@@ -104,16 +104,34 @@ graph TD
     EC2 <-->|Locks| DB
     
     %% Apply styles to groups
-    class AWS,Proxmox fill-opacity:0.1,stroke-dasharray: 5 5
-    class AWS stroke:#ff9900
-    class Proxmox stroke:#e74c3c
+    class AWS fill-opacity:0.1,stroke-dasharray:5,stroke:#ff9900
+    class Proxmox fill-opacity:0.1,stroke-dasharray:5,stroke:#e74c3c
 ```
 *Figure 1: Complete system architecture showing all components and their interactions*
 
 ### 2. Network Flow Sequence
 
 ```mermaid
+%%{init: {
+    'theme': 'base',
+    'themeVariables': {
+        'background': 'transparent',
+        'primaryColor': '#f8f9fa',
+        'primaryText': '#24292f',
+        'primaryBorderColor': '#d0d7de',
+        'lineColor': '#d0d7de',
+        'darkmode': {
+            'background': 'transparent',
+            'primaryColor': '#21262d',
+            'primaryText': '#c9d1d9',
+            'primaryBorderColor': '#30363d',
+            'lineColor': '#30363d'
+        }
+    }
+}}%%
+
 sequenceDiagram
+    %% Define participant colors
     participant U as User
     participant P as Public User
     participant N as Nginx (EC2)
@@ -121,17 +139,27 @@ sequenceDiagram
     participant S as Proxmox Services
     participant A as AWS S3/DynamoDB
     
+    %% Styling
+    rect rgba(0,0,0,0)
+        Note over U: User
+        Note over P: Public User
+        Note over N: Nginx
+        Note over W: WireGuard
+        Note over S: Proxmox
+        Note over A: AWS
+    end
+    
     %% VPN Connection Flow
-    rect rgb(240, 248, 255)
+    rect rgba(52, 152, 219, 0.1)
         Note over U,W: 🔒 Secure VPN Access
-        U->>+W: 1. Initiate VPN Connection (UDP 51820)
+        U->>+W: 1. Initiate VPN Connection
         W-->>-U: 2. Authenticate & Establish Tunnel
         U->>+S: 3. Access Private Services
         S-->>-U: 4. Service Response
     end
     
     %% Public Access Flow
-    rect rgb(240, 255, 240)
+    rect rgba(46, 204, 113, 0.1)
         Note over P,N: 🌐 Public Web Access
         P->>+N: 1. HTTP/HTTPS Request
         N->>+S: 2. Forward to Service
@@ -140,7 +168,7 @@ sequenceDiagram
     end
     
     %% State Management
-    rect rgb(255, 248, 240)
+    rect rgba(155, 89, 182, 0.1)
         Note over N,A: 🔄 State Management
         N->>+A: 1. Lock State (DynamoDB)
         N->>A: 2. Update State (S3)
@@ -148,7 +176,7 @@ sequenceDiagram
     end
     
     %% Security Monitoring
-    rect rgb(255, 240, 240)
+    rect rgba(231, 76, 60, 0.1)
         Note over W: 🛡️ Security
         loop Fail2Ban Protection
             W->>W: Monitor Auth Attempts
@@ -163,35 +191,49 @@ sequenceDiagram
 ### 3. Security Architecture
 
 ```mermaid
+%%{init: {
+    'theme': 'base',
+    'themeVariables': {
+        'background': 'transparent',
+        'primaryColor': '#f8f9fa',
+        'primaryText': '#24292f',
+        'primaryBorderColor': '#d0d7de',
+        'lineColor': '#d0d7de',
+        'darkmode': {
+            'background': 'transparent',
+            'primaryColor': '#21262d',
+            'primaryText': '#c9d1d9',
+            'primaryBorderColor': '#30363d',
+            'lineColor': '#30363d'
+        }
+    }
+}}%%
+
 graph TB
     %% Define styles
-    classDef firewall fill:#FF5722,color:white,stroke:#333
-    classDef vpn fill:#3F51B5,color:white,stroke:#333
-    classDef proxy fill:#4CAF50,color:white,stroke:#333
-    classDef service fill:#9C27B0,color:white,stroke:#333
-    classDef storage fill:#607D8B,color:white,stroke:#333
+    classDef firewall fill:#e74c3c,color:white,stroke:#c0392b,stroke-width:2px
+    classDef vpn fill:#3498db,color:white,stroke:#2980b9,stroke-width:2px
+    classDef proxy fill:#2ecc71,color:black,stroke:#27ae60,stroke-width:2px
+    classDef service fill:#9b59b6,color:white,stroke:#8e44ad,stroke-width:2px
+    classDef storage fill:#95a5a6,color:white,stroke:#7f8c8d,stroke-width:2px
+    classDef internet fill:#f1c40f,color:black,stroke:#f39c12,stroke-width:2px
     
     %% Security Layers
-    subgraph External[🛡️ External Protection]
-        Internet["🌍 Internet"]
-        UFW["UFW Firewall<br>• Allow: 22, 80, 443, 51820"]:::firewall
+    subgraph External[External Protection]
+        Internet[Internet]:::internet
+        UFW[UFW Firewall\n• Ports: 22,80,443,51820]:::firewall
     end
     
-    subgraph EC2[🖥️ EC2 Instance]
-        Nginx["Nginx Reverse Proxy<br>• SSL Termination<br>• Rate Limiting<br>• Header Security"]:::proxy
-        
-        WireGuard["WireGuard VPN<br>• 256-bit Encryption<br>• Perfect Forward Secrecy"]:::vpn
-        
-        Fail2Ban["Fail2Ban<br>• SSH Protection<br>• Nginx Protection"]:::firewall
+    subgraph EC2[EC2 Instance]
+        Nginx[Nginx Reverse Proxy\n• SSL Termination\n• Rate Limiting]:::proxy
+        WireGuard[WireGuard VPN\n• 256-bit Encryption]:::vpn
+        Fail2Ban[Fail2Ban\n• SSH Protection]:::firewall
     end
     
-    subgraph Internal[🔒 Internal Network]
-        Proxmox["Proxmox VE"]
-        
-        subgraph Services[Services]
-            Public["Public Services"]:::service
-            Private["Private Services"]:::service
-        end
+    subgraph Internal[Internal Network]
+        Proxmox[Proxmox VE]:::storage
+        Public[Public Services]:::service
+        Private[Private Services]:::service
     end
     
     %% Data Flow
@@ -208,9 +250,9 @@ graph TB
     WireGuard -->|8. Auth Logs| Fail2Ban
     
     %% Styling
-    style External fill:#FFF3E0,stroke:#FF9800,stroke-width:2px,stroke-dasharray: 5 5
-    style EC2 fill:#E8F5E9,stroke:#4CAF50,stroke-width:2px,stroke-dasharray: 5 5
-    style Internal fill:#E8EAF6,stroke:#3F51B5,stroke-width:2px,stroke-dasharray: 5 5
+    style External fill-opacity:0.1,stroke-dasharray:5,stroke:#f1c40f
+    style EC2 fill-opacity:0.1,stroke-dasharray:5,stroke:#2ecc71
+    style Internal fill-opacity:0.1,stroke-dasharray:5,stroke:#9b59b6
 ```
 *Figure 3: Security layers and protection mechanisms*
 
