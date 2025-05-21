@@ -59,33 +59,25 @@ This repository implements a GitOps workflow for managing a Proxmox server with 
 
 graph TD
     %% Styling
-    classDef aws fill:#ff9900,color:#000,stroke:#e67e22,stroke-width:2px
-    classDef proxmox fill:#e74c3c,color:#fff,stroke:#c0392b,stroke-width:2px
-    classDef storage fill:#9b59b6,color:#fff,stroke:#8e44ad,stroke-width:2px
-    classDef service fill:#2ecc71,color:#000,stroke:#27ae60,stroke-width:2px
-    classDef user fill:#3498db,color:#fff,stroke:#2980b9,stroke-width:2px
-    classDef public fill:#f1c40f,color:#000,stroke:#f39c12,stroke-width:2px
-    classDef internet fill:#95a5a6,color:#fff,stroke:#7f8c8d,stroke-width:2px
-
-    %% Nodes
-    User[User]:::user
-    Public[Public Users]:::public
-    Internet[Internet]:::internet
-    EC2[EC2 t3.micro]:::aws
-    S3[S3 Bucket]:::storage
-    DB[DynamoDB]:::storage
-    PVE[Proxmox Node]:::proxmox
-    PublicApp[Public Apps]:::service
-    PrivateApp[Private Apps]:::service
     
-    %% AWS Group
+    %% Define nodes with simplified styling
+    User["👤 User"]
+    Public["🌍 Public User"]
+    Internet["🌐 Internet"]
+    EC2["EC2 Instance\n- Nginx Reverse Proxy\n- WireGuard VPN\n- Fail2Ban"]
+    PVE["Proxmox VE"]
+    PublicApp["Public Services\n- Web Apps\n- APIs"]
+    PrivateApp["Private Services\n- Databases\n- Management"]
+    S3["S3 Bucket\n- Terraform State\n- Backups"]
+    DB["DynamoDB\n- State Locks"]
+    
+    %% Groupings with solid background
     subgraph AWS[AWS Cloud]
         EC2
         S3
         DB
     end
     
-    %% Proxmox Group
     subgraph Proxmox[Proxmox VE]
         PVE
         PublicApp
@@ -103,39 +95,20 @@ graph TD
     EC2 <-->|State| S3
     EC2 <-->|Locks| DB
     
-    %% Apply styles to groups
-    class AWS fill-opacity:0.1,stroke-dasharray:5,stroke:#ff9900
-    class Proxmox fill-opacity:0.1,stroke-dasharray:5,stroke:#e74c3c
+    %% Style groups with solid backgrounds
+    class AWS fill:#fff3e0,stroke:#ff9900,stroke-width:2px
+    class Proxmox fill:#ffebee,stroke:#e74c3c,stroke-width:2px
 ```
 *Figure 1: Complete system architecture showing all components and their interactions*
 
 ### 2. Network Flow Sequence
 
 ```mermaid
-%%{init: {
-    'theme': 'base',
-    'themeVariables': {
-        'background': 'transparent',
-        'primaryColor': '#f8f9fa',
-        'primaryText': '#24292f',
-        'primaryBorderColor': '#d0d7de',
-        'lineColor': '#d0d7de',
-        'darkmode': {
-            'background': 'transparent',
-            'primaryColor': '#21262d',
-            'primaryText': '#c9d1d9',
-            'primaryBorderColor': '#30363d',
-            'lineColor': '#30363d'
-        }
-    },
-    'themeConfig': {
-        'fontFamily': 'Arial, sans-serif',
-        'fontSize': '14px'
-    }
-}}%%
-
 sequenceDiagram
-    %% Define participants with colors
+    %% Set default styles
+    rect rgb(255, 255, 255)
+    
+    %% Define participants
     participant U as User
     participant P as Public
     participant N as Nginx
@@ -145,7 +118,7 @@ sequenceDiagram
     
     %% VPN Connection Flow
     Note over U,W: 🔒 Secure VPN Access
-    rect rgba(52, 152, 219, 0.15)
+    rect #e3f2fd
         U->>+W: 1. Initiate VPN Connection
         W-->>-U: 2. Authenticate & Establish
         U->>+S: 3. Access Private Services
@@ -154,7 +127,7 @@ sequenceDiagram
     
     %% Public Access Flow
     Note over P,N: 🌐 Public Web Access
-    rect rgba(46, 204, 113, 0.15)
+    rect #e8f5e9
         P->>+N: 1. HTTP/HTTPS Request
         N->>+S: 2. Forward to Service
         S-->>-N: 3. Service Response
@@ -163,7 +136,7 @@ sequenceDiagram
     
     %% State Management
     Note over N,A: 🔄 State Management
-    rect rgba(155, 89, 182, 0.15)
+    rect #f3e5f5
         N->>+A: 1. Lock State
         N->>A: 2. Update State
         A-->>-N: 3. Confirm Update
@@ -171,7 +144,7 @@ sequenceDiagram
     
     %% Security Monitoring
     Note over W: 🛡️ Security
-    rect rgba(231, 76, 60, 0.15)
+    rect #ffebee
         loop Fail2Ban Protection
             W->>W: Monitor Auth Attempts
             alt Too Many Failures
@@ -179,42 +152,24 @@ sequenceDiagram
             end
         end
     end
+    end
 ```
 *Figure 2: Sequence diagram showing network flows for both public and private access*
 
 ### 3. Security Architecture
 
 ```mermaid
-%%{init: {
-    'theme': 'base',
-    'themeVariables': {
-        'background': 'transparent',
-        'primaryColor': '#f8f9fa',
-        'primaryText': '#24292f',
-        'primaryBorderColor': '#d0d7de',
-        'lineColor': '#d0d7de',
-        'darkmode': {
-            'background': 'transparent',
-            'primaryColor': '#21262d',
-            'primaryText': '#c9d1d9',
-            'primaryBorderColor': '#30363d',
-            'lineColor': '#30363d'
-        }
-    },
-    'themeConfig': {
-        'fontFamily': 'Arial, sans-serif',
-        'fontSize': '14px'
-    }
-}}%%
-
 graph TB
-    %% Define styles
-    classDef firewall fill:#e74c3c,color:white,stroke:#c0392b,stroke-width:2px,stroke-dasharray:0
-    classDef vpn fill:#3498db,color:white,stroke:#2980b9,stroke-width:2px,stroke-dasharray:0
-    classDef proxy fill:#2ecc71,color:black,stroke:#27ae60,stroke-width:2px,stroke-dasharray:0
-    classDef service fill:#9b59b6,color:white,stroke:#8e44ad,stroke-width:2px,stroke-dasharray:0
-    classDef storage fill:#95a5a6,color:white,stroke:#7f8c8d,stroke-width:2px,stroke-dasharray:0
-    classDef internet fill:#f1c40f,color:black,stroke:#f39c12,stroke-width:2px,stroke-dasharray:0
+    %% Set white background and default styles
+    classDef default fill:#ffffff,stroke:#333,stroke-width:2px,color:#333
+    
+    %% Define node styles
+    classDef firewall fill:#ffcdd2,stroke:#e53935,stroke-width:2px,color:#000
+    classDef vpn fill:#bbdefb,stroke:#1e88e5,stroke-width:2px,color:#000
+    classDef proxy fill:#c8e6c9,stroke:#43a047,stroke-width:2px,color:#000
+    classDef service fill:#e1bee7,stroke:#8e24aa,stroke-width:2px,color:#000
+    classDef storage fill:#cfd8dc,stroke:#546e7a,stroke-width:2px,color:#000
+    classDef internet fill:#fff9c4,stroke:#fbc02d,stroke-width:2px,color:#000
     
     %% Security Layers
     subgraph External[External Protection]
@@ -248,9 +203,9 @@ graph TB
     WireGuard -->|8. Auth Logs| Fail2Ban
     
     %% Styling
-    style External fill-opacity:0.1,stroke-dasharray:5,stroke:#f1c40f
-    style EC2 fill-opacity:0.1,stroke-dasharray:5,stroke:#2ecc71
-    style Internal fill-opacity:0.1,stroke-dasharray:5,stroke:#9b59b6
+    style External fill:#fff8e1,stroke:#ffc107,stroke-width:2px
+    style EC2 fill:#e8f5e9,stroke:#4caf50,stroke-width:2px
+    style Internal fill:#f3e5f5,stroke:#9c27b0,stroke-width:2px
 ```
 *Figure 3: Security layers and protection mechanisms*
 
