@@ -104,10 +104,8 @@ graph TD
 ### 2. Network Flow Sequence
 
 ```mermaid
+%%{init: {'theme': 'neutral'}}%%
 sequenceDiagram
-    %% Set default styles
-    rect rgb(255, 255, 255)
-    
     %% Define participants
     participant U as User
     participant P as Public
@@ -115,10 +113,10 @@ sequenceDiagram
     participant W as WireGuard
     participant S as Services
     participant A as AWS
-    
+
     %% VPN Connection Flow
-    Note over U,W: 🔒 Secure VPN Access
-    rect #e3f2fd
+    rect rgba(52, 152, 219, 0.1)
+        Note over U,W: 🔒 Secure VPN Access
         U->>+W: 1. Initiate VPN Connection
         W-->>-U: 2. Authenticate & Establish
         U->>+S: 3. Access Private Services
@@ -126,8 +124,8 @@ sequenceDiagram
     end
     
     %% Public Access Flow
-    Note over P,N: 🌐 Public Web Access
-    rect #e8f5e9
+    rect rgba(46, 204, 113, 0.1)
+        Note over P,N: 🌐 Public Web Access
         P->>+N: 1. HTTP/HTTPS Request
         N->>+S: 2. Forward to Service
         S-->>-N: 3. Service Response
@@ -135,23 +133,22 @@ sequenceDiagram
     end
     
     %% State Management
-    Note over N,A: 🔄 State Management
-    rect #f3e5f5
+    rect rgba(155, 89, 182, 0.1)
+        Note over N,A: 🔄 State Management
         N->>+A: 1. Lock State
         N->>A: 2. Update State
         A-->>-N: 3. Confirm Update
     end
     
     %% Security Monitoring
-    Note over W: 🛡️ Security
-    rect #ffebee
+    rect rgba(231, 76, 60, 0.1)
+        Note over W: 🛡️ Security
         loop Fail2Ban Protection
             W->>W: Monitor Auth Attempts
             alt Too Many Failures
                 W->>W: Block IP
             end
         end
-    end
     end
 ```
 *Figure 2: Sequence diagram showing network flows for both public and private access*
