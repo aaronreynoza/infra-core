@@ -127,40 +127,34 @@ graph TD
             'primaryBorderColor': '#30363d',
             'lineColor': '#30363d'
         }
+    },
+    'themeConfig': {
+        'fontFamily': 'Arial, sans-serif',
+        'fontSize': '14px'
     }
 }}%%
 
 sequenceDiagram
-    %% Define participant colors
+    %% Define participants with colors
     participant U as User
-    participant P as Public User
-    participant N as Nginx (EC2)
+    participant P as Public
+    participant N as Nginx
     participant W as WireGuard
-    participant S as Proxmox Services
-    participant A as AWS S3/DynamoDB
-    
-    %% Styling
-    rect rgba(0,0,0,0)
-        Note over U: User
-        Note over P: Public User
-        Note over N: Nginx
-        Note over W: WireGuard
-        Note over S: Proxmox
-        Note over A: AWS
-    end
+    participant S as Services
+    participant A as AWS
     
     %% VPN Connection Flow
-    rect rgba(52, 152, 219, 0.1)
-        Note over U,W: 🔒 Secure VPN Access
+    Note over U,W: 🔒 Secure VPN Access
+    rect rgba(52, 152, 219, 0.15)
         U->>+W: 1. Initiate VPN Connection
-        W-->>-U: 2. Authenticate & Establish Tunnel
+        W-->>-U: 2. Authenticate & Establish
         U->>+S: 3. Access Private Services
         S-->>-U: 4. Service Response
     end
     
     %% Public Access Flow
-    rect rgba(46, 204, 113, 0.1)
-        Note over P,N: 🌐 Public Web Access
+    Note over P,N: 🌐 Public Web Access
+    rect rgba(46, 204, 113, 0.15)
         P->>+N: 1. HTTP/HTTPS Request
         N->>+S: 2. Forward to Service
         S-->>-N: 3. Service Response
@@ -168,16 +162,16 @@ sequenceDiagram
     end
     
     %% State Management
-    rect rgba(155, 89, 182, 0.1)
-        Note over N,A: 🔄 State Management
-        N->>+A: 1. Lock State (DynamoDB)
-        N->>A: 2. Update State (S3)
+    Note over N,A: 🔄 State Management
+    rect rgba(155, 89, 182, 0.15)
+        N->>+A: 1. Lock State
+        N->>A: 2. Update State
         A-->>-N: 3. Confirm Update
     end
     
     %% Security Monitoring
-    rect rgba(231, 76, 60, 0.1)
-        Note over W: 🛡️ Security
+    Note over W: 🛡️ Security
+    rect rgba(231, 76, 60, 0.15)
         loop Fail2Ban Protection
             W->>W: Monitor Auth Attempts
             alt Too Many Failures
@@ -206,28 +200,32 @@ sequenceDiagram
             'primaryBorderColor': '#30363d',
             'lineColor': '#30363d'
         }
+    },
+    'themeConfig': {
+        'fontFamily': 'Arial, sans-serif',
+        'fontSize': '14px'
     }
 }}%%
 
 graph TB
     %% Define styles
-    classDef firewall fill:#e74c3c,color:white,stroke:#c0392b,stroke-width:2px
-    classDef vpn fill:#3498db,color:white,stroke:#2980b9,stroke-width:2px
-    classDef proxy fill:#2ecc71,color:black,stroke:#27ae60,stroke-width:2px
-    classDef service fill:#9b59b6,color:white,stroke:#8e44ad,stroke-width:2px
-    classDef storage fill:#95a5a6,color:white,stroke:#7f8c8d,stroke-width:2px
-    classDef internet fill:#f1c40f,color:black,stroke:#f39c12,stroke-width:2px
+    classDef firewall fill:#e74c3c,color:white,stroke:#c0392b,stroke-width:2px,stroke-dasharray:0
+    classDef vpn fill:#3498db,color:white,stroke:#2980b9,stroke-width:2px,stroke-dasharray:0
+    classDef proxy fill:#2ecc71,color:black,stroke:#27ae60,stroke-width:2px,stroke-dasharray:0
+    classDef service fill:#9b59b6,color:white,stroke:#8e44ad,stroke-width:2px,stroke-dasharray:0
+    classDef storage fill:#95a5a6,color:white,stroke:#7f8c8d,stroke-width:2px,stroke-dasharray:0
+    classDef internet fill:#f1c40f,color:black,stroke:#f39c12,stroke-width:2px,stroke-dasharray:0
     
     %% Security Layers
     subgraph External[External Protection]
         Internet[Internet]:::internet
-        UFW[UFW Firewall\n• Ports: 22,80,443,51820]:::firewall
+        UFW[UFW Firewall\nPorts: 22,80,443,51820]:::firewall
     end
     
     subgraph EC2[EC2 Instance]
-        Nginx[Nginx Reverse Proxy\n• SSL Termination\n• Rate Limiting]:::proxy
-        WireGuard[WireGuard VPN\n• 256-bit Encryption]:::vpn
-        Fail2Ban[Fail2Ban\n• SSH Protection]:::firewall
+        Nginx[Nginx Reverse Proxy\nSSL + Rate Limiting]:::proxy
+        WireGuard[WireGuard VPN\n256-bit Encryption]:::vpn
+        Fail2Ban[Fail2Ban Protection]:::firewall
     end
     
     subgraph Internal[Internal Network]
