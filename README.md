@@ -40,55 +40,41 @@ This repository implements a GitOps workflow for managing a Proxmox server with 
 
 ```mermaid
 graph TD
-    %% Simple Nodes
-    User[User]:::client
-    Public[Public Users]:::public
-    Internet[Internet]:::public
+    %% Nodes
+    User[User]
+    Public[Public Users]
+    Internet[Internet]
+    EC2[EC2 t3.micro]
+    S3[S3 Bucket]
+    DB[DynamoDB]
+    PVE[Proxmox Node]
+    PublicApp[Public Apps]
+    PrivateApp[Private Apps]
     
-    %% AWS Components
+    %% AWS Group
     subgraph AWS[AWS Cloud]
-        EC2[EC2 t3.micro
-        - Nginx
-        - WireGuard
-        - Fail2Ban
-        - UFW]:::aws
-        
-        S3[S3 Bucket]:::storage
-        DB[DynamoDB]:::storage
+        EC2
+        S3
+        DB
     end
     
-    %% Proxmox Components
+    %% Proxmox Group
     subgraph Proxmox[Proxmox VE]
-        PVE[Proxmox Node]:::proxmox
-        PublicApp[Public Apps]:::service
-        PrivateApp[Private Apps]:::service
+        PVE
+        PublicApp
+        PrivateApp
     end
     
     %% Connections
-    User -->|1. WireGuard| EC2
-    User -->|2. SSH| EC2
-    
+    User -->|WireGuard| EC2
+    User -->|SSH| EC2
     Public -->|HTTP/HTTPS| Internet
-    Internet -->|3. Proxy| EC2
-    
-    EC2 <-->|4. VPN| PVE
-    
-    EC2 -->|5a. Public| PublicApp
-    EC2 -->|5b. Private| PrivateApp
-    
-    EC2 <-->|6. State| S3
-    EC2 <-->|7. Locks| DB
-
-    %% Styling
-    classDef aws fill:#FF9900,color:white,stroke:#333,stroke-width:1px
-    classDef proxmox fill:#E6522C,color:white,stroke:#333,stroke-width:1px
-    classDef client fill:#4285F4,color:white,stroke:#333,stroke-width:1px
-    classDef public fill:#34A853,color:white,stroke:#333,stroke-width:1px
-    classDef storage fill:#673AB7,color:white,stroke:#333,stroke-width:1px
-    classDef service fill:#4CAF50,color:white,stroke:#333,stroke-width:1px
-    
-    style AWS fill:#f9f9f9,stroke:#FF9900,stroke-width:1px,stroke-dasharray: 3 3
-    style Proxmox fill:#f9f9f9,stroke:#E6522C,stroke-width:1px,stroke-dasharray: 3 3
+    Internet -->|Proxy| EC2
+    EC2 <-->|VPN| PVE
+    EC2 -->|Public| PublicApp
+    EC2 -->|Private| PrivateApp
+    EC2 <-->|State| S3
+    EC2 <-->|Locks| DB
 ```
 *Figure 1: Complete system architecture showing all components and their interactions*
 
