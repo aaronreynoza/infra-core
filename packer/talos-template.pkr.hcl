@@ -1,6 +1,6 @@
-// Build a Talos VM TEMPLATE on Proxmox using the hashicorp/proxmox plugin.
-// Boots from the Talos ISO and converts the VM to a template.
-// Cloud-Init disk is attached so clones can inject Talos configs later.
+// Build a Talos VM (powered off) on Proxmox using the hashicorp/proxmox plugin.
+// We intentionally do NOT call "template" here because proxmox-iso (v1.2.3) doesn't
+// support it. We'll convert to a template later from Terraform/Proxmox API.
 
 packer {
   required_plugins {
@@ -36,6 +36,11 @@ variable "storage_pool" {
 variable "network_bridge" {
   type    = string
   default = "vmbr0"
+}
+
+variable "iso_storage_pool" {
+  type    = string
+  default = "local" // your directory store that holds ISO images
 }
 
 variable "template_name" {
@@ -84,19 +89,19 @@ source "proxmox-iso" "talos" {
   node    = var.proxmox_node
   vm_name = "${var.template_name}-${var.talos_version}"
 
-  # ISO boot
-  iso_url      = var.talos_iso_url
-  iso_checksum = length(var.talos_iso_checksum) > 0 ? var.talos_iso_checksum : null
-  unmount_iso  = true
+  # ISO boot (download to ISO storage, then mount)
+  iso_url          = var.talos_iso_url
+  iso_checksum     = length(var.talos_iso_checksum) > 0 ? var.talos_iso_checksum : null
+  iso_storage_pool = var.iso_storage_pool
+  unmount_iso      = true
 
-  # Disk + network
-  storage_pool = var.storage_pool
-
+  # Network
   network_adapters {
     model  = "virtio"
     bridge = var.network_bridge
   }
 
+  # Disk (the "storage_pool" is valid ONLY inside this block)
   disks {
     type         = "scsi"
     storage_pool = var.storage_pool
@@ -109,12 +114,9 @@ source "proxmox-iso" "talos" {
   scsi_controller = "virtio-scsi-pci"
   bios            = "seabios"
 
-  # Cloud-Init drive for later per-node configs
+  # Cloud-Init drive for per-node configs later
   cloud_init              = true
   cloud_init_storage_pool = var.storage_pool
-
-  # Convert VM to template after build
-  template = true
 
   # Talos has no SSH during ISO boot; no guest comms.
   communicator = "none"
