@@ -1,0 +1,53 @@
+name: terraform-apply
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - "terraform/**"
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  apply:
+    runs-on: [self-hosted, proxmox, terraform]
+
+    env:
+      TF_VAR_proxmox: >-
+        {"url":"${{ secrets.PROXMOX_URL }}",
+         "username":"${{ secrets.PROXMOX_USERNAME }}",
+         "password":"${{ secrets.PROXMOX_PASSWORD }}",
+         "node":"${{ secrets.PROXMOX_NODE }}",
+         "storage":"${{ secrets.PROXMOX_STORAGE || 'local-lvm' }}",
+         "bridge":"${{ secrets.PROXMOX_BRIDGE || 'vmbr0' }}"}
+
+      TF_VAR_aws_region: ${{ vars.AWS_REGION }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure AWS credentials via OIDC
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.AWS_ROLE_ARN }}
+          aws-region:     ${{ vars.AWS_REGION }}
+
+      - name: Terraform Init (S3 backend)
+        working-directory: terraform
+        run: |
+          terraform init \
+            -backend-config="bucket=${{ vars.TF_BACKEND_BUCKET }}" \
+            -backend-config="key=${{ vars.TF_BACKEND_PREFIX }}/infra.tfstate" \
+            -backend-config="region=${{ vars.AWS_REGION }}" \
+            -backend-config="dynamodb_table=${{ vars.TF_BACKEND_TABLE }}" \
+            -backend-config="encrypt=true"
+
+      - name: Terraform Plan
+        working-directory: terraform
+        run: terraform plan -out=tfplan
+
+      - name: Terraform Apply
+        working-directory: terraform
+        run: terraform apply -auto-approve tfplan

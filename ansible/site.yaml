@@ -1,0 +1,87 @@
+---
+- name: Bootstrap cluster with Argo CD
+  hosts: localhost
+  vars:
+    kubeconfig: "{{ lookup('env', 'KUBECONFIG') | default(kubeconfig_path, true) }}"
+    kubeconfig_path: "{{ kubeconfig | default('/tmp/kubeconfig') }}"
+    argo_namespace: argocd
+    argo_chart_version: 6.9.2
+    gitops_repo_url: "{{ lookup('env','GITOPS_REPO_URL') | default(gitops_repo_url_var, true) }}"
+    gitops_repo_url_var: ""
+    gitops_path: "{{ lookup('env','GITOPS_PATH') | default('clusters/lab', true) }}"
+    gitops_revision: "{{ lookup('env','GITOPS_REVISION') | default('main', true) }}"
+  pre_tasks:
+    - name: Ensure kubeconfig file exists
+      ansible.builtin.stat:
+        path: "{{ kubeconfig_path }}"
+      register: kc
+    - name: Fail if kubeconfig not present
+      ansible.builtin.fail:
+        msg: "kubeconfig not found at {{ kubeconfig_path }} and KUBECONFIG not set"
+      when: not kc.stat.exists and (lookup('env','KUBECONFIG') | length) == 0
+
+  tasks:
+    - name: Create Argo CD namespace
+      kubernetes.core.k8s:
+        kubeconfig: "{{ kubeconfig_path }}"
+        state: present
+        definition:
+          apiVersion: v1
+          kind: Namespace
+          metadata:
+            name: "{{ argo_namespace }}"
+
+    - name: Install/upgrade Argo CD via Helm
+      kubernetes.core.helm:
+        kubeconfig: "{{ kubeconfig_path }}"
+        name: argocd
+        chart_ref: argo/argo-cd
+        chart_repo_url: https://argoproj.github.io/argo-helm
+        release_namespace: "{{ argo_namespace }}"
+        create_namespace: false
+        state: present
+        chart_version: "{{ argo_chart_version }}"
+        values:
+          server:
+            extraArgs: ["--insecure"]
+          dex:
+            enabled: false
+
+    - name: Wait for Argo CD server endpoint
+      kubernetes.core.k8s_info:
+        kubeconfig: "{{ kubeconfig_path }}"
+        api_version: v1
+        kind: Service
+        namespace: "{{ argo_namespace }}"
+        name: argocd-server
+      register: svc
+      retries: 30
+      delay: 10
+      until: svc.resources | length > 0
+
+    - name: Apply App-of-Apps (GitOps entrypoint)
+      kubernetes.core.k8s:
+        kubeconfig: "{{ kubeconfig_path }}"
+        state: present
+        definition: |
+          apiVersion: argoproj.io/v1alpha1
+          kind: Application
+          metadata:
+            name: root-apps
+            namespace: {{ argo_namespace }}
+            finalizers: ["resources-finalizers.argocd.argoproj.io"]
+          spec:
+            project: default
+            source:
+              repoURL: {{ gitops_repo_url | to_json }}
+              targetRevision: {{ gitops_revision | to_json }}
+              path: {{ gitops_path | to_json }}
+            destination:
+              server: https://kubernetes.default.svc
+              namespace: default
+            syncPolicy:
+              automated:
+                prune: true
+                selfHeal: true
+              syncOptions:
+                - CreateNamespace=true

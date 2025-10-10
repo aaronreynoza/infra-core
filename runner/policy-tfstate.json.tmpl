@@ -1,0 +1,20 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect":"Allow",
+      "Action":[ "s3:ListBucket", "s3:GetBucketLocation" ],
+      "Resource":"arn:aws:s3:::__BUCKET__"
+    },
+    {
+      "Effect":"Allow",
+      "Action":[ "s3:GetObject", "s3:PutObject", "s3:DeleteObject" ],
+      "Resource":"arn:aws:s3:::__BUCKET__/*"
+    },
+    {
+      "Effect":"Allow",
+      "Action":[ "dynamodb:DescribeTable", "dynamodb:PutItem", "dynamodb:DeleteItem", "dynamodb:GetItem" ],
+      "Resource":"arn:aws:dynamodb:__REGION__:__ACCOUNT_ID__:table/__TABLE__"
+    }
+  ]
+}

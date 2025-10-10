@@ -1,0 +1,27 @@
+
+---
+
+### `runner/trust.json.tmpl`
+```json
+{
+  "Version": "2012-10-17",
+  "Statement": [{
+    "Sid": "GitHubOIDCTrust",
+    "Effect": "Allow",
+    "Principal": {
+      "Federated": "arn:aws:iam::__ACCOUNT_ID__:oidc-provider/token.actions.githubusercontent.com"
+    },
+    "Action": "sts:AssumeRoleWithWebIdentity",
+    "Condition": {
+      "StringEquals": {
+        "token.actions.githubusercontent.com:aud": "sts.amazonaws.com"
+      },
+      "StringLike": {
+        "token.actions.githubusercontent.com:sub": "repo:__ORG__/__REPO__:*"
+        /* optionally restrict further, e.g.:
+        , "token.actions.githubusercontent.com:ref": "refs/heads/main"
+        */
+      }
+    }
+  }]
+}
