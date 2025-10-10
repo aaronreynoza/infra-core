@@ -1,39 +1,48 @@
-name: packer-build
+name: Packer - Talos template (Proxmox)
 
 on:
-  workflow_dispatch:
+  workflow_dispatch: {}
   push:
     paths:
-      - "packer/**"
+      - "packer/talos-packer/**"
+      - ".github/workflows/packer-build.yml"
 
 jobs:
-  build-talos-template:
-    runs-on: [self-hosted, proxmox]
-    timeout-minutes: 45
+  build:
+    runs-on: ubuntu-latest
+    env:
+      PROXMOX_API_URL: ${{ secrets.PROXMOX_API_URL }}
+      PROXMOX_TOKEN_ID: ${{ secrets.PROXMOX_TOKEN_ID }}
+      PROXMOX_TOKEN_SECRET: ${{ secrets.PROXMOX_TOKEN_SECRET }}
+      PROXMOX_NODE: ${{ secrets.PROXMOX_NODE }}
 
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
       - name: Setup Packer
         uses: hashicorp/setup-packer@v2
         with:
           version: latest
 
-      - name: Build Talos template on Proxmox
-        env:
-          PACKER_LOG: "1"
+      - name: Packer init
+        run: packer init packer/talos-packer
+
+      - name: Packer validate
         run: |
-          packer init packer
+          packer validate \
+            -var "proxmox_api_url=${PROXMOX_API_URL}" \
+            -var "proxmox_api_token_id=${PROXMOX_TOKEN_ID}" \
+            -var "proxmox_api_token_secret=${PROXMOX_TOKEN_SECRET}" \
+            -var "proxmox_node=${PROXMOX_NODE}" \
+            -var-file packer/talos-packer/vars/local.pkrvars.hcl \
+            packer/talos-packer
+
+      - name: Packer build
+        run: |
           packer build \
-            -var "proxmox_url=${{ secrets.PROXMOX_URL }}" \
-            -var "proxmox_username=${{ secrets.PROXMOX_USERNAME }}" \
-            -var "proxmox_password=${{ secrets.PROXMOX_PASSWORD }}" \
-            -var "proxmox_node=${{ secrets.PROXMOX_NODE }}" \
-            -var "storage_pool=${{ secrets.PROXMOX_STORAGE || 'local-lvm' }}" \
-            -var "network_bridge=${{ secrets.PROXMOX_BRIDGE || 'vmbr0' }}" \
-            -var "template_name=template-talos" \
-            -var "talos_version=${{ vars.TALOS_VERSION || 'v1.7.4' }}" \
-            -var "talos_iso_url=${{ vars.TALOS_ISO_URL || 'https://github.com/siderolabs/talos/releases/download/v1.7.4/metal-amd64.iso' }}" \
-            -var "talos_iso_checksum=${{ vars.TALOS_ISO_CHECKSUM || '' }}" \
-            packer/talos-template.pkr.hcl
+            -var "proxmox_api_url=${PROXMOX_API_URL}" \
+            -var "proxmox_api_token_id=${PROXMOX_TOKEN_ID}" \
+            -var "proxmox_api_token_secret=${PROXMOX_TOKEN_SECRET}" \
+            -var "proxmox_node=${PROXMOX_NODE}" \
+            -var-file packer/talos-packer/vars/local.pkrvars.hcl \
+            packer/talos-packer
