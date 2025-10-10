@@ -7,7 +7,7 @@ resource "proxmox_virtual_environment_vm" "talos_cp_01" {
 
   cpu {
     cores = 2
-    type = "x86-64-v2-AES"
+    type  = "x86-64-v2-AES"
   }
 
   memory {
@@ -49,7 +49,7 @@ resource "proxmox_virtual_environment_vm" "talos_cp_01" {
 }
 
 resource "proxmox_virtual_environment_vm" "talos_worker_01" {
-  depends_on = [ proxmox_virtual_environment_vm.talos_cp_01 ]
+  depends_on  = [proxmox_virtual_environment_vm.talos_cp_01]
   name        = "talos-worker-01"
   description = "Managed by Terraform"
   tags        = ["terraform"]
@@ -58,7 +58,7 @@ resource "proxmox_virtual_environment_vm" "talos_worker_01" {
 
   cpu {
     cores = 8
-    type = "x86-64-v2-AES"
+    type  = "x86-64-v2-AES"
   }
 
   memory {
@@ -73,6 +73,7 @@ resource "proxmox_virtual_environment_vm" "talos_worker_01" {
     bridge = "vmbr0"
   }
 
+  # OS disk
   disk {
     datastore_id = "local"
     file_id      = proxmox_virtual_environment_download_file.talos_nocloud_image.id
@@ -81,14 +82,16 @@ resource "proxmox_virtual_environment_vm" "talos_worker_01" {
     size         = 20
   }
 
+  # Data disk for Longhorn
   disk {
     datastore_id = "local"
-    interface    = "virtio1"  # second disk (shows up as /dev/vdb in Talos)
+    interface    = "virtio1" # keep VirtIO; Proxmox exposes it as /dev/vdb
+    file_format  = "raw"
     size         = 500
   }
 
   operating_system {
-    type = "l26" # Linux Kernel 2.6 - 5.X.
+    type = "l26"
   }
 
   initialization {
@@ -106,7 +109,7 @@ resource "proxmox_virtual_environment_vm" "talos_worker_01" {
 }
 
 resource "proxmox_virtual_environment_vm" "talos_worker_02" {
-  depends_on = [ proxmox_virtual_environment_vm.talos_cp_01 ]
+  depends_on  = [proxmox_virtual_environment_vm.talos_cp_01]
   name        = "talos-worker-02"
   description = "Managed by Terraform"
   tags        = ["terraform"]
@@ -115,7 +118,7 @@ resource "proxmox_virtual_environment_vm" "talos_worker_02" {
 
   cpu {
     cores = 8
-    type = "x86-64-v2-AES"
+    type  = "x86-64-v2-AES"
   }
 
   memory {
@@ -130,6 +133,7 @@ resource "proxmox_virtual_environment_vm" "talos_worker_02" {
     bridge = "vmbr0"
   }
 
+  # OS disk
   disk {
     datastore_id = "local"
     file_id      = proxmox_virtual_environment_download_file.talos_nocloud_image.id
@@ -138,9 +142,11 @@ resource "proxmox_virtual_environment_vm" "talos_worker_02" {
     size         = 20
   }
 
+  # Data disk for Longhorn
   disk {
     datastore_id = "local"
-    interface    = "virtio1"  # second disk (shows up as /dev/vdb in Talos)
+    interface    = "virtio1" # keep VirtIO; Proxmox exposes it as /dev/vdb
+    file_format  = "raw"
     size         = 500
   }
 
