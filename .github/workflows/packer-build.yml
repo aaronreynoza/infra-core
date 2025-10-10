@@ -9,7 +9,7 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, linux, x64, proxmox]
     env:
       PROXMOX_API_URL: ${{ secrets.PROXMOX_API_URL }}
       PROXMOX_TOKEN_ID: ${{ secrets.PROXMOX_TOKEN_ID }}

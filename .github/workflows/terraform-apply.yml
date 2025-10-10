@@ -12,7 +12,7 @@ permissions:
 
 jobs:
   apply:
-    runs-on: [self-hosted, proxmox, terraform]
+    runs-on: [self-hosted, linux, x64, proxmox]
 
     env:
       TF_VAR_proxmox: >-
