@@ -1,0 +1,37 @@
+name: build-talos-template
+
+on:
+  workflow_dispatch: {}
+
+jobs:
+  packer:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Packer
+        uses: hashicorp/setup-packer@v2
+        with:
+          version: latest
+
+      - name: Packer init
+        run: packer init packer/talos-packer
+
+      - name: Build template on Proxmox
+        env:
+          PROXMOX_API_URL:        ${{ secrets.PROXMOX_API_URL }}
+          PROXMOX_TOKEN_ID:       ${{ secrets.PROXMOX_TOKEN_ID }}
+          PROXMOX_TOKEN_SECRET:   ${{ secrets.PROXMOX_TOKEN_SECRET }}
+          PROXMOX_NODE:           ${{ secrets.PROXMOX_NODE }}
+        run: |
+          set -euxo pipefail
+          packer build \
+            -var-file=packer/talos-packer/vars/local.pkrvars.hcl \
+            -var "proxmox_api_url=${PROXMOX_API_URL}" \
+            -var "proxmox_api_token_id=${PROXMOX_TOKEN_ID}" \
+            -var "proxmox_api_token_secret=${PROXMOX_TOKEN_SECRET}" \
+            -var "proxmox_node=${PROXMOX_NODE}" \
+            packer/talos-packer/proxmox.pkr.hcl
