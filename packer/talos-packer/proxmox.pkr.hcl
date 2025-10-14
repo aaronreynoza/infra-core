@@ -14,12 +14,12 @@ source "proxmox-iso" "talos" {
   node                     = var.proxmox_node
   insecure_skip_tls_verify = true
 
+  # --- IMPORTANT: use IDE so SeaBIOS can boot the CD-ROM ---
   boot_iso {
-    type     = "ide"
-    iso_file = var.base_iso_file
+    type     = "ide"                                  # was "scsi"
+    iso_file = var.base_iso_file                      # e.g. local:iso/archlinux-2024.06.01-x86_64.iso
     unmount  = true
   }
-
 
   scsi_controller = "virtio-scsi-single"
 
@@ -42,6 +42,7 @@ source "proxmox-iso" "talos" {
   cores        = var.cores
   cpu_type     = var.cpu_type
   sockets      = "1"
+
   ssh_username = "root"
   ssh_password = "packer"
   ssh_timeout  = "15m"
