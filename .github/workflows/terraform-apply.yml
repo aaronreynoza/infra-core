@@ -1,10 +1,11 @@
-name: terraform-apply
+name: Terraform Proxmox (Talos)
 
 on:
   workflow_dispatch:
   push:
     paths:
       - "terraform/**"
+      - ".github/workflows/terraform-apply.yml"
 
 permissions:
   id-token: write
@@ -15,24 +16,55 @@ jobs:
     runs-on: [self-hosted, linux, x64, proxmox]
 
     env:
-      TF_VAR_proxmox: >-
-        {"url":"${{ secrets.PROXMOX_URL }}",
-         "username":"${{ secrets.PROXMOX_USERNAME }}",
-         "password":"${{ secrets.PROXMOX_PASSWORD }}",
-         "node":"${{ secrets.PROXMOX_NODE }}",
-         "storage":"${{ secrets.PROXMOX_STORAGE || 'local-lvm' }}",
-         "bridge":"${{ secrets.PROXMOX_BRIDGE || 'vmbr0' }}"}
+      # Terraform picks these up automatically
+      TF_VAR_proxmox_api_url:          ${{ secrets.PROXMOX_API_URL }}          # e.g. https://pve:8006/api2/json
+      TF_VAR_proxmox_api_token_id:     ${{ secrets.PROXMOX_API_TOKEN_ID }}     # e.g. packer@pve!packer
+      TF_VAR_proxmox_api_token_secret: ${{ secrets.PROXMOX_API_TOKEN_SECRET }} # token value
+      TF_VAR_pm_node:                  ${{ vars.PROXMOX_NODE || 'pve' }}
+      TF_VAR_vm_storage:               ${{ vars.PROXMOX_STORAGE || 'local-lvm' }}
+      TF_VAR_bridge:                   ${{ vars.PROXMOX_BRIDGE  || 'vmbr0' }}
+      TF_VAR_talos_image_url:          ${{ secrets.TALOS_IMAGE_URL }}
 
-      TF_VAR_aws_region: ${{ vars.AWS_REGION }}
+      # Compose SSH host for Terraform's null_resource
+      SSH_USER:                        ${{ secrets.PROXMOX_SSH_USER }}         # e.g. root
+      SSH_HOST:                        ${{ secrets.PROXMOX_SSH_HOST }}         # e.g. pve or 10.0.0.10
+      TF_VAR_pm_ssh_host:              ${{ secrets.PROXMOX_SSH_USER }}@${{ secrets.PROXMOX_SSH_HOST }}
+
+      # Optional: JSON map of cidata ISOs (non-secret repo var)
+      # Example value: {"cp1":"local:iso/cp1-cidata.iso","w1":"local:iso/w1-cidata.iso","w2":"local:iso/w2-cidata.iso"}
+      CONFIG_ISOS_JSON:                ${{ vars.CONFIG_ISOS_JSON }}
+
+      TF_IN_AUTOMATION: "true"
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
 
-      - name: Configure AWS credentials via OIDC
+      - name: Configure AWS credentials via OIDC (S3 backend)
         uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: ${{ vars.AWS_ROLE_ARN }}
           aws-region:     ${{ vars.AWS_REGION }}
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.9.5
+
+      - name: Start ssh-agent and add key
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: |
+            ${{ secrets.PROXMOX_SSH_PRIVATE_KEY }}
+
+      - name: Add Proxmox host to known_hosts
+        run: |
+          mkdir -p ~/.ssh
+          ssh-keyscan -T 10 "${SSH_HOST}" >> ~/.ssh/known_hosts
+
+      - name: Sanity check SSH connectivity
+        run: |
+          ssh -o BatchMode=yes -o StrictHostKeyChecking=yes "${SSH_USER}@${SSH_HOST}" "pveversion | head -1"
 
       - name: Terraform Init (S3 backend)
         working-directory: terraform
@@ -44,10 +76,45 @@ jobs:
             -backend-config="dynamodb_table=${{ vars.TF_BACKEND_TABLE }}" \
             -backend-config="encrypt=true"
 
+      # OPTIONAL: build a temp tfvars file (avoids committing any values)
+      # If you don't want this, just delete this step — TF_VAR_* is enough.
+      - name: Create ephemeral tfvars (optional)
+        working-directory: terraform
+        env:
+          API_URL:       ${{ secrets.PROXMOX_API_URL }}
+          TOKEN_ID:      ${{ secrets.PROXMOX_API_TOKEN_ID }}
+          TOKEN_SECRET:  ${{ secrets.PROXMOX_API_TOKEN_SECRET }}
+          TALOS_URL:     ${{ secrets.TALOS_IMAGE_URL }}
+          SSH_USER:      ${{ secrets.PROXMOX_SSH_USER }}
+          SSH_HOST:      ${{ secrets.PROXMOX_SSH_HOST }}
+          CONFIG_ISOS_JSON: ${{ vars.CONFIG_ISOS_JSON }}
+        run: |
+          # Build JSON safely with jq (no heredoc quoting headaches)
+          jq -n \
+            --arg api_url    "$API_URL" \
+            --arg token_id   "$TOKEN_ID" \
+            --arg token_sec  "$TOKEN_SECRET" \
+            --arg pm_ssh     "$SSH_USER@$SSH_HOST" \
+            --arg talos_url  "$TALOS_URL" \
+            --argjson cfg_isos "${CONFIG_ISOS_JSON:-{}}" \
+            '{
+              proxmox_api_url:          $api_url,
+              proxmox_api_token_id:     $token_id,
+              proxmox_api_token_secret: $token_sec,
+              pm_ssh_host:              $pm_ssh,
+              talos_image_url:          $talos_url
+            } + ( ( $cfg_isos|type == "object" and ($cfg_isos|length>0) ) ? {config_isos:$cfg_isos} : {} )' \
+            > runtime.auto.tfvars.json
+          cat runtime.auto.tfvars.json
+
+      - name: Terraform Validate
+        working-directory: terraform
+        run: terraform validate
+
       - name: Terraform Plan
         working-directory: terraform
-        run: terraform plan -out=tfplan
+        run: terraform plan -input=false -out=tfplan
 
       - name: Terraform Apply
         working-directory: terraform
-        run: terraform apply -auto-approve tfplan
+        run: terraform apply -input=false -auto-approve tfplan
