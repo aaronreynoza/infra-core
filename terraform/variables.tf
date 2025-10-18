@@ -70,15 +70,3 @@ variable "nodes" {
   }))
   default = {}                 # empty = create nothing
 }
-
-# --- Simple cluster shape: map of nodes keyed by VM name ---
-variable "nodes" {
-  description = "Map of nodes to create (key = VM name)"
-  type = map(object({
-    memory    = number         # MB
-    cores     = number
-    os_disk   = string         # e.g., "20G"
-    data_disk = string         # e.g., "100G"; use null for none
-  }))
-  default = {}                 # empty = create nothing
-}
