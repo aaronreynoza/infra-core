@@ -1,8 +1,7 @@
 locals {
-  talos_raw_url = var.talos_image_url != "" ?
-    var.talos_image_url :
-    "https://github.com/siderolabs/talos/releases/download/${var.talos_version}/metal-amd64.raw.xz"
+  talos_raw_url = var.talos_image_url != "" ? var.talos_image_url : "https://github.com/siderolabs/talos/releases/download/${var.talos_version}/metal-amd64.raw.xz"
 }
+
 
 resource "null_resource" "talos_template" {
   triggers = {
