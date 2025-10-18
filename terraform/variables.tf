@@ -35,12 +35,6 @@ variable "pm_ssh_host" {
   sensitive = true
 }
 
-# Where to fetch Talos metal image (.xz) for the template
-variable "talos_image_url" {
-  type = string
-  # e.g. "https://factory.talos.dev/image/metal-amd64/raw.gz?..."; adjust to .xz/raw as you prefer
-}
-
 # Template VM info
 variable "template_vmid" {
   type    = number
@@ -71,7 +65,7 @@ variable "nodes" {
 variable "talos_version" {
   description = "Talos release tag to use, e.g. v1.7.5"
   type        = string
-  default     = "v1.7.5"
+  default     = "v1.8.2"
 }
 
 variable "talos_image_url" {

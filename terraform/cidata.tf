@@ -1,27 +1,18 @@
-locals {
-  talout_dir            = "${path.module}/.talout"              # talhelper writes here
-  cidata_iso_dir        = "/var/lib/vz/template/iso"            # remote path
-  cidata_storage_prefix = "local:iso"                           # attach prefix
-}
-
+# Single builder that creates all per-node ISOs in one shot
 resource "null_resource" "cidata" {
-  for_each = var.nodes
-
-  # Rebuild ISO when the machineconfig YAML changes
+  # change this trigger whenever inputs change so script re-runs
   triggers = {
-    node_name   = each.key
-    mc_hash     = filesha256("${local.talout_dir}/${each.key}.yaml")
-    pm_ssh      = var.pm_ssh_host
+    content_hash = sha1(join(",", sort(keys(var.nodes))))
+    script_hash  = filesha1("${path.module}/scripts/build_cidata.sh")
   }
 
   provisioner "local-exec" {
-    command = <<EOT
-bash '${path.module}/scripts/make_cidata.sh' \
-  '${var.pm_ssh_host}' \
-  '${each.key}' \
-  '${local.talout_dir}/${each.key}.yaml' \
-  '${local.cidata_iso_dir}' \
-  '${local.cidata_storage_prefix}'
-EOT
+    command = <<-EOT
+      bash '${path.module}/scripts/build_cidata.sh' \
+        '${var.pm_ssh_host}' \
+        '${var.cluster_endpoint}' \
+        '${var.cluster_name}'
+    EOT
+    interpreter = ["/usr/bin/bash", "-c"]
   }
 }
