@@ -1,7 +1,10 @@
 resource "proxmox_vm_qemu" "talos_nodes" {
   for_each = var.nodes
 
-  depends_on = [null_resource.talos_template]
+  depends_on = [
+    null_resource.talos_template,
+    null_resource.cidata[each.key]
+  ]
 
   name        = each.key
   target_node = var.pm_node
@@ -14,10 +17,14 @@ resource "proxmox_vm_qemu" "talos_nodes" {
   memory  = each.value.memory
   onboot  = true
 
-  scsihw  = "virtio-scsi-single"
-  boot    = "order=scsi0"
+  scsihw = "virtio-scsi-single"
+  boot   = "order=scsi0"
 
-  cdrom = var.config_isos[each.key]
+  # Attach the per-node ISO we just generated (IDE slot 2)
+  ide {
+    slot = 2
+    iso  = "${local.cidata_storage_prefix}/${each.key}-cidata.iso"
+  }
 
   network {
     model  = "virtio"
@@ -31,7 +38,7 @@ resource "proxmox_vm_qemu" "talos_nodes" {
   }
 
   dynamic "disk" {
-    for_each = each.value.data_disk == null ? [] : [each.value.data_disk]
+    for_each = try(each.value.data_disk, null) == null ? [] : [each.value.data_disk]
     content {
       type     = "scsi"
       storage  = var.vm_storage

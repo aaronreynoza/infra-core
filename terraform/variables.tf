@@ -1,14 +1,12 @@
-# ---------- Proxmox API (secrets come from TF_VAR_* / runtime.auto.tfvars.json) ----------
+# ---------- Proxmox API (use TF_VAR_* or a tfvars file) ----------
 variable "proxmox_api_url" {
   type      = string
   sensitive = true
 }
-
 variable "proxmox_api_token_id" {
   type      = string
   sensitive = true
 }
-
 variable "proxmox_api_token_secret" {
   type      = string
   sensitive = true
@@ -30,43 +28,54 @@ variable "bridge" {
   default = "vmbr0"
 }
 
-# SSH target used by null_resource/remote-exec, etc.
+# SSH target to run 'qm' commands for the template step (local-exec over ssh)
+# e.g. "root@REDACTED_IP"
 variable "pm_ssh_host" {
   type      = string
-  sensitive = true     # e.g. "root@REDACTED_IP"
+  sensitive = true
 }
 
-# Talos image URL in Proxmox content (template or raw image)
+# Where to fetch Talos metal image (.xz) for the template
 variable "talos_image_url" {
   type = string
-  # no default; supply via TF_VAR_talos_image_url or tfvars
+  # e.g. "https://factory.talos.dev/image/metal-amd64/raw.gz?..."; adjust to .xz/raw as you prefer
 }
 
-# Optional: prebuilt cloud-init/cidata ISO locations (vm_name -> storage:path)
+# Template VM info
+variable "template_vmid" {
+  type    = number
+  default = 9000
+}
+variable "template_name" {
+  type    = string
+  default = "talos-template"
+}
+
+# Map of node name -> cidata ISO path in Proxmox (e.g. "local:iso/w1-cidata.iso")
 variable "config_isos" {
   type    = map(string)
   default = {}
 }
 
-# --- Talos template metadata (used by null_resource and clones) ---
-variable "template_vmid" {
-  description = "Numeric VMID to use for the Talos template in Proxmox (e.g., 9000)"
-  type        = number
-}
-
-variable "template_name" {
-  description = "Name of the Talos template VM to create/clone (e.g., talos-tpl)"
-  type        = string
-}
-
-# --- Simple cluster shape: map of nodes keyed by VM name ---
+# Nodes definition: name -> { cores, memory (MiB), os_disk (e.g. "20G"), optional data_disk (e.g. "200G") }
 variable "nodes" {
-  description = "Map of nodes to create (key = VM name)"
   type = map(object({
-    memory    = number         # MB
     cores     = number
-    os_disk   = string         # e.g., "20G"
-    data_disk = string         # e.g., "100G"; use null for none
+    memory    = number
+    os_disk   = string
+    data_disk = optional(string) # present => create a 2nd disk for Longhorn
   }))
-  default = {}                 # empty = create nothing
+  default = {}
+}
+
+variable "talos_version" {
+  description = "Talos release tag to use, e.g. v1.7.5"
+  type        = string
+  default     = "v1.7.5"
+}
+
+variable "talos_image_url" {
+  description = "Override Talos metal image URL (raw.xz). Leave empty to use talos_version."
+  type        = string
+  default     = ""
 }
