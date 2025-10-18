@@ -39,8 +39,8 @@ resource "proxmox_vm_qemu" "talos_nodes" {
       type     = "scsi"
       storage  = var.vm_storage
       size     = disk.value
-      iothread = true
-      ssd      = true
+      iothread = 1
+      ssd      = 1
     }
   }
 }
