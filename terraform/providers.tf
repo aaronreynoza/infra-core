@@ -13,10 +13,17 @@ terraform {
   }
 }
 
+# terraform/providers.tf
 provider "proxmox" {
-  pm_api_url          = var.proxmox_api_url              # e.g. https://pve:8006/api2/json
-  pm_api_token_id     = "packer@pve!packer"              # user@realm!tokenname
+  pm_api_url          = var.proxmox_api_url
+  pm_api_token_id     = "packer@pve!packer"       # user@realm!token
   pm_api_token_secret = var.proxmox_api_token_secret
-  pm_tls_insecure     = true
-  pm_parallel         = 2
+
+  pm_tls_insecure = true
+  pm_parallel     = 2
+
+  # TEMP: debug
+  pm_log_enable = true
+  pm_log_file   = "proxmox-provider.log"
+  pm_debug      = true
 }
