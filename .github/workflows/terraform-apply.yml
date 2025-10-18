@@ -64,11 +64,6 @@ jobs:
           mkdir -p ~/.ssh
           printf '%s\n' "${{ secrets.PROXMOX_KNOWN_HOST }}" >> ~/.ssh/known_hosts
           chmod 600 ~/.ssh/known_hosts
-      
-      - name: Sanity check SSH connectivity
-        run: |
-          ssh -o BatchMode=yes -o StrictHostKeyChecking=yes \
-              "${SSH_USER}@${SSH_HOST}" "pveversion | head -1"
 
       - name: Terraform Init (S3 backend)
         working-directory: terraform
