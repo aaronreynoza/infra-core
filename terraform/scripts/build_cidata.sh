@@ -1,134 +1,122 @@
 #!/usr/bin/env bash
-#
-# build_cidata.sh
-# ----------------
-# Create cloud-init "CIDATA" ISOs for one or more nodes and upload them
-# to a Proxmox host's ISO storage.
-#
-# Usage:
-#   build_cidata.sh <user@proxmox-host> <kube_api_url> <cluster_name> [nodes]
-#
-# Args:
-#   1) user@host          SSH target to your Proxmox node (e.g., root@192.168.1.10)
-#   2) kube_api_url       (kept for compatibility; not strictly needed here)
-#   3) cluster_name       (kept for compatibility; used in metadata only)
-#   4) nodes              OPTIONAL. Comma-separated list (e.g., "w1,w2").
-#                         Defaults to "w1,w2" if omitted/empty.
-#
-# Output:
-#   Prints lines like "local:iso/<node>-cidata.iso" for each generated ISO.
-#
-# Notes:
-#   - This script purposefully does NOT assume Talos needs cloud-init. The ISOs
-#     simply include minimal meta-data/user-data so Proxmox can attach them.
-#   - If you want to inject real configs, replace the USER_DATA content below.
-#   - Requires mkisofs OR genisoimage OR xorriso on the local runner.
-#   - Needs passwordless SSH or an ssh-agent loaded with a key that can sudo on the remote.
-#
+# Build tiny cloud-init "cidata" ISOs and upload them to Proxmox "local" storage.
+# Robust against missing args/tools and unbound vars.
+
 set -euo pipefail
 
-#######################################
-# Args & defaults
-#######################################
-PM_SSH_TARGET=${1:?usage: $0 <user@host> <kube_api_url> <cluster_name> [nodes]}
-KUBE_API_URL=${2:?kube_api_url required}
-CLUSTER_NAME=${3:?cluster_name required}
-NODES_ARG=${4:-}
+# ---------- Usage ----------
+# ./scripts/build_cidata.sh \
+#   --pm-ssh "root@REDACTED_IP" \
+#   --cluster-endpoint "https://192.168.100.101:6443" \
+#   --user "talos" \
+#   --vms "w1,w2"
+#
+# Expects Proxmox "local" storage (default path /var/lib/vz/template/iso)
+# Produces local:iso/<vm>-cidata.iso for each VM name given.
 
-# Default nodes list if none provided
-if [[ -z "${NODES_ARG}" ]]; then
-  NODES_ARG="w1,w2"
+PM_SSH=""
+CLUSTER_ENDPOINT=""
+USER_NAME="talos"
+VMS_CSV="w1,w2"
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --pm-ssh)            PM_SSH="${2:-}"; shift 2 ;;
+    --cluster-endpoint)  CLUSTER_ENDPOINT="${2:-}"; shift 2 ;;
+    --user)              USER_NAME="${2:-}"; shift 2 ;;
+    --vms)               VMS_CSV="${2:-}"; shift 2 ;;
+    *) echo "Unknown arg: $1" >&2; exit 1 ;;
+  esac
+done
+
+if [[ -z "$PM_SSH" || -z "$CLUSTER_ENDPOINT" || -z "$USER_NAME" || -z "$VMS_CSV" ]]; then
+  cat >&2 <<EOF
+ERROR: missing required args.
+
+Required:
+  --pm-ssh "<user@host>"
+  --cluster-endpoint "https://IP:6443"
+  --user "<login>"
+  --vms "w1,w2"
+
+Example:
+  ./scripts/build_cidata.sh --pm-ssh "root@REDACTED_IP" --cluster-endpoint "https://192.168.100.101:6443" --user "talos" --vms "w1,w2"
+EOF
+  exit 2
 fi
 
-# Convert comma-separated to array
-IFS=',' read -r -a NODES <<< "${NODES_ARG}"
+# ---------- tool detection ----------
+mkiso() {
+  local out_iso="$1"
+  local src_dir="$2"
 
-#######################################
-# Locate ISO tool
-#######################################
-have_cmd() { command -v "$1" >/dev/null 2>&1; }
-
-ISO_TOOL=""
-if have_cmd mkisofs; then
-  ISO_TOOL="mkisofs"
-elif have_cmd genisoimage; then
-  ISO_TOOL="genisoimage"
-elif have_cmd xorriso; then
-  # xorriso fallback uses -as mkisofs compatibility mode
-  ISO_TOOL="xorriso"
-else
-  echo "ERROR: Need mkisofs or genisoimage or xorriso installed on the runner." >&2
-  exit 1
-fi
-
-#######################################
-# Remote prep
-#######################################
-REMOTE_ISO_DIR="/var/lib/vz/template/iso"
-# Make sure the ISO dir exists on Proxmox
-ssh -o StrictHostKeyChecking=accept-new "${PM_SSH_TARGET}" "mkdir -p '${REMOTE_ISO_DIR}' && chown root:root '${REMOTE_ISO_DIR}'"
-
-#######################################
-# Work dir
-#######################################
-WORKDIR="$(mktemp -d -t cidata-XXXXXXXX)"
-cleanup() {
-  rm -rf "${WORKDIR}" || true
-}
-trap cleanup EXIT
-
-#######################################
-# Helper: build a single node’s ISO
-#######################################
-build_one() {
-  local node="$1"
-  local node_dir="${WORKDIR}/${node}"
-  mkdir -p "${node_dir}"
-
-  # Minimal meta-data & user-data. Adjust to your needs.
-  # meta-data: set hostname & instance-id (helps cloud-init consumers; harmless otherwise)
-  cat > "${node_dir}/meta-data" <<EOF
-instance-id: ${node}
-local-hostname: ${node}
-cluster-name: ${CLUSTER_NAME}
-EOF
-
-  # user-data: empty but valid YAML to keep cloud-init happy if present
-  # Replace with real content if you want to inject anything.
-  cat > "${node_dir}/user-data" <<'EOF'
-#cloud-config
-# Intentionally minimal. Extend as needed.
-EOF
-
-  local iso_name="${node}-cidata.iso"
-  local iso_path="${WORKDIR}/${iso_name}"
-
-  if [[ "${ISO_TOOL}" == "xorriso" ]]; then
-    # xorriso (mkisofs compat mode)
-    xorriso -as mkisofs -volid cidata -joliet -rock \
-      -output "${iso_path}" \
-      "${node_dir}/user-data" "${node_dir}/meta-data"
-  else
-    # mkisofs / genisoimage
-    "${ISO_TOOL}" -volid cidata -joliet -rock \
-      -output "${iso_path}" \
-      "${node_dir}/user-data" "${node_dir}/meta-data"
+  if command -v xorriso >/dev/null 2>&1; then
+    xorriso -as mkisofs -V cidata -J -R -input-charset utf-8 -o "$out_iso" "$src_dir"
+    return
+  fi
+  if command -v genisoimage >/dev/null 2>&1; then
+    genisoimage -V cidata -J -R -input-charset utf-8 -o "$out_iso" "$src_dir"
+    return
+  fi
+  if command -v mkisofs >/dev/null 2>&1; then
+    mkisofs -V cidata -J -R -input-charset utf-8 -o "$out_iso" "$src_dir"
+    return
   fi
 
-  local remote_tmp="/tmp/${iso_name}"
-  scp -o StrictHostKeyChecking=accept-new "${iso_path}" "${PM_SSH_TARGET}:${remote_tmp}"
-  ssh -o StrictHostKeyChecking=accept-new "${PM_SSH_TARGET}" "mv '${remote_tmp}' '${REMOTE_ISO_DIR}/${iso_name}' && chmod 0644 '${REMOTE_ISO_DIR}/${iso_name}'"
-
-  # Print the Proxmox storage reference path expected by Terraform
-  echo "local:iso/${iso_name}"
+  echo "ERROR: Need mkisofs or genisoimage or xorriso installed on the runner." >&2
+  exit 3
 }
 
-#######################################
-# Build all requested nodes
-#######################################
-for n in "${NODES[@]}"; do
-  # Trim whitespace just in case
-  n="$(echo "${n}" | awk '{$1=$1;print}')"
-  [[ -z "${n}" ]] && continue
-  build_one "${n}"
+# ---------- build workspace ----------
+WORK="$(mktemp -d)"
+OUT_DIR="$WORK/isos"
+mkdir -p "$OUT_DIR"
+
+IFS=',' read -r -a VM_NAMES <<< "$VMS_CSV"
+
+for VM in "${VM_NAMES[@]}"; do
+  VM_DIR="$WORK/${VM}-cidata"
+  mkdir -p "$VM_DIR"
+
+  # Minimal cloud-init files (adjust contents to your Talos/OS needs).
+  # meta-data
+  cat > "${VM_DIR}/meta-data" <<EOF
+instance-id: ${VM}
+local-hostname: ${VM}
+EOF
+
+  # user-data
+  cat > "${VM_DIR}/user-data" <<EOF
+#cloud-config
+users:
+  - name: ${USER_NAME}
+    lock_passwd: true
+    shell: /bin/bash
+ssh_authorized_keys: []
+write_files:
+  - path: /etc/cluster-endpoint
+    permissions: '0644'
+    content: |
+      ${CLUSTER_ENDPOINT}
+runcmd:
+  - [ bash, -lc, "echo 'cidata for ${VM} applied'" ]
+EOF
+
+  ISO_PATH="${OUT_DIR}/${VM}-cidata.iso"
+  mkiso "$ISO_PATH" "$VM_DIR"
+done
+
+# ---------- upload to Proxmox local storage ----------
+# Proxmox "local" storage (content iso) -> /var/lib/vz/template/iso
+REMOTE_ISO_DIR="/var/lib/vz/template/iso"
+ssh -o StrictHostKeyChecking=no "$PM_SSH" "mkdir -p '$REMOTE_ISO_DIR'"
+
+for VM in "${VM_NAMES[@]}"; do
+  ISO_PATH="${OUT_DIR}/${VM}-cidata.iso"
+  scp -o StrictHostKeyChecking=no "$ISO_PATH" "${PM_SSH}:${REMOTE_ISO_DIR}/"
+done
+
+# Print terraform-friendly output (one per line: vm=local:iso/vm-cidata.iso)
+for VM in "${VM_NAMES[@]}"; do
+  echo "${VM}=local:iso/${VM}-cidata.iso"
 done

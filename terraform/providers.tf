@@ -4,7 +4,7 @@ terraform {
   required_providers {
     proxmox = {
       source  = "Telmate/proxmox"
-      version = "~> 2.9"
+      version = "2.9.13"
     }
     null = {
       source  = "hashicorp/null"
@@ -12,6 +12,7 @@ terraform {
     }
   }
 }
+
 
 # terraform/providers.tf
 provider "proxmox" {
