@@ -1,122 +1,93 @@
 #!/usr/bin/env bash
-# Build tiny cloud-init "cidata" ISOs and upload them to Proxmox "local" storage.
-# Robust against missing args/tools and unbound vars.
-
 set -euo pipefail
 
-# ---------- Usage ----------
-# ./scripts/build_cidata.sh \
-#   --pm-ssh "root@REDACTED_IP" \
-#   --cluster-endpoint "https://192.168.100.101:6443" \
-#   --user "talos" \
-#   --vms "w1,w2"
+# Accept BOTH flag-style and positional args:
+#   Flags:      --pm-ssh user@host  --api-server https://IP:6443  --cluster-name talos
+#   Positionals: <pm-ssh> <api-server> <cluster-name>
 #
-# Expects Proxmox "local" storage (default path /var/lib/vz/template/iso)
-# Produces local:iso/<vm>-cidata.iso for each VM name given.
+# This avoids "Unknown arg: user@host" errors from Terraform local-exec.
 
-PM_SSH=""
-CLUSTER_ENDPOINT=""
-USER_NAME="talos"
-VMS_CSV="w1,w2"
+pm_ssh="${PM_SSH:-}"
+api_server="${API_SERVER:-}"
+cluster_name="${CLUSTER_NAME:-}"
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
-    --pm-ssh)            PM_SSH="${2:-}"; shift 2 ;;
-    --cluster-endpoint)  CLUSTER_ENDPOINT="${2:-}"; shift 2 ;;
-    --user)              USER_NAME="${2:-}"; shift 2 ;;
-    --vms)               VMS_CSV="${2:-}"; shift 2 ;;
-    *) echo "Unknown arg: $1" >&2; exit 1 ;;
+    --pm-ssh)       pm_ssh="${2:-}"; shift 2 ;;
+    --api-server)   api_server="${2:-}"; shift 2 ;;
+    --cluster-name) cluster_name="${2:-}"; shift 2 ;;
+    --*)            echo "Unknown flag: $1" >&2; exit 1 ;;
+    *)              # collect leftover positionals in order
+                    if [[ -z "${pm_ssh}" ]]; then
+                      pm_ssh="$1"
+                    elif [[ -z "${api_server}" ]]; then
+                      api_server="$1"
+                    elif [[ -z "${cluster_name}" ]]; then
+                      cluster_name="$1"
+                    else
+                      echo "Unexpected extra arg: $1" >&2; exit 1
+                    fi
+                    shift ;;
   esac
 done
 
-if [[ -z "$PM_SSH" || -z "$CLUSTER_ENDPOINT" || -z "$USER_NAME" || -z "$VMS_CSV" ]]; then
+if [[ -z "${pm_ssh}" || -z "${api_server}" || -z "${cluster_name}" ]]; then
   cat >&2 <<EOF
-ERROR: missing required args.
-
-Required:
-  --pm-ssh "<user@host>"
-  --cluster-endpoint "https://IP:6443"
-  --user "<login>"
-  --vms "w1,w2"
-
-Example:
-  ./scripts/build_cidata.sh --pm-ssh "root@REDACTED_IP" --cluster-endpoint "https://192.168.100.101:6443" --user "talos" --vms "w1,w2"
+Usage:
+  $(basename "$0") --pm-ssh user@host --api-server https://IP:6443 --cluster-name NAME
+  (or) $(basename "$0") <user@host> <https://IP:6443> <NAME>
 EOF
-  exit 2
+  exit 1
 fi
 
-# ---------- tool detection ----------
-mkiso() {
-  local out_iso="$1"
-  local src_dir="$2"
+# Workspace
+workdir="$(mktemp -d)"
+cleanup() { rm -rf "${workdir}"; }
+trap cleanup EXIT
 
-  if command -v xorriso >/dev/null 2>&1; then
-    xorriso -as mkisofs -V cidata -J -R -input-charset utf-8 -o "$out_iso" "$src_dir"
-    return
-  fi
-  if command -v genisoimage >/dev/null 2>&1; then
-    genisoimage -V cidata -J -R -input-charset utf-8 -o "$out_iso" "$src_dir"
-    return
-  fi
-  if command -v mkisofs >/dev/null 2>&1; then
-    mkisofs -V cidata -J -R -input-charset utf-8 -o "$out_iso" "$src_dir"
-    return
-  fi
+seed_dir="${workdir}/cidata"
+mkdir -p "${seed_dir}"
 
-  echo "ERROR: Need mkisofs or genisoimage or xorriso installed on the runner." >&2
-  exit 3
-}
-
-# ---------- build workspace ----------
-WORK="$(mktemp -d)"
-OUT_DIR="$WORK/isos"
-mkdir -p "$OUT_DIR"
-
-IFS=',' read -r -a VM_NAMES <<< "$VMS_CSV"
-
-for VM in "${VM_NAMES[@]}"; do
-  VM_DIR="$WORK/${VM}-cidata"
-  mkdir -p "$VM_DIR"
-
-  # Minimal cloud-init files (adjust contents to your Talos/OS needs).
-  # meta-data
-  cat > "${VM_DIR}/meta-data" <<EOF
-instance-id: ${VM}
-local-hostname: ${VM}
+# Minimal Cloud-Init seed; content can be expanded as needed.
+# meta-data can be empty; user-data sets hostname and drops a note with the API server.
+cat > "${seed_dir}/meta-data" <<EOF
+instance-id: ${cluster_name}
+local-hostname: ${cluster_name}
 EOF
 
-  # user-data
-  cat > "${VM_DIR}/user-data" <<EOF
+cat > "${seed_dir}/user-data" <<EOF
 #cloud-config
-users:
-  - name: ${USER_NAME}
-    lock_passwd: true
-    shell: /bin/bash
-ssh_authorized_keys: []
+hostname: ${cluster_name}
 write_files:
-  - path: /etc/cluster-endpoint
+  - path: /etc/kubernetes/api-endpoint.txt
     permissions: '0644'
+    owner: root:root
     content: |
-      ${CLUSTER_ENDPOINT}
-runcmd:
-  - [ bash, -lc, "echo 'cidata for ${VM} applied'" ]
+      ${api_server}
 EOF
 
-  ISO_PATH="${OUT_DIR}/${VM}-cidata.iso"
-  mkiso "$ISO_PATH" "$VM_DIR"
-done
+iso="${workdir}/${cluster_name}-cidata.iso"
 
-# ---------- upload to Proxmox local storage ----------
-# Proxmox "local" storage (content iso) -> /var/lib/vz/template/iso
-REMOTE_ISO_DIR="/var/lib/vz/template/iso"
-ssh -o StrictHostKeyChecking=no "$PM_SSH" "mkdir -p '$REMOTE_ISO_DIR'"
+# Pick an ISO creator available on the runner
+iso_tool=""
+if command -v mkisofs >/dev/null 2>&1; then
+  iso_tool="mkisofs -J -R -V cidata -o \"${iso}\" \"${seed_dir}\""
+elif command -v genisoimage >/dev/null 2>&1; then
+  iso_tool="genisoimage -J -R -V cidata -o \"${iso}\" \"${seed_dir}\""
+elif command -v xorriso >/dev/null 2>&1; then
+  # xorriso needs different flags to mimic genisoimage
+  iso_tool="xorriso -as genisoimage -J -R -V cidata -o \"${iso}\" \"${seed_dir}\""
+else
+  echo "ERROR: Need mkisofs or genisoimage or xorriso installed on the runner." >&2
+  exit 1
+fi
 
-for VM in "${VM_NAMES[@]}"; do
-  ISO_PATH="${OUT_DIR}/${VM}-cidata.iso"
-  scp -o StrictHostKeyChecking=no "$ISO_PATH" "${PM_SSH}:${REMOTE_ISO_DIR}/"
-done
+eval ${iso_tool}
 
-# Print terraform-friendly output (one per line: vm=local:iso/vm-cidata.iso)
-for VM in "${VM_NAMES[@]}"; do
-  echo "${VM}=local:iso/${VM}-cidata.iso"
-done
+# Push ISO to Proxmox default ISO directory
+# Adjust the path if you keep ISOs elsewhere.
+remote_iso_dir="/var/lib/vz/template/iso"
+ssh -o StrictHostKeyChecking=no "${pm_ssh}" "mkdir -p '${remote_iso_dir}'"
+scp -o StrictHostKeyChecking=no "${iso}" "${pm_ssh}:${remote_iso_dir}/"
+
+echo "OK: Uploaded $(basename "${iso}") to ${pm_ssh}:${remote_iso_dir}/"
