@@ -92,37 +92,6 @@ jobs:
             -backend-config="dynamodb_table=${{ vars.TF_BACKEND_TABLE }}" \
             -backend-config="encrypt=true"
 
-      # OPTIONAL: build a temp tfvars file (avoids committing any values)
-      # If you don't want this, just delete this step — TF_VAR_* is enough.
-      - name: Create ephemeral tfvars (optional)
-        working-directory: terraform
-        env:
-          API_URL:       ${{ secrets.PROXMOX_API_URL }}
-          TOKEN_ID:      ${{ secrets.PROXMOX_API_TOKEN_ID }}
-          TOKEN_SECRET:  ${{ secrets.PROXMOX_API_TOKEN_SECRET }}
-          TALOS_URL:     ${{ secrets.TALOS_IMAGE_URL }}
-          SSH_USER:      ${{ secrets.PROXMOX_SSH_USER }}
-          SSH_HOST:      ${{ secrets.PROXMOX_SSH_HOST }}
-          CONFIG_ISOS_JSON: ${{ vars.CONFIG_ISOS_JSON }}
-        run: |
-          # Build JSON safely with jq (no heredoc quoting headaches)
-          jq -n \
-            --arg api_url    "$API_URL" \
-            --arg token_id   "$TOKEN_ID" \
-            --arg token_sec  "$TOKEN_SECRET" \
-            --arg pm_ssh     "$SSH_USER@$SSH_HOST" \
-            --arg talos_url  "$TALOS_URL" \
-            --argjson cfg_isos "${CONFIG_ISOS_JSON:-{}}" \
-            '{
-              proxmox_api_url:          $api_url,
-              proxmox_api_token_id:     $token_id,
-              proxmox_api_token_secret: $token_sec,
-              pm_ssh_host:              $pm_ssh,
-              talos_image_url:          $talos_url
-            } + ( ( $cfg_isos|type == "object" and ($cfg_isos|length>0) ) ? {config_isos:$cfg_isos} : {} )' \
-            > runtime.auto.tfvars.json
-          cat runtime.auto.tfvars.json
-
       - name: Terraform Validate
         working-directory: terraform
         run: terraform validate
