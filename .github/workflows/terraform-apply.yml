@@ -17,9 +17,9 @@ jobs:
 
     env:
       # Terraform picks these up automatically
-      TF_VAR_proxmox_api_url:          ${{ secrets.PROXMOX_API_URL }}          # e.g. https://pve:8006/api2/json
-      TF_VAR_proxmox_api_token_id:     ${{ secrets.PROXMOX_TOKEN_ID }}     # e.g. packer@pve!packer
-      TF_VAR_proxmox_api_token_secret: ${{ secrets.PROXMOX_TOKEN_SECRET }} # token value
+      TF_VAR_proxmox_api_url:          ${{ secrets.PROXMOX_API_URL }}
+      TF_VAR_proxmox_api_token_id:     ${{ secrets.PROXMOX_TOKEN_ID }}
+      TF_VAR_proxmox_api_token_secret: ${{ secrets.PROXMOX_TOKEN_SECRET }} 
       TF_VAR_pm_node:                  ${{ vars.PROXMOX_NODE || 'pve' }}
       TF_VAR_vm_storage:               ${{ vars.PROXMOX_STORAGE || 'local-lvm' }}
       TF_VAR_bridge:                   ${{ vars.PROXMOX_BRIDGE  || 'vmbr0' }}
