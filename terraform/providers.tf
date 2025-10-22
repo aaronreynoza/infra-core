@@ -3,8 +3,8 @@ terraform {
 
   required_providers {
     proxmox = {
-      source  = "Telmate/proxmox"
-      version = "2.9.13"
+      source  = "bpg/proxmox"
+      version = ">= 0.53.1"
     }
     null = {
       source  = "hashicorp/null"
@@ -13,13 +13,11 @@ terraform {
   }
 }
 
-
-# terraform/providers.tf
 provider "proxmox" {
-  pm_api_url          = var.proxmox_api_url
-  pm_api_token_id     = "packer@pve!packer"
-  pm_api_token_secret = var.proxmox_api_token_secret
+  insecure  = true
 
-  pm_tls_insecure = true
-  pm_parallel     = 2
+  ssh {
+    agent    = true
+    username = "actions-runner"
+  }
 }

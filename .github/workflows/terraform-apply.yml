@@ -16,23 +16,10 @@ jobs:
     runs-on: [self-hosted, linux, x64, proxmox]
 
     env:
-      # Terraform picks these up automatically
-      TF_VAR_proxmox_api_url:          ${{ secrets.PROXMOX_API_URL }}
-      TF_VAR_proxmox_api_token_id:     ${{ secrets.PROXMOX_TOKEN_ID }}
-      TF_VAR_proxmox_api_token_secret: ${{ secrets.PROXMOX_TOKEN_SECRET }} 
-      TF_VAR_pm_node:                  ${{ vars.PROXMOX_NODE || 'pve' }}
-      TF_VAR_vm_storage:               ${{ vars.PROXMOX_STORAGE || 'local-lvm' }}
-      TF_VAR_bridge:                   ${{ vars.PROXMOX_BRIDGE  || 'vmbr0' }}
-      TF_VAR_talos_image_url:          ${{ secrets.TALOS_IMAGE_URL }}
-
-      # Compose SSH host for Terraform's null_resource
-      SSH_USER:                        ${{ secrets.PROXMOX_SSH_USER }}         # e.g. root
-      SSH_HOST:                        ${{ secrets.PROXMOX_SSH_HOST }}         # e.g. pve or 10.0.0.10
-      TF_VAR_pm_ssh_host:              ${{ secrets.PROXMOX_SSH_USER }}@${{ secrets.PROXMOX_SSH_HOST }}
-
-      # Optional: JSON map of cidata ISOs (non-secret repo var)
-      # Example value: {"cp1":"local:iso/cp1-cidata.iso","w1":"local:iso/w1-cidata.iso","w2":"local:iso/w2-cidata.iso"}
-      CONFIG_ISOS_JSON:                ${{ vars.CONFIG_ISOS_JSON }}
+      # bpg/proxmox provider picks these up automatically
+      PROXMOX_VE_ENDPOINT:   ${{ vars.PROXMOX_API_URL }}/api2/json
+      PROXMOX_VE_API_TOKEN:  ${{ secrets.PROXMOX_TOKEN_ID }}=${{ secrets.PROXMOX_TOKEN_SECRET }}
+      PROXMOX_VE_INSECURE:   "true"
 
       TF_IN_AUTOMATION: "true"
 
@@ -40,7 +27,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Configure AWS credentials via OIDC (S3 backend)
+      - name: Configure AWS credentials (S3 backend)
         uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: ${{ vars.AWS_ROLE_ARN }}
@@ -51,42 +38,15 @@ jobs:
         with:
           terraform_version: 1.9.5
 
-      - name: Start ssh-agent and add key
-        uses: webfactory/ssh-agent@v0.9.0
-        with:
-          ssh-private-key: ${{ secrets.PROXMOX_SSH_PRIVATE_KEY }}
-
-
-      - name: Write known_hosts from secret
-        run: |
-          set -euo pipefail
-          mkdir -p ~/.ssh
-          printf '%s\n' "${{ secrets.PROXMOX_KNOWN_HOST }}" >> ~/.ssh/known_hosts
-          chmod 600 ~/.ssh/known_hosts
-
-      - name: Reset provider lock/cache
+      - name: Terraform Init (S3 backend)
         working-directory: terraform
         run: |
-          rm -f .terraform.lock.hcl
-          rm -rf .terraform
-
-      - name: Terraform Init (S3 backend, upgrade providers)
-        working-directory: terraform
-        run: |
-          terraform init -upgrade \
+          terraform init \
             -backend-config="bucket=${{ vars.TF_BACKEND_BUCKET }}" \
             -backend-config="key=${{ vars.TF_BACKEND_PREFIX }}/infra.tfstate" \
             -backend-config="region=${{ vars.AWS_REGION }}" \
             -backend-config="dynamodb_table=${{ vars.TF_BACKEND_TABLE }}" \
             -backend-config="encrypt=true"
-
-      - name: Show loaded providers
-        working-directory: terraform
-        run: terraform providers
-
-      - name: Terraform Validate
-        working-directory: terraform
-        run: terraform validate
 
       - name: Terraform Plan
         working-directory: terraform
