@@ -4,7 +4,7 @@
 ############################################
 
 locals {
-  # Full VM names. Add/remove as needed.
+  talos_upload_name = replace(replace(var.talos_image_file_name, ".raw.xz", ".img"), ".xz", ".img")
   control_planes = [
     "talos-cp-01",
   ]
@@ -49,9 +49,7 @@ resource "proxmox_virtual_environment_vm" "control_planes" {
   # Disks
   disk {
     datastore_id = var.datastore_id
-    # If you use the download_file resource, uncomment the next line and remove var.talos_image_id:
-    # file_id      = proxmox_virtual_environment_download_file.talos_nocloud_image.id
-    file_id      = var.talos_image_id
+    file_id      = "${var.PROXMOX_DIR_STORAGE}:iso/${local.talos_upload_name}"
     file_format  = "raw"
     interface    = "virtio0"
     size         = local.boot_disk_gb
@@ -94,7 +92,7 @@ resource "proxmox_virtual_environment_vm" "workers" {
     datastore_id = var.datastore_id
     # If you use the download_file resource, uncomment the next line and remove var.talos_image_id:
     # file_id      = proxmox_virtual_environment_download_file.talos_nocloud_image.id
-    file_id      = var.talos_image_id
+    file_id      = "${var.PROXMOX_DIR_STORAGE}:iso/${local.talos_upload_name}"
     file_format  = "raw"
     interface    = "virtio0"
     size         = local.boot_disk_gb
