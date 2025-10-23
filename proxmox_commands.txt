@@ -50,3 +50,13 @@ pveum aclmod /storage/local-lvm -token 'actions-runner@pve!ghactions' -role PVED
 
 # verify the ACLs are there
 pveum acl list | grep 'actions-runner@pve!ghactions'
+
+
+
++++++++++++++++++++++++++++++++
+  terraform git:(main) export AWS_REGION=us-east-2
+➜  terraform git:(main) export AWS_ROLE_ARN=arn:aws:iam::REDACTED_ACCOUNT_ID:role/github-oidc-terraform
+➜  terraform git:(main) export PROXMOX_API_URL=REDACTED_IP:8006
+➜  terraform git:(main) export TF_BACKEND_BUCKET=aaronreynoza-tfstate-homelab
+➜  terraform git:(main) export TF_BACKEND_PREFIX=lab 
+➜  terraform git:(main) export TF_BACKEND_TABLE=tfstate-locks

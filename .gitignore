@@ -5,3 +5,4 @@ terraform.tfstate.backup
 *.tfvars.json
 *.tfplan
 *.tfplan.json
+terraform/backend.hcl
