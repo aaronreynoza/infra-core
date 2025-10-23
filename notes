@@ -1,0 +1,3 @@
+B) Alternative: disable the restriction
+
+If you don’t want to use pools, in the UI go to Datacenter → Permissions and turn off the setting that limits VM creation to permitted pools. Then your existing ACLs on /nodes/pve will be enough.

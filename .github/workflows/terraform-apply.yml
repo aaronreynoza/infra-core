@@ -41,7 +41,17 @@ jobs:
           fi
           chmod +x scripts/*.sh
 
-      # ---------- Image check/upload (no SSH, API only) ----------
+      - name: Start ssh-agent and add key
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.PROXMOX_SSH_PRIVATE_KEY }}
+
+      - name: Write known_hosts
+        run: |
+          mkdir -p ~/.ssh
+          printf '%s\n' "${{ secrets.PROXMOX_KNOWN_HOST }}" >> ~/.ssh/known_hosts
+          chmod 600 ~/.ssh/known_hosts
+
       - name: Check if Talos RAW image exists in Proxmox
         id: check_image
         run: scripts/check-image.sh
@@ -49,7 +59,6 @@ jobs:
       - name: Upload Talos RAW image if missing
         if: steps.check_image.outputs.image_present != 'true'
         run: scripts/upload-image.sh
-      # -----------------------------------------------------------
 
       - name: Configure AWS credentials (S3 backend)
         uses: aws-actions/configure-aws-credentials@v4

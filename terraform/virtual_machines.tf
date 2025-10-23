@@ -1,6 +1,11 @@
 locals {
   control_plane_names = ["talos-cp-01"]
   worker_names        = ["talos-worker-01", "talos-worker-02"]
+  vm_ids = {
+  talos-cp-01      = 901
+  talos-worker-01  = 902
+  talos-worker-02  = 903
+}
 
   cpu_cores  = 4
   memory_mb  = 8192
@@ -17,6 +22,8 @@ resource "proxmox_virtual_environment_vm" "control_planes" {
   name      = each.key
   on_boot   = true
   tags      = ["tofu"]
+  pool_id = "lab"
+  vm_id = local.vm_ids[each.key]
 
   cpu {
     sockets = 1
@@ -50,6 +57,8 @@ resource "proxmox_virtual_environment_vm" "workers" {
   name      = each.key
   on_boot   = true
   tags      = ["tofu"]
+  pool_id = "lab"
+  vm_id = local.vm_ids[each.key]
 
   cpu {
     sockets = 1
