@@ -18,6 +18,6 @@ provider "proxmox" {
 
   ssh {
     agent    = true
-    username = "actions-runner"
+    username = "root"
   }
 }
