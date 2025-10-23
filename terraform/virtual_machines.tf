@@ -28,9 +28,6 @@ resource "proxmox_virtual_environment_vm" "control_planes" {
     dedicated = local.memory_mb
   }
 
-  scsi_hardware = local.scsihw
-  hotplug       = ["network", "disk", "usb"]
-
   disk {
     datastore_id = var.datastore_id
     file_id      = "${var.PROXMOX_DIR_STORAGE}:iso/${local.talos_upload_name}"
@@ -65,7 +62,6 @@ resource "proxmox_virtual_environment_vm" "workers" {
   }
 
   scsi_hardware = local.scsihw
-  hotplug       = ["network", "disk", "usb"]
 
   disk {
     datastore_id = var.datastore_id
