@@ -55,3 +55,9 @@ variable "talos_worker_02_ip_addr" {
   type    = string
   default = "REDACTED_IP2"
 }
+
+variable "skip_cluster_health" {
+  description = "Skip Talos cluster health checks (useful during destroy)"
+  type        = bool
+  default     = false
+}

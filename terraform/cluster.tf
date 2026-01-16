@@ -154,6 +154,7 @@ resource "talos_machine_bootstrap" "bootstrap" {
 }
 
 data "talos_cluster_health" "health" {
+  count                = var.skip_cluster_health ? 0 : 1
   depends_on           = [ talos_machine_configuration_apply.cp_config_apply, talos_machine_configuration_apply.worker_1_config_apply, talos_machine_configuration_apply.worker_2_config_apply ]
   client_configuration = data.talos_client_configuration.talosconfig.client_configuration
   control_plane_nodes  = [ var.talos_cp_01_ip_addr ]

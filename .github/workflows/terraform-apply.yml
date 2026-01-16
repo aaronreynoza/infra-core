@@ -83,7 +83,7 @@ jobs:
 
       - name: Terraform Destroy
         working-directory: terraform
-        run: terraform destroy -input=false -auto-approve
+        run: terraform destroy -input=false -auto-approve -var="skip_cluster_health=true"
 
       - name: Cleanup Terraform backend state (S3)
         run: |
