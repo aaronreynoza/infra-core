@@ -10,40 +10,17 @@ spec:
   destination:
     server: https://kubernetes.default.svc
     namespace: cilium-system
-  source:
-    repoURL: https://helm.cilium.io
-    chart: cilium
-    targetRevision: ">0.0.0"
-    helm:
-      releaseName: cilium
-      values: |
-        ipam:
-          mode: "kubernetes"
-
-        kubeProxyReplacement: true
-
-        securityContext:
-          capabilities:
-            ciliumAgent: ["CHOWN","KILL","NET_ADMIN","NET_RAW","IPC_LOCK","SYS_ADMIN","SYS_RESOURCE","DAC_OVERRIDE","FOWNER","SETGID","SETUID"]
-            cleanCiliumState: ["NET_ADMIN","SYS_ADMIN","SYS_RESOURCE"]
-
-        cgroup:
-          autoMount:
-            enabled: false
-          hostRoot: "/sys/fs/cgroup"
-
-        # If you’re bootstrapping without working API DNS, keep these.
-        # Otherwise, remove them to let Cilium auto-detect the API server.
-        k8sServiceHost: "localhost"
-        k8sServicePort: 7445
-
-        # Optional Hubble toggles (disabled by default)
-        hubble:
-          enabled: false
-          relay:
-            enabled: false
-          ui:
-            enabled: false
+  sources:
+    - repoURL: https://helm.cilium.io
+      chart: cilium
+      targetRevision: ">0.0.0"         # pin later if you wish
+      helm:
+        releaseName: cilium
+        valueFiles:
+          - "$values/helm/cilium-values.yaml"
+    - repoURL: git@github.com:aaronreynoza/homelab.git
+      targetRevision: main
+      ref: values
   syncPolicy:
     automated:
       prune: true
