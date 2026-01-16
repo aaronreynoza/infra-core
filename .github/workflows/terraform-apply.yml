@@ -85,12 +85,35 @@ jobs:
         working-directory: terraform
         run: terraform destroy -input=false -auto-approve -var="skip_cluster_health=true"
 
-      - name: Cleanup Terraform backend state (S3)
+      - name: Cleanup Terraform backend bucket (S3)
+        if: always()
         run: |
           set -euo pipefail
-          aws s3 rm "s3://${{ vars.TF_BACKEND_BUCKET }}/${{ vars.TF_BACKEND_PREFIX }}/infra.tfstate" || true
+          bucket="${{ vars.TF_BACKEND_BUCKET }}"
+
+          if ! head_err=$(aws s3api head-bucket --bucket "$bucket" 2>&1); then
+            if echo "$head_err" | grep -q "Not Found" || echo "$head_err" | grep -q "404"; then
+              echo "Bucket $bucket not found; skipping."
+              exit 0
+            fi
+            echo "$head_err" >&2
+            exit 1
+          fi
+
+          while true; do
+            resp="$(aws s3api list-object-versions --bucket "$bucket" --max-items 1000 --output json)"
+            objects="$(echo "$resp" | jq -c '[.Versions[]? | {Key, VersionId}] + [.DeleteMarkers[]? | {Key, VersionId}]')"
+            count="$(echo "$objects" | jq 'length')"
+            if [ "$count" -eq 0 ]; then
+              break
+            fi
+            aws s3api delete-objects --bucket "$bucket" --delete "$(jq -c '{Objects: .}' <<<"$objects")"
+          done
+
+          aws s3api delete-bucket --bucket "$bucket"
 
       - name: Cleanup Terraform lock table (DynamoDB)
+        if: always()
         run: |
           set -euo pipefail
-          aws dynamodb delete-table --table-name "${{ vars.TF_BACKEND_TABLE }}" || true
+          aws dynamodb delete-table --table-name "${{ vars.TF_BACKEND_TABLE }}"
