@@ -1,4 +1,4 @@
-name: Terraform Proxmox (Talos)
+name: Terraform Destroy Proxmox (Talos)
 
 on:
   workflow_dispatch:
@@ -13,7 +13,7 @@ permissions:
   contents: read
 
 jobs:
-  apply:
+  destroy:
     runs-on: [self-hosted, linux, x64, proxmox]
 
     env:
@@ -81,10 +81,16 @@ jobs:
             -backend-config="dynamodb_table=${{ vars.TF_BACKEND_TABLE }}" \
             -backend-config="encrypt=true"
 
-      - name: Terraform Plan
+      - name: Terraform Destroy
         working-directory: terraform
-        run: terraform plan -input=false -out=tfplan
+        run: terraform destroy -input=false -auto-approve
 
-      - name: Terraform Apply
-        working-directory: terraform
-        run: terraform apply -input=false -auto-approve tfplan
+      - name: Cleanup Terraform backend state (S3)
+        run: |
+          set -euo pipefail
+          aws s3 rm "s3://${{ vars.TF_BACKEND_BUCKET }}/${{ vars.TF_BACKEND_PREFIX }}/infra.tfstate" || true
+
+      - name: Cleanup Terraform lock table (DynamoDB)
+        run: |
+          set -euo pipefail
+          aws dynamodb delete-table --table-name "${{ vars.TF_BACKEND_TABLE }}" || true
