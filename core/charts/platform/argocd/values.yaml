@@ -1,0 +1,68 @@
+# ArgoCD Helm values
+# See: https://github.com/argoproj/argo-helm/tree/main/charts/argo-cd
+
+# Global settings
+global:
+  logging:
+    level: info
+
+# Server configuration
+server:
+  # Run in insecure mode (no TLS) - assumes TLS termination at ingress/tunnel
+  extraArgs:
+    - --insecure
+
+# Controller settings
+controller:
+  # Resource requests/limits for single-node setup
+  resources:
+    requests:
+      cpu: 250m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+
+# Repo server settings
+repoServer:
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 250m
+      memory: 256Mi
+
+# Application controller settings
+applicationSet:
+  enabled: true
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 250m
+      memory: 256Mi
+
+# Notifications controller (disabled for now)
+notifications:
+  enabled: false
+
+# Redis HA (disabled for single-node setup)
+redis-ha:
+  enabled: false
+
+# Dex (disabled - will use Zitadel for SSO later)
+dex:
+  enabled: false
+
+# Configs
+configs:
+  # Repository credentials will be added via External Secrets later
+  repositories: {}
+
+  # Known hosts for SSH git access
+  ssh:
+    knownHosts: |
+      github.com ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOMqqnkVzrm0SdG6UOoqKLsabgH5C9okWi0dh2l9GKJl
+      github.com ecdsa-sha2-nistp256 AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBEmKSENjQEezOmxkZMy7opKgwFB9nkt5YRrYMjNuG5N87uRgg6CLrbo5wAdT/y6v0mKV0U2w0WZ2YB/++Tpockg=

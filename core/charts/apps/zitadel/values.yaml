@@ -1,0 +1,50 @@
+# Zitadel Helm Values
+# Identity Provider and OAuth/OIDC server
+# See: https://zitadel.com/docs/self-hosting/deploy/kubernetes
+
+# Zitadel configuration
+zitadel:
+  # Master key for encryption - use External Secrets
+  masterkey: ""  # Set via External Secrets
+
+  # External domain
+  externalDomain: ""  # Set in environment-specific values
+
+  # TLS configuration
+  configmapConfig:
+    ExternalSecure: true
+    ExternalPort: 443
+
+# Database - use CockroachDB or PostgreSQL
+cockroachdb:
+  enabled: false  # Use PostgreSQL instead
+
+postgres:
+  enabled: true
+  # Use External Secrets for credentials
+  auth:
+    username: zitadel
+    database: zitadel
+
+# Ingress - use Cloudflare Tunnel
+ingress:
+  enabled: false
+
+# Persistence
+persistence:
+  enabled: true
+  storageClass: longhorn
+  size: 5Gi
+
+# Resource limits
+resources:
+  requests:
+    cpu: 100m
+    memory: 256Mi
+  limits:
+    cpu: 500m
+    memory: 512Mi
+
+# Init job for setting up admin user
+initJob:
+  enabled: true

@@ -1,0 +1,55 @@
+# Velero Helm Values
+# Backup and disaster recovery for Kubernetes
+# See: https://github.com/vmware-tanzu/helm-charts/tree/main/charts/velero
+
+# Configuration for AWS S3 backend
+configuration:
+  backupStorageLocation:
+    - name: default
+      provider: aws
+      bucket: ""  # Set in environment-specific values
+      config:
+        region: us-east-1
+
+  volumeSnapshotLocation:
+    - name: default
+      provider: aws
+      config:
+        region: us-east-1
+
+# Credentials - use IRSA or External Secrets in production
+credentials:
+  useSecret: false  # Use IRSA instead
+
+# Schedule backups
+schedules:
+  daily-backup:
+    disabled: false
+    schedule: "0 2 * * *"  # 2 AM daily
+    template:
+      ttl: "720h"  # 30 days retention
+      includedNamespaces:
+        - "*"
+      excludedNamespaces:
+        - kube-system
+        - velero
+
+# Resource requests/limits
+resources:
+  requests:
+    cpu: 100m
+    memory: 128Mi
+  limits:
+    cpu: 500m
+    memory: 512Mi
+
+# Enable restic for file-level backups
+deployNodeAgent: true
+nodeAgent:
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi

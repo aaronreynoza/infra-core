@@ -1,5 +1,0 @@
-pm_node               = "pve"
-datastore_id          = "local-lvm"
-talos_image_url       = "https://factory.talos.dev/image/613e1592b2da41ae5e265e8789429f22e121aab91cb4deb6bc3c0b6262961245/v1.11.3/nocloud-amd64.raw.xz"
-talos_image_file_name = "talos-nocloud-amd64-v1.11.3.raw.xz"
-PROXMOX_DIR_STORAGE   = "local"
