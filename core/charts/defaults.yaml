@@ -1,0 +1,69 @@
+# Default Application Configuration
+# Toggle which applications are enabled by default in homelab-core
+# These can be overridden in the homelab-config repository
+
+# Platform Layer - Core Infrastructure
+platform:
+  # ArgoCD - GitOps controller (always enabled, managed separately)
+  argocd:
+    enabled: true
+    version: "7.7.10"
+
+  # Cilium - CNI with Hubble observability
+  cilium:
+    enabled: true
+    version: "1.16.5"
+
+  # Longhorn - Distributed block storage
+  longhorn:
+    enabled: true
+    version: "1.7.2"
+
+  # Velero - Backup and disaster recovery
+  velero:
+    enabled: false  # Enable when AWS S3 backup target is configured
+    version: "8.0.0"
+
+# Observability Layer
+observability:
+  # Grafana - Dashboards and visualization
+  grafana:
+    enabled: false  # Enable when InfluxDB is configured
+    version: "8.8.2"
+
+  # InfluxDB - Time-series metrics storage
+  influxdb:
+    enabled: false
+    version: "2.1.2"
+
+# Application Layer - Services
+apps:
+  # Forgejo - Self-hosted Git server
+  forgejo:
+    enabled: false  # Enable when ready to migrate from GitHub
+    version: "10.0.0"
+
+  # Harbor - Container registry
+  harbor:
+    enabled: false  # Enable per environment
+    version: "1.16.0"
+
+  # Zitadel - Identity Provider / OAuth
+  zitadel:
+    enabled: false  # Enable when ready for SSO
+    version: "8.6.0"
+
+  # Jellyfin - Media server
+  jellyfin:
+    enabled: false  # Enable when media storage is ready
+    version: "2.1.0"
+
+  # Ollama - Self-hosted LLM (requires GPU)
+  ollama:
+    enabled: false  # Enable when GPU is available
+    version: "0.1.0"
+
+  # Cloudflare Tunnel - Secure public access
+  cloudflare-tunnel:
+    enabled: false  # Enable when Cloudflare is configured
+    version: "0.1.0"

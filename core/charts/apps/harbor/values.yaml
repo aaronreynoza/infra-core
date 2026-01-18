@@ -1,0 +1,61 @@
+# Harbor Helm Values
+# Container registry
+# See: https://github.com/goharbor/harbor-helm
+
+# Expose configuration - use Cloudflare Tunnel or Ingress
+expose:
+  type: clusterIP  # Use Cloudflare Tunnel for external access
+  tls:
+    enabled: true
+    certSource: auto
+
+# External URL for Harbor
+externalURL: ""  # Set in environment-specific values
+
+# Persistence using Longhorn
+persistence:
+  enabled: true
+  persistentVolumeClaim:
+    registry:
+      storageClass: longhorn
+      size: 50Gi
+    database:
+      storageClass: longhorn
+      size: 5Gi
+    redis:
+      storageClass: longhorn
+      size: 1Gi
+    trivy:
+      storageClass: longhorn
+      size: 5Gi
+
+# Database - use internal PostgreSQL
+database:
+  type: internal
+
+# Redis - use internal Redis
+redis:
+  type: internal
+
+# Trivy - vulnerability scanning
+trivy:
+  enabled: true
+
+# Resource limits
+core:
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+
+portal:
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 250m
+      memory: 256Mi

@@ -1,0 +1,54 @@
+# Forgejo Helm Values
+# Self-hosted Git server (Gitea fork)
+# See: https://forgejo.org/docs/latest/admin/installation-helm/
+
+# Ingress - use Cloudflare Tunnel
+ingress:
+  enabled: false  # Use Cloudflare Tunnel instead
+
+# Persistence using Longhorn
+persistence:
+  enabled: true
+  storageClass: longhorn
+  size: 10Gi
+
+# Git LFS storage
+gitea:
+  config:
+    server:
+      DOMAIN: ""  # Set in environment-specific values
+      ROOT_URL: ""  # Set in environment-specific values
+
+    database:
+      DB_TYPE: postgres
+
+    # OAuth/OIDC - integrate with Zitadel
+    oauth2:
+      ENABLED: true
+
+    # Actions runner support
+    actions:
+      ENABLED: true
+
+# PostgreSQL - use internal
+postgresql:
+  enabled: true
+  global:
+    postgresql:
+      auth:
+        password: ""  # Use External Secrets
+        database: forgejo
+        username: forgejo
+
+# Redis for caching
+redis-cluster:
+  enabled: false
+
+# Resource limits
+resources:
+  requests:
+    cpu: 100m
+    memory: 256Mi
+  limits:
+    cpu: 500m
+    memory: 512Mi

@@ -1,0 +1,54 @@
+# Jellyfin Helm Values
+# Media server for music, movies, and TV shows
+# See: https://jellyfin.org/docs/
+
+# Note: Using a custom deployment, not an official Helm chart
+
+# Image configuration
+image:
+  repository: jellyfin/jellyfin
+  tag: "10.10.3"
+  pullPolicy: IfNotPresent
+
+# Service configuration
+service:
+  type: ClusterIP
+  port: 8096
+
+# Persistence for config and media
+persistence:
+  config:
+    enabled: true
+    storageClass: longhorn
+    size: 5Gi
+    accessMode: ReadWriteOnce
+
+  # Media storage - mount from NFS or local storage
+  media:
+    enabled: true
+    # Use NFS or local path
+    type: hostPath  # or nfs
+    hostPath: /mnt/media
+    # nfs:
+    #   server: "10.10.10.100"
+    #   path: "/media"
+
+# Hardware transcoding (optional)
+# Uncomment for Intel QuickSync or NVIDIA GPU
+# devices:
+#   - /dev/dri/renderD128
+
+# Resource limits
+resources:
+  requests:
+    cpu: 500m
+    memory: 1Gi
+  limits:
+    cpu: 4000m
+    memory: 4Gi
+
+# Security context
+securityContext:
+  runAsUser: 1000
+  runAsGroup: 1000
+  fsGroup: 1000
