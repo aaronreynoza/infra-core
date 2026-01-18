@@ -726,14 +726,27 @@ homelab/
 
 ## Work Status
 
-**Current Phase**: Phase 1 Complete, Ready for Phase 2 (Network Infrastructure)
+**Current Phase**: Pre-merge testing (Phases 2-7)
 **Last Updated**: January 2025
+**Open PR**: `refactor/modular-structure` branch - DO NOT MERGE until testing complete
 
 ### Completed:
 - Phase 0: Code Review & Cleanup (bugs fixed, workflows created)
 - Phase 1: Repository Restructure (modules created, charts organized)
+- PR created for review
 
-### Next Steps:
+### Pre-Merge Testing (in progress):
+The PR stays open while we manually test the infrastructure. Once validated and reproducible, we merge.
+
+- [ ] Phase 2: Network Infrastructure (OPNSense, VLANs)
+- [ ] Phase 3: Deploy dev and prod clusters with new modules
+- [ ] Phase 4: Platform services (Forgejo, Harbor, Zitadel)
+- [ ] Phase 5: Backup & Disaster Recovery
+- [ ] Phase 6: Observability
+- [ ] Phase 7: Applications
+- [ ] Document any issues found and fix them
+
+### Next Immediate Step:
 - Phase 2: Network Infrastructure (OPNSense, VLANs)
 - Configure Proxmox servers with VLAN-aware bridges
 - Deploy OPNSense VM for routing
