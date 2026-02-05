@@ -22,9 +22,12 @@ Environments are **fully isolated** - no inter-VLAN communication.
 ## Current State
 
 ### Infrastructure
-- **Proxmox Host**: `https://REDACTED_IP:8006/` (bond0 active-backup, ZFS pool at `/mnt/hd`)
-- **Network**: Flat 192.168.1.x (VLAN segmentation pending - Phase 2)
-- **K8s**: Single cluster on Talos Linux v1.11.3
+- **Proxmox Hosts**: Two nodes with VLAN-aware bridges
+- **OPNSense** (VM on primary host):
+  - WAN: DHCP on management network, SSH/HTTPS accessible
+  - VLAN 10 (PROD): 10.10.10.1/16
+  - VLAN 11 (DEV): 10.11.10.1/16
+- **K8s**: Single cluster on Talos Linux v1.11.3 (to be migrated to VLANs)
 
 ### Deployed Applications
 - Cilium (CNI + Hubble)
@@ -45,7 +48,7 @@ Environments are **fully isolated** - no inter-VLAN communication.
 
 - **Cilium** as CNI (with Hubble observability)
 - **Talos Linux** for immutable, secure cluster OS
-- **Two-repo architecture**: homelab-core (public) + homelab-config (private)
+- **Two-repo architecture**: homelab (public) + environments (private)
 - **Harbor** per environment (isolated registries)
 - **Cloudflare Tunnel** for public access (no port forwarding)
 - **Zitadel** for SSO/OAuth
@@ -55,13 +58,21 @@ Environments are **fully isolated** - no inter-VLAN communication.
 
 ## Work Status
 
-**Current Phase**: Phase 2 - Network Infrastructure (OPNSense, VLANs)
-**Branch**: `refactor/modular-structure` (DO NOT MERGE until testing complete)
+**Current Phase**: Phase 3 - Multi-Environment Clusters
+**Branch**: `refactor/modular-structure`
 
-**Next Steps**:
-1. Make Proxmox bridge VLAN-aware
-2. Deploy OPNSense VM
-3. Configure VLANs 10/11
+**Phase 2 Complete** (2026-02-04):
+- OPNSense VM deployed with WAN + LAN trunk NICs
+- VLAN 10 (PROD): 10.10.10.1/16, DHCP REDACTED_VLAN_IP0-200 ✅
+- VLAN 11 (DEV): 10.11.10.1/16, DHCP 10.11.10.50-200 ✅
+- NAT working: VLAN clients can reach internet ✅
+- Firewall working: SSH/HTTPS accessible ✅
+- Inter-VLAN isolation: PROD/DEV cannot communicate ✅
+
+**Next Tasks** (in order):
+1. Deploy TrueNAS VM on PROD VLAN (see `docs/decisions/002-truenas-storage.md`)
+2. Test Talos cluster deployment on PROD VLAN (10.10.10.0/16)
+3. Phase 2.6: Ops maturity (pre-commit hooks, SOPs, checklists)
 
 See [docs/roadmap.md](docs/roadmap.md) for full implementation plan.
 
@@ -70,22 +81,27 @@ See [docs/roadmap.md](docs/roadmap.md) for full implementation plan.
 ## Directory Structure
 
 ```
-homelab/
+homelab/                     # This repo (public, reusable)
 ├── core/                    # Reusable modules (open source ready)
 │   ├── terraform/modules/   # talos-cluster, proxmox-vm, aws-backend
+│   ├── terraform/live/      # Live terraform configs (parameterized)
+│   ├── terraform/bootstrap/ # AWS backend bootstrap
 │   ├── charts/              # platform/ and apps/ Helm values
 │   ├── manifests/           # K8s manifests, ArgoCD apps
 │   └── ansible/             # Playbooks & inventory
-├── environments/            # Environment-specific configs
-│   ├── network/terraform/   # Shared network infra (OPNSense)
-│   ├── prod/terraform/      # Prod K8s cluster
-│   └── dev/terraform/       # Dev K8s cluster
 └── docs/                    # Documentation
+    ├── configuration.md     # How to set up your environments/
     ├── CHANGELOG.md         # Progress log
     ├── architecture.md      # Network/app diagrams
     ├── roadmap.md           # Implementation phases
     ├── runbooks/            # Operational procedures
     └── decisions/           # Architecture Decision Records
+
+environments/                # Private (gitignored, see docs/configuration.md)
+├── network/                 # Shared network infra (OPNSense)
+├── bootstrap/               # AWS backend bootstrap
+├── prod/                    # Prod K8s cluster
+└── dev/                     # Dev K8s cluster
 ```
 
 ---
@@ -93,8 +109,10 @@ homelab/
 ## Commands Reference
 
 ```bash
-# Terraform
-cd environments/prod/terraform && terraform init && terraform plan
+# Terraform (with external config)
+cd core/terraform/live/network
+terraform init -backend-config=../../../../environments/network/backend.hcl
+terraform plan -var-file=../../../../environments/network/terraform.tfvars
 
 # Ansible
 cd core/ansible
@@ -113,19 +131,23 @@ kubectl port-forward svc/argocd-server -n argocd 8080:443
 
 | Topic | File |
 |-------|------|
+| **Configuration guide** | [docs/configuration.md](docs/configuration.md) |
 | Architecture diagrams | [docs/architecture.md](docs/architecture.md) |
 | Implementation roadmap | [docs/roadmap.md](docs/roadmap.md) |
 | Progress log | [docs/CHANGELOG.md](docs/CHANGELOG.md) |
 | OPNSense setup | [docs/04-opnsense.md](docs/04-opnsense.md) |
+| VLAN fix runbook | [docs/runbooks/vlan-opnsense-fix.md](docs/runbooks/vlan-opnsense-fix.md) |
 | Terraform backend setup | [docs/runbooks/terraform-backend-setup.md](docs/runbooks/terraform-backend-setup.md) |
 | Proxmox recovery | [docs/runbooks/proxmox-recovery.md](docs/runbooks/proxmox-recovery.md) |
 | VLAN architecture decision | [docs/decisions/001-vlan-architecture.md](docs/decisions/001-vlan-architecture.md) |
+| TrueNAS storage proposal | [docs/decisions/002-truenas-storage.md](docs/decisions/002-truenas-storage.md) |
 
 ---
 
 ## Important Rules
 
 - **No local terraform state** - always use S3 backend (no single points of failure)
+- **NEVER edit OPNSense config.xml directly** - always use Web UI (direct edits cause corruption on reboot)
 - Test infrastructure changes in dev before prod
 - Update docs with new decisions or context
 - Use `workflow_dispatch` for destructive operations

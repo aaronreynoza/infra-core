@@ -36,6 +36,6 @@ output "next_steps" {
        - LAN: vtnet1 (create VLANs 10 and 11)
     5. See docs/04-opnsense.md for detailed VLAN and firewall configuration
 
-    After installation, update boot_order to "c" (disk only) and remove ISO.
+    After installation, update boot_order to "virtio0" (disk only) and remove ISO.
   EOT
 }

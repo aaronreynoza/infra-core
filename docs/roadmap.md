@@ -2,8 +2,8 @@
 
 This document tracks the implementation phases for the homelab project.
 
-**Current Phase**: Phase 2 (Network Infrastructure)
-**Last Updated**: January 2026
+**Current Phase**: Phase 3 (Multi-Environment Clusters)
+**Last Updated**: 2026-02-04
 
 ---
 
@@ -13,12 +13,14 @@ This document tracks the implementation phases for the homelab project.
 |-------|------|--------|
 | 0 | Code Review & Cleanup | ✅ Complete |
 | 1 | Repository Restructure | ✅ Complete |
-| 2 | Network Infrastructure | 🔄 In Progress |
-| 3 | Multi-Environment Clusters | ⏳ Pending |
+| 2 | Network Infrastructure | ✅ Complete |
+| 3 | Multi-Environment Clusters | 🔄 In Progress |
 | 4 | Platform Services | ⏳ Pending |
 | 5 | Backup & Disaster Recovery | ⏳ Pending |
 | 6 | Observability | ⏳ Pending |
 | 7 | Applications | ⏳ Pending |
+| 2.5 | Storage Infrastructure | ⏳ Pending |
+| 2.6 | Ops Maturity (guardrails, SOPs) | ⏳ Pending |
 | 8 | Future (GPU-dependent) | ⏳ Pending |
 
 ---
@@ -75,7 +77,7 @@ This document tracks the implementation phases for the homelab project.
 
 ---
 
-## Phase 2: Network Infrastructure 🔄 IN PROGRESS
+## Phase 2: Network Infrastructure ✅ COMPLETE
 
 **Goal**: Set up VLAN-segmented network with OPNSense
 
@@ -83,25 +85,84 @@ This document tracks the implementation phases for the homelab project.
 - [x] Create Terraform module for OPNSense VM provisioning (`core/terraform/modules/opnsense/`)
 - [x] Create `environments/network/terraform/` for shared network infrastructure
 - [x] Configure dual NICs (WAN + LAN trunk) in module
-- [ ] Deploy OPNSense VM via Terraform
-- [ ] Complete OPNSense installation wizard (manual)
-- [ ] Document manual OPNSense initial setup steps
-- [ ] Create OPNSense configuration export/backup
+- [x] Deploy OPNSense VM via Terraform
+- [x] Complete OPNSense installation wizard (manual)
+- [x] Document manual OPNSense initial setup steps
+- [x] Create OPNSense configuration export/backup (`/conf/backup/config-2026-02-04-vlans-dhcp-firewall.xml`)
 
 ### 2.2 VLAN Configuration
 - [x] Configure NETGEAR GS308EP switch with VLANs (done manually)
-- [ ] Configure VLAN 10 (Prod: 10.10.10.0/16) in OPNSense
-- [ ] Configure VLAN 11 (Dev: 10.11.10.0/16) in OPNSense
-- [ ] Configure trunk ports for OPNSense and Proxmox
-- [ ] Test inter-VLAN routing through OPNSense
+- [x] Configure VLAN 10 (Prod: 10.10.10.0/16) in OPNSense
+- [x] Configure VLAN 11 (Dev: 10.11.10.0/16) in OPNSense
+- [x] Configure trunk ports for OPNSense and Proxmox
+- [x] Test VLAN 10 outbound access (DHCP + NAT working, tested 2026-02-04)
+- [ ] Test inter-VLAN isolation (PROD cannot reach DEV)
+- [ ] Test VLAN 11 connectivity
 
 ### 2.3 Proxmox Network
 - [x] Restore Proxmox host connectivity (vmbr0 reachable; bond0 active-backup with `enp11s0` primary)
-- [ ] Create VLAN-aware bridge in Proxmox (vmbr0 with VLAN tagging)
-- [ ] Configure switch port for Proxmox as VLAN trunk (native mgmt + tagged workload VLANs)
-- [ ] Update VM configurations to use VLAN tags (per-VM NIC VLAN Tag)
-- [ ] Test VM connectivity on each VLAN
-- [ ] (Later) Add second NIC/cable and migrate to dedicated workloads bridge
+- [x] Create VLAN-aware bridge in Proxmox (vmbr0 with VLAN tagging)
+- [x] Configure switch port for Proxmox as VLAN trunk (native mgmt + tagged workload VLANs)
+- [x] Validate VLAN 10 with a tagged test VM
+- [x] Split WAN/LAN on primary host (dedicated NIC per bridge: vmbr0 LAN, vmbr1 WAN)
+- [x] Move OPNSense WAN to `vmbr1` (Terraform updated, VM reconfigured)
+- [x] Configure VLANs on LAN interface (vtnet0)
+- [x] Validate VLAN 10 can reach internet (NAT working - tested 2026-02-04)
+
+**Runbook**: See `docs/runbooks/vlan-opnsense-fix.md` for interface debugging steps
+
+**Backup**: `/conf/backup/config-2026-02-04-vlans-dhcp-firewall.xml`
+
+---
+
+## Phase 2.5: Storage Infrastructure ⏳ PENDING
+
+**Goal**: Deploy TrueNAS for media storage, integrate with Kubernetes via NFS
+
+**Decision**: See `docs/decisions/002-truenas-storage.md`
+
+### 2.5.1 TrueNAS VM
+- [ ] Deploy TrueNAS VM on Proxmox (VLAN 10)
+- [ ] Allocate dedicated disk(s) for ZFS pool
+- [ ] Create ZFS datasets (media, downloads, backups)
+- [ ] Configure NFS shares for Kubernetes
+
+### 2.5.2 Kubernetes Integration
+- [ ] Create NFS PersistentVolumes for media/downloads
+- [ ] Test NFS mounts from Kubernetes pod
+- [ ] Document storage split (Longhorn vs NFS)
+
+### 2.5.3 Mobile Access
+- [ ] Configure TrueNAS mobile app or WebDAV
+- [ ] Test file upload from phone to media library
+
+---
+
+## Phase 2.6: Ops Maturity ⏳ PENDING
+
+**Goal**: Add engineering guardrails and operational documentation (inspired by William's infra)
+
+### 2.6.1 Pre-commit Hooks
+- [ ] Add `.pre-commit-config.yaml` with terraform_fmt, tflint, trivy
+- [ ] Add yamllint, ansible-lint hooks
+- [ ] Add secret detection (gitleaks or similar)
+- [ ] Add no-commit-to-main protection
+
+### 2.6.2 SOPs (Standard Operating Procedures)
+- [ ] Create `docs/runbooks/secrets.md` (AWS Secrets Manager + ESO)
+- [ ] Create `docs/runbooks/backups.md` (Longhorn + Velero)
+- [ ] Create `docs/runbooks/upgrades.md` (Talos + K8s + platform components)
+- [ ] Create `docs/runbooks/destroy.md` (safe teardown + rebuild)
+- [ ] Create `docs/runbooks/troubleshooting.md` (common issues + fixes)
+
+### 2.6.3 Checklists
+- [ ] Create `docs/checklists/day0.md` (hypervisor/network/storage readiness)
+- [ ] Create `docs/checklists/day1.md` (cluster bootstrap validation)
+
+### 2.6.4 CI/CD Guardrails
+- [ ] Add GitHub Actions for pre-commit checks
+- [ ] Add Renovate for dependency updates
+- [ ] Pin Terraform provider versions with `.terraform.lock.hcl`
 
 ---
 

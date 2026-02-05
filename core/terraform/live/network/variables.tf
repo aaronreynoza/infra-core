@@ -93,3 +93,9 @@ variable "opnsense_iso_filename" {
   type        = string
   default     = "OPNsense-24.7-dvd-amd64.iso"
 }
+
+variable "boot_order" {
+  description = "Boot order for OPNSense VM (comma-separated device IDs, e.g. 'ide3,virtio0' for CD-ROM install, 'virtio0' for disk-only after install)"
+  type        = string
+  default     = "ide3,virtio0"
+}

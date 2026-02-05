@@ -86,14 +86,14 @@ Result: `bond0` had **no active slave**, and `vmbr0` showed `NO-CARRIER/linkdown
    # Expected: Currently Active Slave: enp11s0, MII Status: up
 
    ip route
-   # Expected: default via 192.168.1.1 (no 'linkdown')
+   # Expected: default via <GATEWAY_IP> (no 'linkdown')
    ```
 
 ---
 
 ## Final State
 
-- UI reachable at: `https://REDACTED_IP:8006/`
+- UI reachable at: `https://<PROXMOX_IP>:8006/`
 - Network stack: `vmbr0` (management bridge) on top of `bond0` (mode: `active-backup`)
   - Primary: `enp11s0`
   - Standby: `mgmt0`

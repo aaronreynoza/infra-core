@@ -74,7 +74,7 @@ resource "proxmox_virtual_environment_vm" "opnsense" {
   }
 
   # Boot order: CD-ROM first for initial install, then disk
-  boot_order = [for device in split(",", var.boot_order) : device]
+  boot_order = [for device in split(",", var.boot_order) : trimspace(device)]
 
   # CD-ROM with OPNSense ISO
   cdrom {

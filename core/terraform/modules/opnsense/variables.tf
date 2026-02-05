@@ -117,7 +117,7 @@ variable "start_vm" {
 }
 
 variable "boot_order" {
-  description = "Boot order (comma-separated): cdn = CD-ROM first, c = disk first"
+  description = "Boot order (comma-separated device IDs, e.g. ide3,virtio0)"
   type        = string
-  default     = "cdn"
+  default     = "ide3,virtio0"
 }
