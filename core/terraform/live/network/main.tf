@@ -10,11 +10,8 @@ terraform {
   required_version = ">= 1.5.0"
 
   backend "s3" {
-    bucket         = "homelab-terraform-state-REDACTED_ACCOUNT_ID"
-    key            = "network/terraform.tfstate"
-    region         = "us-east-1"
-    dynamodb_table = "homelab-terraform-locks"
-    encrypt        = true
+    # Configure via: terraform init -backend-config=<path-to>/backend.hcl
+    # See docs/configuration.md for details
   }
 
   required_providers {
@@ -84,5 +81,5 @@ module "opnsense" {
   start_on_boot = true
 
   # Boot from CD-ROM first for initial installation
-  boot_order = "cdn"
+  boot_order = var.boot_order
 }

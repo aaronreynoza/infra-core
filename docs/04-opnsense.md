@@ -11,6 +11,19 @@ OPNSense acts as the central network gateway, managing:
 - Firewall rules for network isolation
 - NAT for internet access
 
+## Status
+
+**Phase 2 Complete** (2026-02-04)
+
+All network infrastructure is working:
+- OPNSense VM deployed via Terraform
+- WAN on dedicated bridge (vmbr1), LAN trunk on vmbr0
+- VLANs 10/11 with DHCP and NAT working
+- Inter-VLAN isolation verified
+- Firewall rules in place
+
+**Backups**: Store OPNSense config.xml files in `docs/opnsense-backups/` (gitignored for security).
+
 ## Network Architecture
 
 ```
@@ -26,7 +39,7 @@ OPNSense acts as the central network gateway, managing:
 │  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐   │
 │  │     WAN     │  │   VLAN 10   │  │   VLAN 11   │  │  Management │   │
 │  │   (DHCP)    │  │    PROD     │  │     DEV     │  │  (Optional) │   │
-│  │             │  │ 10.10.10.1  │  │ 10.11.10.1  │  │ 192.168.1.1 │   │
+│  │             │  │ 10.10.10.1  │  │ 10.11.10.1  │  │ <MGMT_IP>   │   │
 │  └─────────────┘  └─────────────┘  └─────────────┘  └─────────────┘   │
 │                           │                │                           │
 └───────────────────────────┼────────────────┼───────────────────────────┘
@@ -76,7 +89,7 @@ After booting from ISO:
 
 1. Install OPNSense to disk
 2. Reboot and complete initial wizard
-3. Access web UI at https://192.168.1.1 (default)
+3. Access web UI at `https://<LAN_IP>` (default: 192.168.1.1)
 4. Login: root / opnsense
 
 ### 3. Interface Configuration
@@ -88,8 +101,11 @@ Interfaces > WAN
 ├── Enable: ✓
 ├── IPv4 Configuration Type: DHCP
 ├── IPv6 Configuration Type: None
-└── Block private networks: ✓ (recommended)
+├── Block private networks: ✗ (see note below)
+└── Block bogon networks: ✗ (if behind private upstream)
 ```
+
+**Critical**: If your WAN is on a private network (e.g., behind an office router on 192.168.x.x), you MUST disable "Block private networks". Otherwise, the firewall will block all incoming traffic from your private LAN, including SSH and web UI access.
 
 #### VLAN Interfaces
 
@@ -151,7 +167,7 @@ Navigate to: **Services > DHCPv4**
 ```
 Services > DHCPv4 > [PROD]
 ├── Enable: ✓
-├── Range: 10.10.10.100 - 10.10.10.200
+├── Range: 10.10.10.50 - 10.10.10.200
 ├── DNS Servers: 10.10.10.1 (or external)
 ├── Gateway: 10.10.10.1
 └── Domain Name: prod.homelab.local
@@ -171,7 +187,7 @@ XX:XX:XX:XX:XX:04    10.10.10.21    prod-wk-02
 ```
 Services > DHCPv4 > [DEV]
 ├── Enable: ✓
-├── Range: 10.11.10.100 - 10.11.10.200
+├── Range: 10.11.10.50 - 10.11.10.200 (verify actual pool)
 ├── DNS Servers: 10.11.10.1
 ├── Gateway: 10.11.10.1
 └── Domain Name: dev.homelab.local
@@ -192,19 +208,19 @@ Navigate to: **Firewall > Rules**
 
 #### PROD Rules
 
+**Important**: Block rules must be ABOVE allow rules (rules are processed top-to-bottom).
+
 | # | Action | Protocol | Source | Destination | Description |
 |---|--------|----------|--------|-------------|-------------|
-| 1 | Pass | * | PROD net | * | Allow PROD to internet |
-| 2 | Block | * | PROD net | DEV net | Block PROD to DEV |
-| 3 | Pass | TCP | PROD net | PROD net | Allow intra-PROD |
+| 1 | Block | * | PROD net | DEV net | Block PROD to DEV |
+| 2 | Pass | * | PROD net | * | Allow PROD to any |
 
 #### DEV Rules
 
 | # | Action | Protocol | Source | Destination | Description |
 |---|--------|----------|--------|-------------|-------------|
-| 1 | Pass | * | DEV net | * | Allow DEV to internet |
-| 2 | Block | * | DEV net | PROD net | Block DEV to PROD |
-| 3 | Pass | TCP | DEV net | DEV net | Allow intra-DEV |
+| 1 | Block | * | DEV net | PROD net | Block DEV to PROD |
+| 2 | Pass | * | DEV net | * | Allow DEV to any |
 
 #### Key Principle: Environment Isolation
 
@@ -267,6 +283,8 @@ Source: DEV net (10.11.10.0/16)
 Translation: Interface Address
 ```
 
+**Note**: Automatic outbound NAT works when WAN and LAN are on separate bridges.
+
 ## Switch Configuration (NETGEAR GS308EP Example)
 
 ### VLAN Configuration
@@ -298,6 +316,8 @@ VLAN ID: 11, Name: DEV
 - U = Untagged (access)
 - `-` = Not a member
 
+If WAN is on a dedicated NIC/bridge, connect that NIC to a switch port configured as **access VLAN 1** (or the upstream ISP VLAN) only.
+
 ### Port VLAN ID (PVID)
 
 ```
@@ -313,27 +333,37 @@ Port 8: PVID 1
 
 ## Proxmox Network Configuration
 
-### VLAN-Aware Bridge
+### Recommended: Separate WAN and LAN Bridges
 
-Edit `/etc/network/interfaces`:
+Use dedicated bridges for WAN and LAN trunk to ensure proper NAT:
 
 ```
-auto lo
-iface lo inet loopback
+auto <LAN_NIC>
+iface <LAN_NIC> inet manual
 
-auto eno1
-iface eno1 inet manual
+auto <WAN_NIC>
+iface <WAN_NIC> inet manual
 
+# LAN trunk bridge (VLANs + management)
 auto vmbr0
 iface vmbr0 inet static
-    address 192.168.1.100/24
-    gateway 192.168.1.1
-    bridge-ports eno1
+    address <MGMT_IP>/24
+    gateway <GATEWAY_IP>
+    bridge-ports <LAN_NIC>
     bridge-stp off
     bridge-fd 0
     bridge-vlan-aware yes
-    bridge-vids 2-4094
+    bridge-vids 10 11
+
+# WAN bridge (upstream to router/ISP)
+auto vmbr1
+iface vmbr1 inet manual
+    bridge-ports <WAN_NIC>
+    bridge-stp off
+    bridge-fd 0
 ```
+
+**Important**: WAN and LAN must be on separate L2 segments for NAT to work correctly.
 
 ### VM Network Configuration
 
@@ -406,6 +436,7 @@ System > Configuration > Backups > Google Drive/Nextcloud
 2. Verify NAT rules exist
 3. Test DNS resolution
 4. Check default gateway
+5. Ensure WAN and LAN are on separate L2 segments (do not share the same bridge)
 
 ### Inter-VLAN Routing Issues
 
