@@ -18,3 +18,6 @@ docs/opnsense-backups/
 
 # Claude Code settings
 .claude/
+
+# temporary files
+william-repo/

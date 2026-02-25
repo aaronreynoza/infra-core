@@ -34,6 +34,11 @@ Environments are **fully isolated** - no inter-VLAN communication.
 - Longhorn (storage, replica: 1)
 - ArgoCD (GitOps)
 
+### External Services (Operational)
+- **Pangolin** on Vultr VPS — deployed and configured (shared with William), dashboard accessible
+- **Control D** — "Aaron-Homelab" endpoint provisioned, PROD/DEV profiles created
+- Remaining: Newt integration into Talos, ctrld installation on OPNsense
+
 ### Technology Stack
 - **Virtualization**: Proxmox VE
 - **Cluster OS**: Talos Linux
@@ -50,7 +55,9 @@ Environments are **fully isolated** - no inter-VLAN communication.
 - **Talos Linux** for immutable, secure cluster OS
 - **Two-repo architecture**: homelab (public) + environments (private)
 - **Harbor** per environment (isolated registries)
-- **Cloudflare Tunnel** for public access (no port forwarding)
+- **Pangolin** on Vultr VPS for public access (replaces Cloudflare Tunnel — see ADR-003)
+- **Control D + ctrld** for DNS management with per-VLAN policies (replaces Unbound on OPNsense)
+- **Newt** (Talos system extension) as Pangolin agent inside the cluster
 - **Zitadel** for SSO/OAuth
 - **Velero + Longhorn** for backup/DR to AWS S3
 
@@ -68,11 +75,16 @@ Environments are **fully isolated** - no inter-VLAN communication.
 - NAT working: VLAN clients can reach internet ✅
 - Firewall working: SSH/HTTPS accessible ✅
 - Inter-VLAN isolation: PROD/DEV cannot communicate ✅
+- Pangolin VPS deployed (shared with William), site created ✅
+- Control D profiles configured, "Aaron-Homelab" endpoint provisioned ✅
 
 **Next Tasks** (in order):
 1. Deploy TrueNAS VM on PROD VLAN (see `docs/decisions/002-truenas-storage.md`)
-2. Test Talos cluster deployment on PROD VLAN (10.10.10.0/16)
-3. Phase 2.6: Ops maturity (pre-commit hooks, SOPs, checklists)
+2. Deploy Talos cluster on PROD VLAN with Newt extension (10.10.10.0/16)
+3. Validate Pangolin connectivity (Newt → VPS WireGuard tunnel)
+4. Install ctrld on OPNsense + configure split-horizon DNS (after cluster testing)
+5. Deploy first Pangolin resource to validate full traffic path
+6. Phase 2.6: Ops maturity (pre-commit hooks, SOPs, checklists)
 
 See [docs/roadmap.md](docs/roadmap.md) for full implementation plan.
 
@@ -141,6 +153,9 @@ kubectl port-forward svc/argocd-server -n argocd 8080:443
 | Proxmox recovery | [docs/runbooks/proxmox-recovery.md](docs/runbooks/proxmox-recovery.md) |
 | VLAN architecture decision | [docs/decisions/001-vlan-architecture.md](docs/decisions/001-vlan-architecture.md) |
 | TrueNAS storage proposal | [docs/decisions/002-truenas-storage.md](docs/decisions/002-truenas-storage.md) |
+| Pangolin + Control D architecture | [docs/decisions/003-pangolin-controld-architecture.md](docs/decisions/003-pangolin-controld-architecture.md) |
+| Security hardening (future) | [docs/issues/006-security-hardening-ddos-protection.md](docs/issues/006-security-hardening-ddos-protection.md) |
+| Homelab vs Cloud comparison | [docs/cloud-comparison.md](docs/cloud-comparison.md) |
 
 ---
 
