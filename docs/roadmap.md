@@ -3,7 +3,7 @@
 This document tracks the implementation phases for the homelab project.
 
 **Current Phase**: Phase 3 (Multi-Environment Clusters)
-**Last Updated**: 2026-02-04
+**Last Updated**: 2026-02-09
 
 ---
 
@@ -13,14 +13,14 @@ This document tracks the implementation phases for the homelab project.
 |-------|------|--------|
 | 0 | Code Review & Cleanup | ✅ Complete |
 | 1 | Repository Restructure | ✅ Complete |
-| 2 | Network Infrastructure | ✅ Complete |
+| 2 | Network & External Services | ✅ Complete |
+| 2.5 | Storage Infrastructure | ⏳ Pending |
+| 2.6 | Ops Maturity (guardrails, SOPs) | ⏳ Pending |
 | 3 | Multi-Environment Clusters | 🔄 In Progress |
 | 4 | Platform Services | ⏳ Pending |
 | 5 | Backup & Disaster Recovery | ⏳ Pending |
 | 6 | Observability | ⏳ Pending |
 | 7 | Applications | ⏳ Pending |
-| 2.5 | Storage Infrastructure | ⏳ Pending |
-| 2.6 | Ops Maturity (guardrails, SOPs) | ⏳ Pending |
 | 8 | Future (GPU-dependent) | ⏳ Pending |
 
 ---
@@ -77,9 +77,9 @@ This document tracks the implementation phases for the homelab project.
 
 ---
 
-## Phase 2: Network Infrastructure ✅ COMPLETE
+## Phase 2: Network & External Services ✅ COMPLETE
 
-**Goal**: Set up VLAN-segmented network with OPNSense
+**Goal**: Set up VLAN-segmented network with OPNSense, deploy external services (Pangolin, Control D)
 
 ### 2.1 OPNSense VM
 - [x] Create Terraform module for OPNSense VM provisioning (`core/terraform/modules/opnsense/`)
@@ -112,6 +112,18 @@ This document tracks the implementation phases for the homelab project.
 **Runbook**: See `docs/runbooks/vlan-opnsense-fix.md` for interface debugging steps
 
 **Backup**: `/conf/backup/config-2026-02-04-vlans-dhcp-firewall.xml`
+
+### 2.4 Pangolin + Control D (External Services)
+- [x] Deploy Pangolin stack on Vultr VPS (Traefik, Gerbil, Badger, Pangolin)
+- [x] Configure Control D profiles (PROD strict filtering, DEV permissive)
+- [x] Provision "Aaron-Homelab" endpoint in Control D
+- [x] Create homelab site in Pangolin dashboard
+- [ ] Install ctrld on OPNsense — replace Unbound, configure per-VLAN DNS policies (after Phase 3 cluster testing)
+- [ ] Configure split-horizon DNS — internal domains resolve locally via ctrld rules (after ctrld)
+
+**Decision**: See `docs/decisions/003-pangolin-controld-architecture.md`
+
+**Note**: ctrld installation on OPNsense is deferred until after Talos cluster deployment is validated (Phase 3).
 
 ---
 
@@ -171,6 +183,7 @@ This document tracks the implementation phases for the homelab project.
 **Goal**: Deploy separate Kubernetes clusters for prod and dev
 
 ### 3.1 Prod Cluster
+- [ ] Add Newt system extension to Talos image (Factory schematic)
 - [ ] Update Terraform to use new IP scheme (10.10.10.x)
 - [ ] Deploy control plane: prod-cp-01 (10.10.10.10), prod-cp-02 (10.10.10.11)
 - [ ] Deploy workers: prod-wk-01 (10.10.10.20), prod-wk-02 (10.10.10.21)
@@ -186,6 +199,11 @@ This document tracks the implementation phases for the homelab project.
 ### 3.3 Separate Terraform State
 - [ ] Configure separate S3 paths for prod/dev state
 - [ ] Ensure state isolation between environments
+
+### 3.4 Validate Pangolin Connectivity
+- [ ] Verify Newt connects to Pangolin VPS via WireGuard
+- [ ] Deploy first Pangolin resource to validate full traffic path
+- [ ] Install ctrld on OPNsense and configure split-horizon DNS (see Phase 2.4)
 
 ---
 
@@ -218,13 +236,6 @@ This document tracks the implementation phases for the homelab project.
 - [ ] Set up OAuth applications for each service
 - [ ] Integrate with Forgejo, Harbor, Grafana, etc.
 - [ ] Configure SSO across all services
-
-### 4.5 Cloudflare Tunnel
-- [ ] Deploy cloudflared on prod cluster
-- [ ] Deploy cloudflared on dev cluster (separate tunnel)
-- [ ] Configure tunnel routes for public services
-- [ ] Set up Cloudflare Access policies (integrate with Zitadel)
-- [ ] No port forwarding or public IPs required
 
 ---
 

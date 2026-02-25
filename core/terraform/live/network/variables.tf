@@ -99,3 +99,64 @@ variable "boot_order" {
   type        = string
   default     = "ide3,virtio0"
 }
+
+# TrueNAS VM configuration
+variable "truenas_vm_id" {
+  description = "VM ID for TrueNAS"
+  type        = number
+  default     = 101
+}
+
+variable "truenas_vm_name" {
+  description = "Name of the TrueNAS VM"
+  type        = string
+  default     = "truenas"
+}
+
+variable "truenas_cpu_cores" {
+  description = "Number of CPU cores for TrueNAS"
+  type        = number
+  default     = 4
+}
+
+variable "truenas_memory_mb" {
+  description = "Memory in MB for TrueNAS (16384 recommended for ZFS)"
+  type        = number
+  default     = 16384
+}
+
+variable "truenas_boot_disk_size_gb" {
+  description = "Boot disk size in GB for TrueNAS (OS only)"
+  type        = number
+  default     = 32
+}
+
+variable "truenas_passthrough_disks" {
+  description = "Physical disk paths (/dev/disk/by-id/...) to pass through for ZFS pool"
+  type        = list(string)
+  default     = []
+}
+
+variable "truenas_vlan_id" {
+  description = "VLAN ID for TrueNAS network"
+  type        = number
+  default     = 10
+}
+
+variable "truenas_iso_url" {
+  description = "URL to download TrueNAS SCALE ISO"
+  type        = string
+  default     = "https://download.truenas.com/TrueNAS-SCALE-Goldeye/25.10.1/TrueNAS-SCALE-25.10.1.iso"
+}
+
+variable "truenas_iso_filename" {
+  description = "Filename for the TrueNAS ISO"
+  type        = string
+  default     = "TrueNAS-SCALE-25.10.1.iso"
+}
+
+variable "truenas_boot_order" {
+  description = "Boot order for TrueNAS VM (e.g. 'ide3,scsi0' for CD-ROM install, 'scsi0' for disk-only after install)"
+  type        = string
+  default     = "ide3,scsi0"
+}

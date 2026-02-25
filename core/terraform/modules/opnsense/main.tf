@@ -30,6 +30,8 @@ resource "proxmox_virtual_environment_download_file" "opnsense_iso" {
   file_name          = var.opnsense_iso_filename
   decompression_algorithm = "bz2"
 
+  overwrite = false
+
   lifecycle {
     # Don't re-download if file exists
     ignore_changes = [url]

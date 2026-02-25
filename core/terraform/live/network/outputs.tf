@@ -15,7 +15,28 @@ output "opnsense_mac_addresses" {
   value       = module.opnsense.mac_addresses
 }
 
-output "next_steps" {
+output "opnsense_next_steps" {
   description = "Instructions for completing OPNSense setup"
   value       = module.opnsense.next_steps
+}
+
+# TrueNAS outputs
+output "truenas_vm_id" {
+  description = "The VM ID of the TrueNAS instance"
+  value       = module.truenas.vm_id
+}
+
+output "truenas_vm_name" {
+  description = "The name of the TrueNAS VM"
+  value       = module.truenas.vm_name
+}
+
+output "truenas_mac_address" {
+  description = "MAC address of TrueNAS network interface"
+  value       = module.truenas.mac_address
+}
+
+output "truenas_next_steps" {
+  description = "Instructions for completing TrueNAS setup"
+  value       = module.truenas.next_steps
 }
