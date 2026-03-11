@@ -13,9 +13,9 @@ k8sServicePort: "6443"
 bpf:
   masquerade: true
 
-# MTU — account for VLAN 802.1Q overhead (4 bytes)
-# Set to 1450 to guarantee no fragmentation across any path
-MTU: 1450
+# MTU — native routing on VLAN has no tunnel overhead
+# VLAN 802.1Q tag is handled at L2 by switch/NIC, not IP layer
+mtu: 1500
 
 # Routing — native mode for flat L2 VLAN network (avoids double encapsulation)
 routingMode: native
