@@ -1,0 +1,57 @@
+# Cilium CNI Configuration for Talos Linux
+# Talos disables kube-proxy, so Cilium must handle service proxying.
+
+ipam:
+  mode: kubernetes
+
+# kube-proxy replacement — requires k8sServiceHost/Port
+kubeProxyReplacement: true
+k8sServiceHost: "REDACTED_K8S_API"
+k8sServicePort: "6443"
+
+# BPF masquerade (required when replacing kube-proxy)
+bpf:
+  masquerade: true
+
+# MTU — native routing on VLAN has no tunnel overhead
+# VLAN 802.1Q tag is handled at L2 by switch/NIC, not IP layer
+mtu: 1500
+
+# Routing — native mode for flat L2 VLAN network (avoids double encapsulation)
+routingMode: native
+autoDirectNodeRoutes: true
+ipv4NativeRoutingCIDR: "10.244.0.0/16"
+
+# Security context required for Talos
+securityContext:
+  capabilities:
+    ciliumAgent:
+      - CHOWN
+      - KILL
+      - NET_ADMIN
+      - NET_RAW
+      - IPC_LOCK
+      - SYS_ADMIN
+      - SYS_RESOURCE
+      - DAC_OVERRIDE
+      - FOWNER
+      - SETGID
+      - SETUID
+
+# Hubble observability
+hubble:
+  enabled: true
+  relay:
+    enabled: true
+  ui:
+    enabled: true
+
+# Talos mounts cgroupv2
+cgroup:
+  autoMount:
+    enabled: true
+  hostRoot: /sys/fs/cgroup
+
+# Single-node operator (resource constrained)
+operator:
+  replicas: 1

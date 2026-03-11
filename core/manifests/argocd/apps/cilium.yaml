@@ -1,0 +1,65 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: cilium
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  source:
+    repoURL: https://helm.cilium.io/
+    chart: cilium
+    targetRevision: 1.16.5
+    helm:
+      valueFiles: []
+      values: |
+        ipam:
+          mode: kubernetes
+        kubeProxyReplacement: true
+        k8sServiceHost: "REDACTED_K8S_API"
+        k8sServicePort: "6443"
+        bpf:
+          masquerade: true
+        mtu: 1500
+        routingMode: native
+        autoDirectNodeRoutes: true
+        ipv4NativeRoutingCIDR: "10.244.0.0/16"
+        securityContext:
+          capabilities:
+            ciliumAgent:
+              - CHOWN
+              - KILL
+              - NET_ADMIN
+              - NET_RAW
+              - IPC_LOCK
+              - SYS_ADMIN
+              - SYS_RESOURCE
+              - DAC_OVERRIDE
+              - FOWNER
+              - SETGID
+              - SETUID
+        hubble:
+          enabled: true
+          relay:
+            enabled: true
+          ui:
+            enabled: true
+        cgroup:
+          autoMount:
+            enabled: true
+          hostRoot: /sys/fs/cgroup
+        operator:
+          replicas: 1
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: cilium
+  syncPolicy:
+    automated:
+      prune: false
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true

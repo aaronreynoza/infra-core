@@ -1,8 +1,23 @@
+# Terraform
 .terraform/
 .terraform.lock.hcl
 terraform.tfstate
 terraform.tfstate.backup
+*.tfvars
 *.tfvars.json
 *.tfplan
 *.tfplan.json
-terraform/backend.hcl
+*.hcl
+!*.hcl.example
+
+# Environment-specific configs (private — see docs/configuration.md)
+environments/
+
+# OPNSense backups (contain sensitive data)
+docs/opnsense-backups/
+
+# Claude Code settings
+.claude/
+
+# temporary files
+william-repo/
