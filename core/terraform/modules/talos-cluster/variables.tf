@@ -162,12 +162,6 @@ variable "vlan_id" {
 }
 
 # Longhorn configuration
-variable "longhorn_min_size_gib" {
-  description = "Minimum size for Longhorn volumes in GiB"
-  type        = number
-  default     = 300
-}
-
 variable "longhorn_mount_path" {
   description = "Mount path for Longhorn volumes"
   type        = string
