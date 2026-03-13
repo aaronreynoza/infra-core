@@ -65,29 +65,26 @@ Environments are **fully isolated** - no inter-VLAN communication.
 
 ## Work Status
 
-**Current Phase**: Phase 3 - Multi-Environment Clusters
-**Branch**: `refactor/modular-structure`
+**Current Phase**: Platform Apps Deployed, Starting Docs Site
+**Branch**: `main`
 
-**Phase 2 Complete** (2026-02-04):
-- OPNSense VM deployed with WAN + LAN trunk NICs
-- VLAN 10 (PROD): 10.10.10.1/16, DHCP REDACTED_VLAN_IP0-200 ✅
-- VLAN 11 (DEV): 10.11.10.1/16, DHCP 10.11.10.50-200 ✅
-- NAT working: VLAN clients can reach internet ✅
-- Firewall working: SSH/HTTPS accessible ✅
-- Inter-VLAN isolation: PROD/DEV cannot communicate ✅
-- Pangolin VPS deployed (shared with William), site created ✅
-- Control D profiles configured, "Aaron-Homelab" endpoint provisioned ✅
+**Platform Apps Complete** (2026-03-13):
+- All platform apps deployed via ArgoCD and Synced/Healthy ✅
+- CloudNativePG operator + clusters for Forgejo and Zitadel ✅
+- Cilium LB-IPAM assigning IPs (REDACTED_LB_IP-225) ✅
+- Monitoring stack: kube-prometheus-stack, Loki, Tempo, Mimir, OTel Collector ✅
+- Apps verified: nginx-test, ArgoCD, Forgejo, Harbor, Grafana, Zitadel ✅
 
 **Next Tasks** (in order):
-1. Generate Talos Factory schematic with Newt extension (manual: factory.talos.dev)
-2. Fill Newt credentials in terraform.tfvars (from Pangolin dashboard)
-3. Merge `refactor/modular-structure` to `main`
-4. `terraform apply` — deploys full platform stack + nginx-test app
-5. Create Pangolin resource for test app (manual: Pangolin dashboard)
-6. Verify public access to test app
-7. Deploy race telemetry app via ArgoCD
+1. Set up MkDocs Material docs site (first publicly exposed app)
+2. Build and push to Harbor, create ArgoCD Application
+3. Create Pangolin resource for public access
+4. Set up Management VM (ID 99)
+5. Migrate Git source of truth to Forgejo
+6. Forgejo Actions CI/CD
+7. Zitadel SSO integration
 
-See [docs/issues/backlog.md](docs/issues/backlog.md) for deferred work.
+See [docs/issues/backlog.md](docs/issues/backlog.md) and `internal-docs/master-plan.md` for full roadmap.
 
 ---
 
