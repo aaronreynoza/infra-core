@@ -17,9 +17,7 @@ spec:
       valueFiles: []
       values: |
         zitadel:
-          masterkeyExternalSecret:
-            name: zitadel-credentials
-            key: masterkey
+          masterkeySecretName: zitadel-credentials
           configmapConfig:
             ExternalSecure: false
             ExternalDomain: zitadel.internal

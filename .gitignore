@@ -22,6 +22,9 @@ docs/opnsense-backups/
 # temporary files
 william-repo/
 
+# Internal planning docs (context for Claude, not committed)
+internal-docs/
+
 # OS files
 .DS_Store
 *.DS_Store

@@ -23,11 +23,11 @@ terraform {
 
 # Download OPNSense ISO
 resource "proxmox_virtual_environment_download_file" "opnsense_iso" {
-  content_type       = "iso"
-  datastore_id       = var.iso_datastore_id
-  node_name          = var.proxmox_node
-  url                = var.opnsense_iso_url
-  file_name          = var.opnsense_iso_filename
+  content_type            = "iso"
+  datastore_id            = var.iso_datastore_id
+  node_name               = var.proxmox_node
+  url                     = var.opnsense_iso_url
+  file_name               = var.opnsense_iso_filename
   decompression_algorithm = "bz2"
 
   overwrite = false
