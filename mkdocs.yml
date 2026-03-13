@@ -1,0 +1,65 @@
+site_name: Aaron's Homelab
+site_description: Self-hosted infrastructure platform documentation
+site_url: https://docs.home-infra.net
+
+theme:
+  name: material
+  palette:
+    - scheme: slate
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-7
+        name: Light mode
+    - scheme: default
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-4
+        name: Dark mode
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - navigation.expand
+    - search.suggest
+    - search.highlight
+    - content.code.copy
+
+markdown_extensions:
+  - admonition
+  - pymdownx.details
+  - pymdownx.superfences
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - tables
+  - toc:
+      permalink: true
+
+nav:
+  - Home: index.md
+  - Architecture: architecture.md
+  - Cloud Comparison: cloud-comparison.md
+  - Setup:
+      - Configuration: configuration.md
+      - Infrastructure: 01-infrastructure.md
+      - Deployment: 02-deployment.md
+      - Ansible: 03-ansible.md
+      - OPNSense: 04-opnsense.md
+      - Security: 05-security.md
+  - Decisions:
+      - VLAN Architecture: decisions/001-vlan-architecture.md
+      - TrueNAS Storage: decisions/002-truenas-storage.md
+      - Pangolin + ControlD: decisions/003-pangolin-controld-architecture.md
+      - SOPS Secrets: decisions/004-sops-secrets-management.md
+  - Runbooks:
+      - Initial Setup: runbooks/initial-setup.md
+      - Terraform Backend: runbooks/terraform-backend-setup.md
+      - Proxmox Recovery: runbooks/proxmox-recovery.md
+      - VLAN Fix: runbooks/vlan-opnsense-fix.md
+      - VLAN Routing: runbooks/mgmt-to-vlan-routing.md
+      - Cluster Deployment: runbooks/prod-cluster-deployment.md
+      - OPNSense Recovery: runbooks/opnsense-recovery-2026-02-11.md
+  - Roadmap: roadmap.md
+  - Changelog: CHANGELOG.md
