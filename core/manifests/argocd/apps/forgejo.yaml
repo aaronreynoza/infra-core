@@ -43,7 +43,7 @@ spec:
               DISABLE_SSH: true
 
             database:
-              DB_TYPE: postgres
+              DB_TYPE: sqlite3
 
             service:
               DISABLE_REGISTRATION: true
@@ -62,29 +62,15 @@ spec:
               TYPE: level
 
         postgresql:
-          enabled: true
-          global:
-            postgresql:
-              auth:
-                existingSecret: forgejo-credentials
-                secretKeys:
-                  userPasswordKey: postgresql-password
-                database: forgejo
-                username: forgejo
-          primary:
-            persistence:
-              enabled: true
-              storageClass: longhorn
-              size: 5Gi
-            resources:
-              requests:
-                cpu: 50m
-                memory: 128Mi
-              limits:
-                cpu: 250m
-                memory: 256Mi
+          enabled: false
+
+        postgresql-ha:
+          enabled: false
 
         redis-cluster:
+          enabled: false
+
+        valkey-cluster:
           enabled: false
 
         test:
