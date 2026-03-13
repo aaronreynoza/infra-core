@@ -1,0 +1,130 @@
+---
+# --- Terraform ---
+- name: Add HashiCorp GPG key
+  ansible.builtin.get_url:
+    url: https://apt.releases.hashicorp.com/gpg
+    dest: /usr/share/keyrings/hashicorp-archive-keyring.asc
+    mode: "0644"
+
+- name: Add HashiCorp apt repository
+  ansible.builtin.apt_repository:
+    repo: "deb [signed-by=/usr/share/keyrings/hashicorp-archive-keyring.asc] https://apt.releases.hashicorp.com bookworm main"
+    filename: hashicorp
+
+- name: Install Terraform
+  ansible.builtin.apt:
+    name: terraform=1.9.8-1
+    state: present
+    update_cache: true
+
+# --- kubectl ---
+- name: Add Kubernetes GPG key
+  ansible.builtin.get_url:
+    url: https://pkgs.k8s.io/core:/stable:/v1.31/deb/Release.key
+    dest: /usr/share/keyrings/kubernetes-apt-keyring.asc
+    mode: "0644"
+
+- name: Add Kubernetes apt repository
+  ansible.builtin.apt_repository:
+    repo: "deb [signed-by=/usr/share/keyrings/kubernetes-apt-keyring.asc] https://pkgs.k8s.io/core:/stable:/v1.31/deb/ /"
+    filename: kubernetes
+
+- name: Install kubectl
+  ansible.builtin.apt:
+    name: kubectl=1.31.1-1.1
+    state: present
+    update_cache: true
+
+# --- talosctl (must match cluster version) ---
+- name: Install talosctl
+  ansible.builtin.get_url:
+    url: "https://github.com/siderolabs/talos/releases/download/v1.12.5/talosctl-linux-amd64"
+    dest: /usr/local/bin/talosctl
+    mode: "0755"
+
+# --- Helm ---
+- name: Install Helm
+  ansible.builtin.unarchive:
+    src: "https://get.helm.sh/helm-v3.16.1-linux-amd64.tar.gz"
+    dest: /tmp
+    remote_src: true
+
+- name: Move Helm binary
+  ansible.builtin.copy:
+    src: /tmp/linux-amd64/helm
+    dest: /usr/local/bin/helm
+    mode: "0755"
+    remote_src: true
+
+# --- SOPS ---
+- name: Install SOPS
+  ansible.builtin.get_url:
+    url: "https://github.com/getsops/sops/releases/download/v3.12.1/sops-v3.12.1.linux.amd64"
+    dest: /usr/local/bin/sops
+    mode: "0755"
+
+# --- age ---
+- name: Install age
+  ansible.builtin.apt:
+    name: age
+    state: present
+
+# --- AWS CLI v2 ---
+- name: Download AWS CLI v2
+  ansible.builtin.unarchive:
+    src: "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip"
+    dest: /tmp
+    remote_src: true
+
+- name: Install AWS CLI v2
+  ansible.builtin.command: /tmp/aws/install --update
+  changed_when: true
+
+# --- ArgoCD CLI (pinned) ---
+- name: Install ArgoCD CLI
+  ansible.builtin.get_url:
+    url: "https://github.com/argoproj/argo-cd/releases/download/v2.14.11/argocd-linux-amd64"
+    dest: /usr/local/bin/argocd
+    mode: "0755"
+
+# --- yq (pinned) ---
+- name: Install yq
+  ansible.builtin.get_url:
+    url: "https://github.com/mikefarah/yq/releases/download/v4.45.4/yq_linux_amd64"
+    dest: /usr/local/bin/yq
+    mode: "0755"
+
+# --- AWS CLI v2 ---
+- name: Check if AWS CLI is installed
+  ansible.builtin.stat:
+    path: /usr/local/bin/aws
+  register: aws_cli_check
+
+- name: Download AWS CLI v2
+  ansible.builtin.unarchive:
+    src: "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip"
+    dest: /tmp
+    remote_src: true
+  when: not aws_cli_check.stat.exists
+
+- name: Install AWS CLI v2
+  ansible.builtin.command: /tmp/aws/install
+  when: not aws_cli_check.stat.exists
+  changed_when: true
+
+# --- Ansible (in virtualenv to avoid PEP 668) ---
+- name: Install Ansible in virtualenv
+  ansible.builtin.pip:
+    name: ansible
+    virtualenv: /opt/ansible-venv
+    virtualenv_command: python3 -m venv
+
+- name: Symlink ansible binaries
+  ansible.builtin.file:
+    src: "/opt/ansible-venv/bin/{{ item }}"
+    dest: "/usr/local/bin/{{ item }}"
+    state: link
+  loop:
+    - ansible
+    - ansible-playbook
+    - ansible-galaxy
