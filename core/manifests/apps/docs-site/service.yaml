@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: docs-site
+  namespace: docs
+  labels:
+    app: docs-site
+spec:
+  type: LoadBalancer
+  selector:
+    app: docs-site
+  ports:
+    - port: 80
+      targetPort: 80
+      protocol: TCP

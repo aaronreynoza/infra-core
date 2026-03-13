@@ -1,0 +1,41 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: docs-site
+  namespace: docs
+  labels:
+    app: docs-site
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: docs-site
+  template:
+    metadata:
+      labels:
+        app: docs-site
+    spec:
+      containers:
+        - name: caddy
+          image: REDACTED_LB_IP/platform/docs:v1.0.0
+          ports:
+            - containerPort: 80
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 200m
+              memory: 128Mi
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 80
+            initialDelaySeconds: 5
+            periodSeconds: 30
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 80
+            initialDelaySeconds: 3
+            periodSeconds: 10
