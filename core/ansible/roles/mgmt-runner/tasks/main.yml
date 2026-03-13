@@ -1,0 +1,30 @@
+---
+- name: Get latest forgejo-runner release URL
+  ansible.builtin.uri:
+    url: https://code.forgejo.org/api/v1/repos/forgejo/runner/releases/latest
+    return_content: true
+  register: runner_release
+
+- name: Set forgejo-runner download URL
+  ansible.builtin.set_fact:
+    runner_url: "{{ runner_release.json.assets | selectattr('name', 'search', 'forgejo-runner-.*-linux-amd64$') | map(attribute='browser_download_url') | first }}"
+
+- name: Download forgejo-runner
+  ansible.builtin.get_url:
+    url: "{{ runner_url }}"
+    dest: /usr/local/bin/forgejo-runner
+    mode: "0755"
+
+- name: Install forgejo-runner systemd service
+  ansible.builtin.template:
+    src: forgejo-runner.service.j2
+    dest: /etc/systemd/system/forgejo-runner.service
+    mode: "0644"
+  notify: reload systemd
+
+- name: Note about registration
+  ansible.builtin.debug:
+    msg: >
+      forgejo-runner is installed but NOT registered.
+      Run 'forgejo-runner register' manually after Forgejo has the repo.
+      See docs/runbooks/mgmt-vm-setup.md for instructions.

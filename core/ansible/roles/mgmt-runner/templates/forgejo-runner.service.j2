@@ -1,0 +1,16 @@
+[Unit]
+Description=Forgejo Actions Runner
+After=network.target
+
+[Service]
+Type=simple
+User=operator
+Group=operator
+WorkingDirectory=/home/operator
+ExecStart=/usr/local/bin/forgejo-runner daemon
+Restart=on-failure
+RestartSec=10
+Environment=SOPS_AGE_KEY_FILE=/home/operator/.config/sops/age/keys.txt
+
+[Install]
+WantedBy=multi-user.target
