@@ -1,0 +1,107 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: mimir
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "10"
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  source:
+    repoURL: https://grafana.github.io/helm-charts
+    chart: mimir-distributed
+    targetRevision: 5.6.0
+    helm:
+      values: |
+        # Monolithic mode for homelab simplicity
+        deploymentMode: monolithic
+
+        # Single replica monolithic deployment
+        monolithic:
+          replicas: 1
+          resources:
+            requests:
+              cpu: 200m
+              memory: 512Mi
+            limits:
+              cpu: "1"
+              memory: 2Gi
+          persistentVolume:
+            enabled: true
+            storageClass: longhorn
+            size: 50Gi
+
+        # Disable distributed components (using monolithic)
+        ingester:
+          replicas: 0
+        distributor:
+          replicas: 0
+        querier:
+          replicas: 0
+        query_frontend:
+          replicas: 0
+        store_gateway:
+          replicas: 0
+        compactor:
+          replicas: 0
+        ruler:
+          replicas: 0
+        alertmanager:
+          replicas: 0
+        overrides_exporter:
+          replicas: 0
+        query_scheduler:
+          replicas: 0
+
+        # Mimir configuration
+        mimir:
+          structuredConfig:
+            common:
+              storage:
+                backend: filesystem
+                filesystem:
+                  dir: /data/mimir
+            blocks_storage:
+              backend: filesystem
+              filesystem:
+                dir: /data/mimir/blocks
+              tsdb:
+                dir: /data/mimir/tsdb
+            limits:
+              max_global_series_per_user: 500000
+              max_global_series_per_metric: 50000
+              compactor_blocks_retention_period: 90d
+            multitenancy_enabled: false
+
+        # Disable minio subchart (using filesystem)
+        minio:
+          enabled: false
+
+        # Disable nginx gateway (not needed for monolithic)
+        nginx:
+          enabled: false
+
+        # Disable rollout operator
+        rollout_operator:
+          enabled: false
+
+        # Disable self-monitoring to avoid circular deps
+        metaMonitoring:
+          dashboards:
+            enabled: false
+          serviceMonitor:
+            enabled: false
+          prometheusRule:
+            enabled: false
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: monitoring
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true

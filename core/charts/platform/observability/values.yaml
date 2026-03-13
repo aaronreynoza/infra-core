@@ -1,0 +1,29 @@
+# Observability Stack - Reference Values
+# =======================================
+# This file documents the observability stack configuration.
+# Actual values are inlined in each ArgoCD Application manifest
+# under core/manifests/argocd/apps/.
+#
+# Components:
+#   - kube-prometheus-stack (Prometheus, Grafana, AlertManager, exporters)
+#   - Loki (log aggregation, single-binary mode)
+#   - Tempo (distributed tracing, monolithic mode)
+#   - Mimir (long-term metrics storage, monolithic mode)
+#   - OpenTelemetry Collector (unified telemetry pipeline)
+#
+# All components deploy to the `monitoring` namespace.
+# Only Grafana is exposed via LoadBalancer (Cilium LB-IPAM).
+# All other services are ClusterIP (internal to cluster).
+#
+# Storage: Longhorn (storageClass: longhorn, replica: 1)
+# Access: Internal only (no ingress, no Cloudflare Tunnel)
+#
+# Datasource wiring:
+#   Grafana -> Prometheus (metrics, short-term 15d)
+#   Grafana -> Mimir (metrics, long-term)
+#   Grafana -> Loki (logs)
+#   Grafana -> Tempo (traces)
+#   Prometheus -> remote-write -> Mimir (long-term storage)
+#   OTel Collector -> Prometheus remote-write (metrics)
+#   OTel Collector -> Loki (logs via otlphttp)
+#   OTel Collector -> Tempo (traces via otlp)

@@ -89,7 +89,7 @@ After booting from ISO:
 
 1. Install OPNSense to disk
 2. Reboot and complete initial wizard
-3. Access web UI at `https://<LAN_IP>` (default: 192.168.1.1)
+3. Access web UI at `https://<LAN_IP>` (default: <HOME_ROUTER_IP>)
 4. Login: root / opnsense
 
 ### 3. Interface Configuration

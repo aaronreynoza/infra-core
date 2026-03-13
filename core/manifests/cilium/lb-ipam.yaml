@@ -1,0 +1,23 @@
+---
+# CiliumLoadBalancerIPPool — IP range for LoadBalancer services
+# These IPs are on the PROD VLAN (10.10.10.0/16), above the DHCP range (50-200)
+apiVersion: "cilium.io/v2alpha1"
+kind: CiliumLoadBalancerIPPool
+metadata:
+  name: prod-pool
+spec:
+  blocks:
+    - start: "REDACTED_LB_IP"
+      stop: "10.10.10.250"
+---
+# CiliumL2AnnouncementPolicy — responds to ARP requests for LoadBalancer IPs
+# This makes the IPs reachable from any device on the same VLAN
+apiVersion: "cilium.io/v2alpha1"
+kind: CiliumL2AnnouncementPolicy
+metadata:
+  name: default-l2-policy
+spec:
+  interfaces:
+    - ^eth[0-9]+
+  externalIPs: true
+  loadBalancerIPs: true

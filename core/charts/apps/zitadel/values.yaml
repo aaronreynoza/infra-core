@@ -1,42 +1,79 @@
-# Zitadel Helm Values
+# Zitadel Helm Values — Reference Configuration
 # Identity Provider and OAuth/OIDC server
-# See: https://zitadel.com/docs/self-hosting/deploy/kubernetes
+# Chart: https://charts.zitadel.com (zitadel)
+# Docs: https://zitadel.com/docs/self-hosting/deploy/kubernetes
+#
+# Secrets managed via SOPS — see docs/configuration.md
+# Required K8s secret: zitadel-credentials
+#   Keys: masterkey, postgresql-password, postgres-password
+# Created by Terraform from environments/<env>/secrets/
+#
+# Internal-only deployment via Cilium LB-IPAM (no ingress, no TLS termination)
 
-# Zitadel configuration
 zitadel:
-  # Master key for encryption - use External Secrets
-  masterkey: ""  # Set via External Secrets
+  # Master key loaded from external secret
+  masterkeyExternalSecret:
+    name: zitadel-credentials
+    key: masterkey
 
-  # External domain
-  externalDomain: ""  # Set in environment-specific values
-
-  # TLS configuration
+  # configmapConfig is merged into the ZITADEL runtime config
   configmapConfig:
-    ExternalSecure: true
-    ExternalPort: 443
+    ExternalSecure: false
+    ExternalDomain: zitadel.internal
+    ExternalPort: 8080
+    TLS:
+      Enabled: false
+    Database:
+      Postgres:
+        Host: zitadel-postgresql
+        Port: 5432
+        Database: zitadel
+        User:
+          Username: zitadel
+          SSL:
+            Mode: disable
+        Admin:
+          Username: postgres
+          SSL:
+            Mode: disable
 
-# Database - use CockroachDB or PostgreSQL
-cockroachdb:
-  enabled: false  # Use PostgreSQL instead
+  configSecretName: ""
 
-postgres:
+# Bitnami PostgreSQL subchart
+postgresql:
   enabled: true
-  # Use External Secrets for credentials
   auth:
     username: zitadel
     database: zitadel
+    existingSecret: zitadel-credentials
+    secretKeys:
+      userPasswordKey: postgresql-password
+      adminPasswordKey: postgres-password
+  primary:
+    persistence:
+      enabled: true
+      storageClass: longhorn
+      size: 5Gi
+    resources:
+      requests:
+        cpu: 100m
+        memory: 256Mi
+      limits:
+        cpu: 500m
+        memory: 512Mi
 
-# Ingress - use Cloudflare Tunnel
+# Service — LoadBalancer for Cilium LB-IPAM
+service:
+  type: LoadBalancer
+  port: 8080
+  protocol: http2
+  annotations: {}
+
+# Ingress disabled — direct LB access
 ingress:
   enabled: false
 
-# Persistence
-persistence:
-  enabled: true
-  storageClass: longhorn
-  size: 5Gi
-
-# Resource limits
+# Zitadel container resources
 resources:
   requests:
     cpu: 100m
@@ -45,6 +82,10 @@ resources:
     cpu: 500m
     memory: 512Mi
 
-# Init job for setting up admin user
+# Init job — runs DB migrations and initial setup
 initJob:
   enabled: true
+  backoffLimit: 5
+  activeDeadlineSeconds: 300
+
+replicaCount: 1

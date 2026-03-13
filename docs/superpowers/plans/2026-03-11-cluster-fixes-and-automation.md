@@ -967,7 +967,7 @@ git commit -m "docs: update runbook with automated platform stack deployment"
 ### What's still manual:
 - Talos image schematic generation (one-time, at factory.talos.dev)
 - OPNSense firewall rules (WAN→PROD pass, NAT exceptions)
-- Static route on Mac (`sudo route add -net 10.10.0.0/16 REDACTED_OPNSENSE_IP`)
+- Static route on Mac (`sudo route add -net 10.10.0.0/16 <OPNSENSE_WAN_IP>`)
 - Worker reboot after first deploy (for disk partition changes)
 - DHCP reservation for OPNSense WAN IP (needs router access)
 

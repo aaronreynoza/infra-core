@@ -1,0 +1,149 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: kube-prometheus-stack
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "10"
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  source:
+    repoURL: https://prometheus-community.github.io/helm-charts
+    chart: kube-prometheus-stack
+    targetRevision: 72.6.2
+    helm:
+      skipCrds: false
+      values: |
+        # --- Prometheus ---
+        prometheus:
+          prometheusSpec:
+            retention: 15d
+            retentionSize: "10GB"
+            storageSpec:
+              volumeClaimTemplate:
+                spec:
+                  storageClassName: longhorn
+                  accessModes: ["ReadWriteOnce"]
+                  resources:
+                    requests:
+                      storage: 20Gi
+            resources:
+              requests:
+                cpu: 200m
+                memory: 512Mi
+              limits:
+                cpu: "1"
+                memory: 2Gi
+            # Remote write to Mimir for long-term storage
+            remoteWrite:
+              - url: http://mimir.monitoring.svc.cluster.local:9009/api/v1/push
+
+        # --- Grafana ---
+        grafana:
+          admin:
+            existingSecret: grafana-credentials
+            userKey: admin-user
+            passwordKey: admin-password
+          service:
+            type: LoadBalancer
+          persistence:
+            enabled: true
+            storageClassName: longhorn
+            size: 5Gi
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+          # Additional datasources (Prometheus is auto-configured by the chart)
+          additionalDataSources:
+            - name: Loki
+              type: loki
+              access: proxy
+              url: http://loki.monitoring.svc.cluster.local:3100
+              isDefault: false
+              jsonData:
+                maxLines: 1000
+            - name: Tempo
+              type: tempo
+              access: proxy
+              url: http://tempo.monitoring.svc.cluster.local:3100
+              isDefault: false
+              jsonData:
+                tracesToLogsV2:
+                  datasourceUid: loki
+                  filterByTraceID: true
+                tracesToMetrics:
+                  datasourceUid: prometheus
+                nodeGraph:
+                  enabled: true
+            - name: Mimir
+              type: prometheus
+              access: proxy
+              url: http://mimir.monitoring.svc.cluster.local:9009/prometheus
+              isDefault: false
+              jsonData:
+                timeInterval: 15s
+
+        # --- AlertManager ---
+        alertmanager:
+          alertmanagerSpec:
+            storage:
+              volumeClaimTemplate:
+                spec:
+                  storageClassName: longhorn
+                  accessModes: ["ReadWriteOnce"]
+                  resources:
+                    requests:
+                      storage: 2Gi
+            resources:
+              requests:
+                cpu: 50m
+                memory: 64Mi
+              limits:
+                cpu: 200m
+                memory: 256Mi
+
+        # --- Node Exporter ---
+        nodeExporter:
+          resources:
+            requests:
+              cpu: 50m
+              memory: 32Mi
+            limits:
+              cpu: 200m
+              memory: 128Mi
+
+        # --- Kube State Metrics ---
+        kube-state-metrics:
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 200m
+              memory: 256Mi
+
+        # --- Prometheus Operator ---
+        prometheusOperator:
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 300m
+              memory: 512Mi
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: monitoring
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true

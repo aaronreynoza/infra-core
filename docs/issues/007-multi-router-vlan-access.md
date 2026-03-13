@@ -6,31 +6,31 @@
 
 ## Problem
 
-Devices connected to the **office router** (same L2 segment as Proxmox/OPNSense) can reach PROD VLAN services (10.10.10.0/16) via a static route through OPNSense WAN (REDACTED_OPNSENSE_IP). However, devices connected to the **home (room) router** cannot, even with the same static route configured on the device.
+Devices connected to the **office router** (same L2 segment as Proxmox/OPNSense) can reach PROD VLAN services (10.10.10.0/16) via a static route through OPNSense WAN (<OPNSENSE_WAN_IP>). However, devices connected to the **home (room) router** cannot, even with the same static route configured on the device.
 
 ## Network Topology
 
 ```
 ISP
  |
-Home Router (192.168.1.1) ← main router, DHCP server
+Home Router (<HOME_ROUTER_IP>) ← main router, DHCP server
  ├── Office Router (bridge/AP mode?) ← Proxmox hosts + OPNSense connected here
- │    ├── daytona (REDACTED_PVE_IP)
- │    ├── OPNSense WAN (REDACTED_OPNSENSE_IP, DHCP)
- │    └── Laptop (192.168.1.214 when on office wifi)
+ │    ├── daytona (<PROXMOX_HOST_IP>)
+ │    ├── OPNSense WAN (<OPNSENSE_WAN_IP>, DHCP)
+ │    └── Laptop (<WORKSTATION_IP> when on office wifi)
  └── Room wifi
-      └── Laptop (192.168.1.184 when on room wifi)
+      └── Laptop (<WORKSTATION_ALT_IP> when on room wifi)
 ```
 
 ## Root Cause Analysis
 
-When the laptop is on the **office router**, it shares L2 with OPNSense WAN. The static route (`10.10.0.0/16 via REDACTED_OPNSENSE_IP`) works because:
+When the laptop is on the **office router**, it shares L2 with OPNSense WAN. The static route (`10.10.0.0/16 via <OPNSENSE_WAN_IP>`) works because:
 1. Laptop sends packet to OPNSense directly (same L2 broadcast domain)
 2. OPNSense forwards to PROD VLAN
 3. Reply comes back to OPNSense, which sends it back to laptop (same L2)
 
 When the laptop is on the **room wifi** (home router), even though it's on the same 192.168.1.0/24 subnet:
-1. Laptop sends packet toward REDACTED_OPNSENSE_IP, but it goes through the **home router first**
+1. Laptop sends packet toward <OPNSENSE_WAN_IP>, but it goes through the **home router first**
 2. The home router doesn't have a route for 10.10.10.0/16 — it may drop/misroute the return traffic
 3. Even if the forward path works, the return path fails: OPNSense sends the reply to the laptop's IP, but the packet goes to the home router, which may not forward it correctly to the room wifi segment
 
@@ -46,11 +46,11 @@ The key issue is that **the home router doesn't know about the 10.10.0.0/16 and 
 
 ### Option A: Static route on home router (Preferred)
 
-Add static routes on the home router (192.168.1.1):
+Add static routes on the home router (<HOME_ROUTER_IP>):
 
 ```
-10.10.0.0/16 via REDACTED_OPNSENSE_IP
-10.11.0.0/16 via REDACTED_OPNSENSE_IP
+10.10.0.0/16 via <OPNSENSE_WAN_IP>
+10.11.0.0/16 via <OPNSENSE_WAN_IP>
 ```
 
 This tells the home router to forward VLAN-destined traffic to OPNSense, and properly route return traffic back to any device on the network.
@@ -71,7 +71,7 @@ Set up a WireGuard or SSH tunnel from the laptop to OPNSense or a Proxmox host, 
 
 ### Option D: OPNSense as default gateway
 
-Configure the home router to use OPNSense (REDACTED_OPNSENSE_IP) as its default gateway, or set up OPNSense as the DHCP server pushing itself as the gateway.
+Configure the home router to use OPNSense (<OPNSENSE_WAN_IP>) as its default gateway, or set up OPNSense as the DHCP server pushing itself as the gateway.
 
 **Downside:** All traffic goes through OPNSense, single point of failure for internet
 
@@ -81,13 +81,13 @@ Connect laptop to the **office router** wifi when needing to access VLAN service
 
 ## Prerequisites for Fix
 
-1. Get admin access to home router (192.168.1.1)
+1. Get admin access to home router (<HOME_ROUTER_IP>)
 2. Verify home router supports static routes
 3. Also: set a DHCP reservation for OPNSense WAN to prevent IP changes (currently .245 via DHCP)
 
 ## Acceptance Criteria
 
-- [ ] Any device on 192.168.1.0/24 (regardless of which router/AP) can ping REDACTED_K8S_API
+- [ ] Any device on the management network (regardless of which router/AP) can ping REDACTED_K8S_API
 - [ ] Any device can access K8s services (port 6443, HTTP/HTTPS)
 - [ ] OPNSense WAN has a stable IP (DHCP reservation or static)
 

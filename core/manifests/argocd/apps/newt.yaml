@@ -1,0 +1,48 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: newt
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "3"
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  source:
+    repoURL: https://charts.fossorial.io
+    chart: newt
+    targetRevision: 1.2.0
+    helm:
+      valueFiles: []
+      values: |
+        newtInstances:
+          - name: "main-tunnel"
+            enabled: true
+            replicas: 1
+            auth:
+              existingSecretName: newt-credentials
+              keys:
+                endpointKey: PANGOLIN_ENDPOINT
+                idKey: NEWT_ID
+                secretKey: NEWT_SECRET
+            useNativeInterface: false
+            resources:
+              requests:
+                cpu: "100m"
+                memory: "128Mi"
+              limits:
+                cpu: "500m"
+                memory: "256Mi"
+            service:
+              enabled: false
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: newt
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true

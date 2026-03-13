@@ -31,8 +31,8 @@ This runbook documents the complete deployment of the production Talos Linux Kub
 ## Architecture Overview
 
 ```
-Proxmox Host: daytona (REDACTED_PVE_IP)
-├── OPNSense VM (100) — WAN: REDACTED_OPNSENSE_IP, PROD: 10.10.10.1
+Proxmox Host: daytona (<PROXMOX_HOST_IP>)
+├── OPNSense VM (100) — WAN: <OPNSENSE_WAN_IP>, PROD: 10.10.10.1
 ├── prod-cp-01 (500) — Control Plane — REDACTED_K8S_API
 ├── prod-wk-01 (510) — Worker — 10.10.10.20
 └── prod-wk-02 (511) — Worker — 10.10.10.21
@@ -76,12 +76,12 @@ Before starting, ensure all of the following are in place:
 
 ```bash
 # Test SSH to Proxmox
-ssh root@REDACTED_PVE_IP 'hostname'
+ssh root@<PROXMOX_HOST_IP> 'hostname'
 # Expected: daytona
 
 # Test AWS credentials
 aws sts get-caller-identity
-# Expected: shows account REDACTED_AWS_ACCOUNT
+# Expected: shows account <AWS_ACCOUNT_ID>
 ```
 
 ---
@@ -93,7 +93,7 @@ The prod environment lives in `environments/prod/` (gitignored, private). Three 
 ### 1a. Backend config (`environments/prod/backend.hcl`)
 
 ```hcl
-bucket         = "homelab-terraform-state-REDACTED_AWS_ACCOUNT"
+bucket         = "homelab-terraform-state-<AWS_ACCOUNT_ID>"
 key            = "prod/infra.tfstate"
 region         = "us-east-1"
 dynamodb_table = "homelab-terraform-locks"
@@ -194,7 +194,7 @@ module "cluster" {
 
 ```hcl
 # Proxmox
-proxmox_host     = "REDACTED_PVE_IP"
+proxmox_host     = "<PROXMOX_HOST_IP>"
 proxmox_node     = "daytona"
 proxmox_ssh_user = "root"
 
@@ -365,14 +365,14 @@ Your workstation (on the management network 192.168.1.0/24) needs to reach nodes
 
 ```bash
 # Add static route for PROD VLAN via OPNSense WAN
-sudo route add -net 10.10.0.0/16 REDACTED_OPNSENSE_IP
+sudo route add -net 10.10.0.0/16 <OPNSENSE_WAN_IP>
 
 # Verify
 ping REDACTED_K8S_API
 nc -zv REDACTED_K8S_API 6443
 ```
 
-**IMPORTANT**: This static route only works when your Mac is connected to the **office router** (same L2 segment as OPNSense WAN at REDACTED_OPNSENSE_IP). If you are on the room/home router, routing will fail. See [issue #007](../issues/007-multi-router-vlan-access.md) for details and workaround.
+**IMPORTANT**: This static route only works when your Mac is connected to the **office router** (same L2 segment as OPNSense WAN at <OPNSENSE_WAN_IP>). If you are on the room/home router, routing will fail. See [issue #007](../issues/007-multi-router-vlan-access.md) for details and workaround.
 
 #### Verify connectivity
 
@@ -760,7 +760,7 @@ terraform output -raw kubeconfig > ../kubeconfig
 terraform output -raw talosconfig > ../talosconfig
 
 # Routing (run once per Mac reboot)
-sudo route add -net 10.10.0.0/16 REDACTED_OPNSENSE_IP
+sudo route add -net 10.10.0.0/16 <OPNSENSE_WAN_IP>
 
 # Emergency: force-unlock stale terraform lock
 terraform force-unlock <LOCK_ID>

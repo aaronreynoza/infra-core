@@ -4,7 +4,7 @@ This runbook fixes bidirectional routing between the management network (192.168
 
 ## Problem
 
-Devices on the management network (e.g., your Mac at 192.168.1.214) cannot reach VLAN devices (e.g., Talos node at REDACTED_K8S_API), even with a static route pointing 10.10.0.0/16 to OPNSense WAN (REDACTED_OPNSENSE_IP).
+Devices on the management network (e.g., your Mac at <WORKSTATION_IP>) cannot reach VLAN devices (e.g., Talos node at REDACTED_K8S_API), even with a static route pointing 10.10.0.0/16 to OPNSense WAN (<OPNSENSE_WAN_IP>).
 
 **Symptoms:**
 - `ping REDACTED_K8S_API` from Mac: timeout
@@ -15,7 +15,7 @@ Devices on the management network (e.g., your Mac at 192.168.1.214) cannot reach
 
 Three interacting issues:
 
-1. **Outbound NAT rewrites return traffic**: Automatic outbound NAT translates ALL traffic from PROD exiting the WAN interface, including traffic to 192.168.1.0/24. Return packets from REDACTED_K8S_API to 192.168.1.214 get source-rewritten to REDACTED_OPNSENSE_IP, breaking end-to-end connectivity.
+1. **Outbound NAT rewrites return traffic**: Automatic outbound NAT translates ALL traffic from PROD exiting the WAN interface, including traffic to 192.168.1.0/24. Return packets from REDACTED_K8S_API to <WORKSTATION_IP> get source-rewritten to <OPNSENSE_WAN_IP>, breaking end-to-end connectivity.
 
 2. **reply-to directive causes asymmetric routing drops**: OPNSense adds `reply-to` to WAN rules by default, forcing replies out the originating interface. Routed traffic (WAN->PROD) has replies entering on PROD, which pf drops as not matching the WAN state table.
 
@@ -78,17 +78,17 @@ Ensure these rules exist (in order):
 netstat -rn | grep 10.10
 
 # Add if missing
-sudo route add -net 10.10.0.0/16 REDACTED_OPNSENSE_IP
-sudo route add -net 10.11.0.0/16 REDACTED_OPNSENSE_IP
+sudo route add -net 10.10.0.0/16 <OPNSENSE_WAN_IP>
+sudo route add -net 10.11.0.0/16 <OPNSENSE_WAN_IP>
 ```
 
 ### Step 5 (Optional): Static route on home router
 
-On your home router (192.168.1.1), if it supports static routes:
+On your home router (<HOME_ROUTER_IP>), if it supports static routes:
 
 ```
-10.10.0.0/16 via REDACTED_OPNSENSE_IP
-10.11.0.0/16 via REDACTED_OPNSENSE_IP
+10.10.0.0/16 via <OPNSENSE_WAN_IP>
+10.11.0.0/16 via <OPNSENSE_WAN_IP>
 ```
 
 This allows any device on the management network to reach VLANs without per-device routes.
@@ -102,21 +102,21 @@ ping 10.10.10.1           # OPNSense PROD interface
 nc -zv REDACTED_K8S_API 6443   # Talos API (should connect)
 
 # From OPNSense shell (Diagnostics > Shell)
-ping -S REDACTED_OPNSENSE_IP 192.168.1.214   # Ping Mac from WAN IP
+ping -S <OPNSENSE_WAN_IP> <WORKSTATION_IP>   # Ping Mac from WAN IP
 ```
 
 ## Packet flow after fix
 
 ```
-Mac (192.168.1.214)
+Mac (<WORKSTATION_IP>)
   |
-  | dst: REDACTED_K8S_API (static route via REDACTED_OPNSENSE_IP)
+  | dst: REDACTED_K8S_API (static route via <OPNSENSE_WAN_IP>)
   v
-Home Router (192.168.1.1)
+Home Router (<HOME_ROUTER_IP>)
   |
-  | forwards to REDACTED_OPNSENSE_IP (L2, same subnet)
+  | forwards to <OPNSENSE_WAN_IP> (L2, same subnet)
   v
-OPNSense WAN (REDACTED_OPNSENSE_IP)
+OPNSense WAN (<OPNSENSE_WAN_IP>)
   |
   | WAN rule: Pass WAN net -> PROD net
   | Routes to PROD interface (10.10.10.1)
@@ -128,18 +128,18 @@ OPNSense PROD (10.10.10.1)
   v
 Talos Node (REDACTED_K8S_API)
   |
-  | Reply: dst 192.168.1.214, gateway 10.10.10.1
+  | Reply: dst <WORKSTATION_IP>, gateway 10.10.10.1
   v
 OPNSense PROD (10.10.10.1)
   |
   | Routes to WAN (192.168.1.0/24 is on WAN interface)
   | NO NAT (hybrid rule), NO reply-to drop
   v
-OPNSense WAN (REDACTED_OPNSENSE_IP)
+OPNSense WAN (<OPNSENSE_WAN_IP>)
   |
-  | Sends to 192.168.1.214 (L2, same subnet)
+  | Sends to <WORKSTATION_IP> (L2, same subnet)
   v
-Mac (192.168.1.214) -- reply received
+Mac (<WORKSTATION_IP>) -- reply received
 ```
 
 ## Known Limitation: Multi-Router Topology
@@ -148,7 +148,7 @@ This runbook assumes the client device is on the **same L2 segment** as OPNSense
 
 **Workaround:** Connect to the office router wifi when accessing VLAN services.
 
-**Permanent fix:** Add static routes on the home router (192.168.1.1). See [issue #007](../issues/007-multi-router-vlan-access.md).
+**Permanent fix:** Add static routes on the home router (<HOME_ROUTER_IP>). See [issue #007](../issues/007-multi-router-vlan-access.md).
 
 ---
 

@@ -18,6 +18,8 @@ spec:
         server:
           extraArgs:
             - --insecure
+          service:
+            type: LoadBalancer
           resources:
             requests:
               cpu: 100m

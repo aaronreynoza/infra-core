@@ -9,10 +9,8 @@ Tasks identified during cluster setup that are not needed for the initial deploy
 - **Fix:** Use `templatefile()` in `environments/prod/terraform/main.tf` to render manifests with env-specific variables, or move manifests to `environments/<env>/manifests/`
 - **Blocks:** Dev cluster deployment
 
-### Store Newt credentials in AWS Secrets Manager
-- **Why:** Currently in terraform.tfvars (gitignored, but risky)
-- **Fix:** Add `data "aws_secretsmanager_secret_version" "newt"` like Proxmox creds
-- **Blocks:** Nothing (works as-is, just better practice)
+### ~~Store Newt credentials in AWS Secrets Manager~~ → DONE (SOPS + age)
+- **Resolved:** Migrated to SOPS + age encryption (ADR-004). All secrets in `environments/prod/secrets/` encrypted at rest. AWS SM dependency removed. Proxmox creds also migrated.
 
 ### Automate worker reboot for disk partitioning
 - **Why:** `machine.disks` only applies on reboot. Current flow may need manual reboot.
@@ -90,4 +88,4 @@ Tasks identified during cluster setup that are not needed for the initial deploy
 
 ---
 
-**Last Updated:** 2026-03-11
+**Last Updated:** 2026-03-12

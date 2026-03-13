@@ -11,6 +11,7 @@ homelab/              (this repo — public, reusable)
 └── .gitignore        # Excludes environments/
 
 environments/         (your private config — gitignored, eventually its own repo)
+├── .sops.yaml            # SOPS encryption rules + age public key
 ├── bootstrap/
 │   ├── backend.hcl
 │   └── terraform.tfvars
@@ -21,10 +22,14 @@ environments/         (your private config — gitignored, eventually its own re
 │   └── docs/             # Private runbooks with real IPs
 ├── prod/
 │   ├── backend.hcl
-│   └── terraform.tfvars
+│   ├── terraform.tfvars
+│   └── secrets/          # SOPS-encrypted secret files
+│       ├── proxmox-creds.yaml
+│       └── newt-credentials.yaml
 └── dev/
     ├── backend.hcl
-    └── terraform.tfvars
+    ├── terraform.tfvars
+    └── secrets/          # SOPS-encrypted secret files
 ```
 
 ---
@@ -159,18 +164,82 @@ terraform apply -var-file=../../../environments/bootstrap/terraform.tfvars
 
 ---
 
+## Secrets Management (SOPS + age)
+
+Secrets are encrypted with [SOPS](https://github.com/getsops/sops) + [age](https://github.com/FiloSottile/age) and stored in `environments/<env>/secrets/`. See [ADR-004](decisions/004-sops-secrets-management.md) for rationale.
+
+### Setup
+
+```bash
+# Install tools
+brew install sops age
+
+# Generate age keypair (one-time)
+mkdir -p ~/.config/sops/age
+age-keygen -o ~/.config/sops/age/keys.txt
+
+# Add to shell profile (~/.zshrc)
+export SOPS_AGE_KEY_FILE="$HOME/.config/sops/age/keys.txt"
+```
+
+Copy the public key from the keygen output into `environments/.sops.yaml`.
+
+### Usage
+
+```bash
+cd environments
+
+# Encrypt a new secret file
+sops -e -i prod/secrets/my-secret.yaml
+
+# Edit an encrypted file (decrypts in $EDITOR, re-encrypts on save)
+sops prod/secrets/my-secret.yaml
+
+# View decrypted contents
+sops -d prod/secrets/my-secret.yaml
+```
+
+### How Terraform uses secrets
+
+Terraform reads encrypted files via the `carlpett/sops` provider:
+
+```hcl
+data "sops_file" "proxmox_creds" {
+  source_file = "${path.module}/../secrets/proxmox-creds.yaml"
+}
+
+# Use: data.sops_file.proxmox_creds.data["api_token_id"]
+```
+
+For Kubernetes secrets, Terraform creates them directly:
+
+```hcl
+resource "kubernetes_secret" "newt_credentials" {
+  metadata {
+    name      = "newt-credentials"
+    namespace = "newt"
+  }
+  data = {
+    NEWT_ID     = data.sops_file.newt_creds.data["NEWT_ID"]
+    NEWT_SECRET = data.sops_file.newt_creds.data["NEWT_SECRET"]
+  }
+}
+```
+
+ArgoCD apps reference the pre-existing secret via `existingSecretName`.
+
+### Key backup
+
+Back up `~/.config/sops/age/keys.txt` securely (password manager, USB drive). If lost, secrets cannot be decrypted.
+
+---
+
 ## Prerequisites
 
-- **AWS credentials** configured (`aws configure` or environment variables)
-- **AWS Secrets Manager** secret `homelab/proxmox` containing:
-  ```json
-  {
-    "api_token_id": "user@pam!token-name",
-    "api_token_secret": "your-token-secret"
-  }
-  ```
+- **SOPS + age** installed and configured (see above)
+- **AWS credentials** configured (`aws configure`) for S3 backend only
 - **Proxmox** host accessible from your workstation
-- **Terraform** >= 1.5.0
+- **Terraform** >= 1.9.0
 
 ---
 

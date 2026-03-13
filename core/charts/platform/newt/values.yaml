@@ -1,0 +1,33 @@
+# Newt (Pangolin tunnel agent) Helm values
+# Chart: fossorial/newt
+# Docs: https://github.com/fosrl/pangolin
+#
+# Credentials are managed via SOPS-encrypted secrets in environments/
+# Terraform creates the K8s secret, ArgoCD references it via existingSecretName
+
+newtInstances:
+  - name: "main-tunnel"
+    enabled: true
+    replicas: 1
+
+    # Auth from pre-existing K8s secret (created by Terraform from SOPS)
+    auth:
+      existingSecretName: newt-credentials
+      keys:
+        endpointKey: PANGOLIN_ENDPOINT
+        idKey: NEWT_ID
+        secretKey: NEWT_SECRET
+
+    # Userspace WireGuard (no privileged mode needed)
+    useNativeInterface: false
+
+    resources:
+      requests:
+        cpu: "100m"
+        memory: "128Mi"
+      limits:
+        cpu: "500m"
+        memory: "256Mi"
+
+    service:
+      enabled: false

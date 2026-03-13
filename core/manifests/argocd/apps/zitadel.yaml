@@ -1,0 +1,91 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: zitadel
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "10"
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  source:
+    repoURL: https://charts.zitadel.com
+    chart: zitadel
+    targetRevision: 9.26.0
+    helm:
+      valueFiles: []
+      values: |
+        zitadel:
+          masterkeyExternalSecret:
+            name: zitadel-credentials
+            key: masterkey
+          configmapConfig:
+            ExternalSecure: false
+            ExternalDomain: zitadel.internal
+            ExternalPort: 8080
+            TLS:
+              Enabled: false
+            Database:
+              Postgres:
+                Host: zitadel-postgresql
+                Port: 5432
+                Database: zitadel
+                User:
+                  Username: zitadel
+                  SSL:
+                    Mode: disable
+                Admin:
+                  Username: postgres
+                  SSL:
+                    Mode: disable
+        postgresql:
+          enabled: true
+          auth:
+            username: zitadel
+            database: zitadel
+            existingSecret: zitadel-credentials
+            secretKeys:
+              userPasswordKey: postgresql-password
+              adminPasswordKey: postgres-password
+          primary:
+            persistence:
+              enabled: true
+              storageClass: longhorn
+              size: 5Gi
+            resources:
+              requests:
+                cpu: 100m
+                memory: 256Mi
+              limits:
+                cpu: 500m
+                memory: 512Mi
+        service:
+          type: LoadBalancer
+          port: 8080
+          protocol: http2
+          annotations: {}
+        ingress:
+          enabled: false
+        resources:
+          requests:
+            cpu: 100m
+            memory: 256Mi
+          limits:
+            cpu: 500m
+            memory: 512Mi
+        initJob:
+          enabled: true
+          backoffLimit: 5
+          activeDeadlineSeconds: 300
+        replicaCount: 1
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: zitadel
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true

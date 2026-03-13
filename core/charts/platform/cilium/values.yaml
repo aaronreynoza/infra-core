@@ -42,6 +42,14 @@ cgroup:
     enabled: false
   hostRoot: /sys/fs/cgroup
 
+# L2 announcements — makes LoadBalancer IPs reachable on the local network
+l2announcements:
+  enabled: true
+
+# External IPs / LB-IPAM — Cilium assigns IPs from a pool to LoadBalancer services
+externalIPs:
+  enabled: true
+
 # Single-node operator (resource constrained)
 operator:
   replicas: 1

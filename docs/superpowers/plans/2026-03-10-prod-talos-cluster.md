@@ -84,7 +84,7 @@ git commit -m "feat(prod): add AWS secrets manager auth for Proxmox provider"
 - [ ] **Step 1: Create backend.hcl**
 
 ```hcl
-bucket         = "homelab-terraform-state-REDACTED_AWS_ACCOUNT"
+bucket         = "homelab-terraform-state-<AWS_ACCOUNT_ID>"
 key            = "prod/infra.tfstate"
 region         = "us-east-1"
 dynamodb_table = "homelab-terraform-locks"
@@ -111,7 +111,7 @@ Sized for single-host (daytona). 1 CP + 2 workers. Data disks on hdd-mirror.
 
 ```hcl
 # Proxmox Configuration
-proxmox_host     = "REDACTED_PVE_IP"
+proxmox_host     = "<PROXMOX_HOST_IP>"
 proxmox_node     = "daytona"
 proxmox_ssh_user = "root"
 

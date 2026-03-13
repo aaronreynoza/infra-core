@@ -1,40 +1,49 @@
-# Velero Helm Values
+# Velero Helm Values — Reference Configuration
 # Backup and disaster recovery for Kubernetes
-# See: https://github.com/vmware-tanzu/helm-charts/tree/main/charts/velero
+# Chart: vmware-tanzu/velero v11.4.0 (appVersion: v1.17.1)
+# Docs: https://github.com/vmware-tanzu/helm-charts/tree/main/charts/velero
+#
+# Secrets managed via SOPS — see docs/configuration.md
+# Required K8s secret: velero-aws-credentials
+#   Key: cloud (contains AWS credentials file format)
+# Created by Terraform from environments/<env>/secrets/
 
-# Configuration for AWS S3 backend
+# AWS plugin init container — required for S3 backup storage
+initContainers:
+  - name: velero-plugin-for-aws
+    image: velero/velero-plugin-for-aws:v1.14.0
+    imagePullPolicy: IfNotPresent
+    volumeMounts:
+      - mountPath: /target
+        name: plugins
+
+# Velero server configuration
 configuration:
+  # BackupStorageLocation — where backup tarballs are stored
   backupStorageLocation:
     - name: default
       provider: aws
-      bucket: ""  # Set in environment-specific values
+      bucket: "CHANGEME-velero-backups"  # TODO: Set your S3 bucket name in ArgoCD app manifest
+      default: true
+      accessMode: ReadWrite
       config:
         region: us-east-1
 
+  # VolumeSnapshotLocation — for EBS-style snapshots (not used on-prem,
+  # but needed so Velero doesn't error; file-system backup via node-agent
+  # handles PV data instead)
   volumeSnapshotLocation:
     - name: default
       provider: aws
       config:
         region: us-east-1
 
-# Credentials - use IRSA or External Secrets in production
+# AWS credentials from existing K8s secret
 credentials:
-  useSecret: false  # Use IRSA instead
+  useSecret: true
+  existingSecret: velero-aws-credentials
 
-# Schedule backups
-schedules:
-  daily-backup:
-    disabled: false
-    schedule: "0 2 * * *"  # 2 AM daily
-    template:
-      ttl: "720h"  # 30 days retention
-      includedNamespaces:
-        - "*"
-      excludedNamespaces:
-        - kube-system
-        - velero
-
-# Resource requests/limits
+# Velero server resources (homelab-appropriate)
 resources:
   requests:
     cpu: 100m
@@ -43,8 +52,11 @@ resources:
     cpu: 500m
     memory: 512Mi
 
-# Enable restic for file-level backups
+# Enable node-agent (formerly restic) for file-system-level PV backups.
+# This is required for backing up Longhorn volumes since we don't have
+# native AWS EBS snapshots on-prem.
 deployNodeAgent: true
+
 nodeAgent:
   resources:
     requests:
@@ -53,3 +65,22 @@ nodeAgent:
     limits:
       cpu: 500m
       memory: 512Mi
+
+# Scheduled backups
+schedules:
+  daily-backup:
+    disabled: false
+    schedule: "0 2 * * *"  # 2:00 AM UTC daily
+    template:
+      ttl: "720h"  # 30-day retention
+      storageLocation: default
+      includedNamespaces:
+        - "*"
+      excludedNamespaces:
+        - kube-system
+        - velero
+      # Use file-system backup for all PVs (Longhorn volumes)
+      defaultVolumesToFsBackup: true
+
+# Disable snapshot CRD since we use file-system backups, not EBS snapshots
+snapshotsEnabled: false

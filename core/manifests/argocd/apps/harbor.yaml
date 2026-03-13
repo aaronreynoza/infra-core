@@ -1,0 +1,124 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: harbor
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "10"
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  source:
+    repoURL: https://helm.goharbor.io
+    chart: harbor
+    targetRevision: 1.16.4
+    helm:
+      valueFiles: []
+      values: |
+        expose:
+          type: loadBalancer
+          tls:
+            enabled: false
+          loadBalancer:
+            name: harbor
+            annotations: {}
+
+        externalURL: "http://harbor.internal"
+
+        existingSecretAdminPassword: harbor-credentials
+        existingSecretAdminPasswordKey: admin-password
+
+        persistence:
+          enabled: true
+          persistentVolumeClaim:
+            registry:
+              storageClass: longhorn
+              size: 50Gi
+            database:
+              storageClass: longhorn
+              size: 5Gi
+            redis:
+              storageClass: longhorn
+              size: 1Gi
+            trivy:
+              storageClass: longhorn
+              size: 5Gi
+
+        database:
+          type: internal
+          internal:
+            resources:
+              requests:
+                cpu: 100m
+                memory: 256Mi
+              limits:
+                cpu: 500m
+                memory: 512Mi
+
+        redis:
+          type: internal
+          internal:
+            resources:
+              requests:
+                cpu: 50m
+                memory: 64Mi
+              limits:
+                cpu: 250m
+                memory: 256Mi
+
+        trivy:
+          enabled: true
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+
+        core:
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+
+        portal:
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 250m
+              memory: 256Mi
+
+        jobservice:
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+
+        registry:
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: harbor
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true

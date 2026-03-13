@@ -174,30 +174,3 @@ variable "skip_health_check" {
   type        = bool
   default     = true
 }
-
-# Newt (Pangolin agent) configuration
-variable "newt_enabled" {
-  description = "Enable Newt system extension for Pangolin connectivity"
-  type        = bool
-  default     = false
-}
-
-variable "newt_endpoint" {
-  description = "Pangolin endpoint URL (e.g., https://pangolin.example.com)"
-  type        = string
-  default     = ""
-}
-
-variable "newt_id" {
-  description = "Newt site ID from Pangolin"
-  type        = string
-  default     = ""
-  sensitive   = true
-}
-
-variable "newt_secret" {
-  description = "Newt auth secret from Pangolin"
-  type        = string
-  default     = ""
-  sensitive   = true
-}

@@ -1,0 +1,109 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: forgejo
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "10"
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  source:
+    repoURL: code.forgejo.org
+    chart: forgejo-helm/forgejo
+    targetRevision: 16.2.1
+    helm:
+      valueFiles: []
+      values: |
+        service:
+          http:
+            type: LoadBalancer
+          ssh:
+            enabled: false
+
+        ingress:
+          enabled: false
+
+        persistence:
+          enabled: true
+          storageClass: longhorn
+          size: 10Gi
+
+        gitea:
+          admin:
+            existingSecret: forgejo-credentials
+            email: admin@localhost
+
+          config:
+            server:
+              DOMAIN: localhost
+              ROOT_URL: http://localhost:3000
+              SSH_DOMAIN: ""
+              DISABLE_SSH: true
+
+            database:
+              DB_TYPE: postgres
+
+            service:
+              DISABLE_REGISTRATION: true
+
+            oauth2:
+              ENABLED: false
+
+            actions:
+              ENABLED: true
+
+            cache:
+              ADAPTER: memory
+            session:
+              PROVIDER: memory
+            queue:
+              TYPE: level
+
+        postgresql:
+          enabled: true
+          global:
+            postgresql:
+              auth:
+                existingSecret: forgejo-credentials
+                secretKeys:
+                  userPasswordKey: postgresql-password
+                database: forgejo
+                username: forgejo
+          primary:
+            persistence:
+              enabled: true
+              storageClass: longhorn
+              size: 5Gi
+            resources:
+              requests:
+                cpu: 50m
+                memory: 128Mi
+              limits:
+                cpu: 250m
+                memory: 256Mi
+
+        redis-cluster:
+          enabled: false
+
+        test:
+          enabled: false
+
+        resources:
+          requests:
+            cpu: 100m
+            memory: 256Mi
+          limits:
+            cpu: "1"
+            memory: 512Mi
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: forgejo
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true

@@ -509,7 +509,7 @@ Required for VLAN routing (management network → PROD VLAN 10 via OPNSense). Ve
 ping -c 3 10.10.10.1  # OPNSense PROD interface
 ```
 
-If no route, add: `sudo route add -net 10.10.0.0/16 REDACTED_OPNSENSE_IP`
+If no route, add: `sudo route add -net 10.10.0.0/16 <OPNSENSE_WAN_IP>`
 
 - [ ] **Step 4: Run terraform init**
 

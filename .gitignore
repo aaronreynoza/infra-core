@@ -21,3 +21,21 @@ docs/opnsense-backups/
 
 # temporary files
 william-repo/
+
+# OS files
+.DS_Store
+*.DS_Store
+
+# Kubernetes credentials
+kubeconfig
+*kubeconfig*
+talosconfig
+*talosconfig*
+
+# Private keys and certificates
+*.pem
+*.key
+
+# Environment files
+.env
+.env.*

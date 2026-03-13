@@ -163,24 +163,6 @@ locals {
       }
     }
   })
-
-  # Newt system extension config (Pangolin agent)
-  newt_config_patch = var.newt_enabled ? yamlencode({
-    machine = {
-      files = [
-        {
-          content     = join("\n", [
-            "NEWT_ENDPOINT=${var.newt_endpoint}",
-            "NEWT_ID=${var.newt_id}",
-            "NEWT_SECRET=${var.newt_secret}",
-          ])
-          path        = "/var/etc/newt/env"
-          permissions = 384
-          op          = "create"
-        }
-      ]
-    }
-  }) : null
 }
 
 # Apply configuration to control planes
@@ -192,7 +174,7 @@ resource "talos_machine_configuration_apply" "control_plane" {
   machine_configuration_input = data.talos_machine_configuration.control_plane.machine_configuration
   node                        = each.value.ip_address
 
-  config_patches = var.newt_enabled ? [local.common_config_patch, local.newt_config_patch] : [local.common_config_patch]
+  config_patches = [local.common_config_patch]
 }
 
 # Apply configuration to workers
@@ -204,7 +186,7 @@ resource "talos_machine_configuration_apply" "worker" {
   machine_configuration_input = data.talos_machine_configuration.worker.machine_configuration
   node                        = each.value.ip_address
 
-  config_patches = var.newt_enabled ? [local.common_config_patch, local.worker_config_patch, local.newt_config_patch] : [local.common_config_patch, local.worker_config_patch]
+  config_patches = [local.common_config_patch, local.worker_config_patch]
 }
 
 # Bootstrap the cluster

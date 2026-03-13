@@ -1,18 +1,30 @@
-# Harbor Helm Values
-# Container registry
+# Harbor Helm Values — Reference Configuration
+# Container registry — internal-only deployment (HTTP, no TLS)
 # See: https://github.com/goharbor/harbor-helm
+#
+# Secrets managed via SOPS — see docs/configuration.md
+# Required K8s secret: harbor-credentials
+#   Keys: admin-password
+# Created by Terraform from environments/<env>/secrets/
 
-# Expose configuration - use Cloudflare Tunnel or Ingress
+# Expose via LoadBalancer (Cilium LB-IPAM assigns IP from REDACTED_LB_IP-250)
 expose:
-  type: clusterIP  # Use Cloudflare Tunnel for external access
+  type: loadBalancer
   tls:
-    enabled: true
-    certSource: auto
+    enabled: false
+  loadBalancer:
+    name: harbor
+    annotations: {}
 
-# External URL for Harbor
-externalURL: ""  # Set in environment-specific values
+# External URL — update once LB IP is assigned
+# Run: kubectl -n harbor get svc harbor to find the IP, then update this
+externalURL: "http://harbor.internal"
 
-# Persistence using Longhorn
+# Admin password from existing secret
+existingSecretAdminPassword: harbor-credentials
+existingSecretAdminPasswordKey: admin-password
+
+# Persistence using Longhorn (single replica)
 persistence:
   enabled: true
   persistentVolumeClaim:
@@ -29,19 +41,42 @@ persistence:
       storageClass: longhorn
       size: 5Gi
 
-# Database - use internal PostgreSQL
+# Database — internal PostgreSQL
 database:
   type: internal
+  internal:
+    resources:
+      requests:
+        cpu: 100m
+        memory: 256Mi
+      limits:
+        cpu: 500m
+        memory: 512Mi
 
-# Redis - use internal Redis
+# Redis — internal Redis
 redis:
   type: internal
+  internal:
+    resources:
+      requests:
+        cpu: 50m
+        memory: 64Mi
+      limits:
+        cpu: 250m
+        memory: 256Mi
 
-# Trivy - vulnerability scanning
+# Trivy — vulnerability scanning
 trivy:
   enabled: true
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
 
-# Resource limits
+# Core service
 core:
   resources:
     requests:
@@ -51,6 +86,7 @@ core:
       cpu: 500m
       memory: 512Mi
 
+# Portal (web UI)
 portal:
   resources:
     requests:
@@ -59,3 +95,23 @@ portal:
     limits:
       cpu: 250m
       memory: 256Mi
+
+# Job service
+jobservice:
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+
+# Registry
+registry:
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi

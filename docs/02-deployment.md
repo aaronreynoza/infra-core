@@ -76,7 +76,7 @@ Create a VLAN-aware bridge in Proxmox:
 auto vmbr0
 iface vmbr0 inet static
     address REDACTED_MGMT_IP0/24
-    gateway 192.168.1.1
+    gateway <HOME_ROUTER_IP>
     bridge-ports eno1
     bridge-stp off
     bridge-fd 0
