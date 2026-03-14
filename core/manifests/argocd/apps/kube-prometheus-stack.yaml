@@ -63,6 +63,27 @@ spec:
             limits:
               cpu: 500m
               memory: 512Mi
+          envFromSecret: grafana-oidc-secrets
+          grafana.ini:
+            server:
+              root_url: "http://REDACTED_LB_IP"
+            auth.generic_oauth:
+              enabled: true
+              name: Zitadel
+              client_id: $__env{client-id}
+              client_secret: $__env{client-secret}
+              scopes: openid profile email
+              auth_url: http://zitadel.internal:8080/oauth/v2/authorize
+              token_url: http://zitadel.internal:8080/oauth/v2/token
+              api_url: http://zitadel.internal:8080/oidc/v1/userinfo
+              allow_sign_up: true
+              auto_login: false
+          extraContainers: |
+            []
+          hostAliases:
+            - ip: "REDACTED_LB_IP"
+              hostnames:
+                - "zitadel.internal"
           # Additional datasources (Prometheus is auto-configured by the chart)
           additionalDataSources:
             - name: Loki
