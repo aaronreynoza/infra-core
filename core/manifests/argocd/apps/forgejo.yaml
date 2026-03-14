@@ -60,18 +60,7 @@ spec:
               DISABLE_REGISTRATION: true
 
             oauth2:
-              ENABLED: true
-
-            openid:
-              ENABLE_OPENID_SIGNIN: true
-              ENABLE_OPENID_SIGNUP: true
-
-            oauth2_client:
-              REGISTER_EMAIL_CONFIRM: false
-              OPENID_CONNECT_SCOPES: "openid profile email"
-              ENABLE_AUTO_REGISTRATION: true
-              ACCOUNT_LINKING: auto
-              USERNAME: email
+              ENABLED: false
 
             actions:
               ENABLED: true
