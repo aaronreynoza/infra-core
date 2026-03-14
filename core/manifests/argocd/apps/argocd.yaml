@@ -15,6 +15,11 @@ spec:
     targetRevision: 7.7.10
     helm:
       values: |
+        global:
+          hostAliases:
+            - ip: "REDACTED_LB_IP"
+              hostnames:
+                - "zitadel.internal"
         server:
           extraArgs:
             - --insecure
@@ -60,6 +65,16 @@ spec:
           enabled: false
         configs:
           cm:
+            url: "http://REDACTED_LB_IP"
+            oidc.config: |
+              name: Zitadel
+              issuer: http://zitadel.internal
+              clientID: $argocd-oidc-secrets:client-id
+              requestedScopes:
+                - openid
+                - profile
+                - email
+                - urn:zitadel:iam:org:project:roles
             resource.customizations.health.postgresql.cnpg.io_Cluster: |
               hs = {}
               if obj.status ~= nil then
@@ -78,6 +93,11 @@ spec:
                 hs.message = "Waiting for status"
               end
               return hs
+          rbac:
+            policy.csv: |
+              g, admin, role:admin
+              g, user, role:readonly
+            policy.default: role:readonly
           ssh:
             knownHosts: |
               github.com ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOMqqnkVzrm0SdG6UOoqKLsabgH5C9okWi0dh2l9GKJl
