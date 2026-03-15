@@ -18,6 +18,7 @@ provider "kubernetes" {
 
 # --- Project ---
 resource "zitadel_project" "homelab" {
+  org_id                   = var.zitadel_org_id
   name                     = "HOMELAB"
   project_role_assertion   = true
   project_role_check       = true
@@ -25,7 +26,7 @@ resource "zitadel_project" "homelab" {
   private_labeling_setting = "PRIVATE_LABELING_SETTING_UNSPECIFIED"
 
   lifecycle {
-    prevent_destroy = true
+    ignore_changes = [org_id]
   }
 }
 
@@ -46,9 +47,7 @@ resource "zitadel_application_oidc" "argocd" {
   post_logout_redirect_uris = [var.argocd_url]
   dev_mode             = true  # Allow HTTP redirect URIs
 
-  lifecycle {
-    prevent_destroy = true
-  }
+
 }
 
 resource "kubernetes_secret_v1" "argocd_oidc" {
@@ -75,9 +74,7 @@ resource "zitadel_application_oidc" "forgejo" {
   post_logout_redirect_uris = [var.forgejo_url]
   dev_mode             = true
 
-  lifecycle {
-    prevent_destroy = true
-  }
+
 }
 
 resource "kubernetes_secret_v1" "forgejo_oidc" {
@@ -105,9 +102,7 @@ resource "zitadel_application_oidc" "harbor" {
   post_logout_redirect_uris = [var.harbor_url]
   dev_mode             = true
 
-  lifecycle {
-    prevent_destroy = true
-  }
+
 }
 
 resource "kubernetes_secret_v1" "harbor_oidc" {
@@ -135,9 +130,7 @@ resource "zitadel_application_oidc" "grafana" {
   post_logout_redirect_uris = [var.grafana_url]
   dev_mode             = true
 
-  lifecycle {
-    prevent_destroy = true
-  }
+
 }
 
 resource "kubernetes_secret_v1" "grafana_oidc" {
@@ -506,19 +499,22 @@ resource "null_resource" "harbor_oidc_config" {
 
 # Allow both password and external IDP login
 resource "zitadel_default_login_policy" "default" {
-  user_login                  = true
-  allow_register              = false
-  allow_external_idp          = true
-  force_mfa                   = false
-  passwordless_type           = "PASSWORDLESS_TYPE_NOT_ALLOWED"
-  hide_password_reset         = false
-  multi_factors               = []
-  second_factors              = []
-  password_check_lifetime     = "240h"
+  user_login                    = true
+  allow_register                = false
+  allow_external_idp            = true
+  force_mfa                     = false
+  force_mfa_local_only          = false
+  passwordless_type             = "PASSWORDLESS_TYPE_NOT_ALLOWED"
+  hide_password_reset           = false
+  ignore_unknown_usernames      = false
+  default_redirect_uri          = var.argocd_url
+  multi_factors                 = []
+  second_factors                = []
+  password_check_lifetime       = "240h"
   external_login_check_lifetime = "12h"
-  mfa_init_skip_lifetime      = "720h"
-  second_factor_check_lifetime = "12h"
-  multi_factor_check_lifetime  = "12h"
+  mfa_init_skip_lifetime        = "720h"
+  second_factor_check_lifetime  = "12h"
+  multi_factor_check_lifetime   = "12h"
 }
 
 # OIDC settings — token lifetimes
