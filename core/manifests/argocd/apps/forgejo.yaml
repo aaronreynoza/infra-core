@@ -44,8 +44,8 @@ spec:
 
           config:
             server:
-              DOMAIN: localhost
-              ROOT_URL: http://localhost:3000
+              DOMAIN: REDACTED_LB_IP
+              ROOT_URL: http://REDACTED_LB_IP:3000
               SSH_DOMAIN: ""
               DISABLE_SSH: true
 
