@@ -472,7 +472,7 @@ resource "null_resource" "harbor_oidc_config" {
       set -euo pipefail
 
       HARBOR_URL="${var.harbor_url}"
-      HARBOR_PASS="${var.harbor_admin_password}"
+      HARBOR_PASS=$(kubectl --kubeconfig="${var.kubeconfig_path}" get secret harbor-credentials -n harbor -o jsonpath='{.data.admin-password}' | base64 -d)
 
       curl -sf -X PUT "$HARBOR_URL/api/v2.0/configurations" \
         -u "admin:$HARBOR_PASS" \
