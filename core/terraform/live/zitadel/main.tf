@@ -147,8 +147,12 @@ resource "kubernetes_secret_v1" "grafana_oidc" {
   }
 
   data = {
-    client-id     = zitadel_application_oidc.grafana.client_id
-    client-secret = zitadel_application_oidc.grafana.client_secret
+    GF_AUTH_GENERIC_OAUTH_CLIENT_ID     = zitadel_application_oidc.grafana.client_id
+    GF_AUTH_GENERIC_OAUTH_CLIENT_SECRET = zitadel_application_oidc.grafana.client_secret
+    GF_AUTH_GENERIC_OAUTH_AUTH_URL      = "${var.zitadel_url}/oauth/v2/authorize"
+    GF_AUTH_GENERIC_OAUTH_TOKEN_URL     = "${var.zitadel_url}/oauth/v2/token"
+    GF_AUTH_GENERIC_OAUTH_API_URL       = "${var.zitadel_url}/oidc/v1/userinfo"
+    GF_SERVER_ROOT_URL                  = var.grafana_url
   }
 }
 
@@ -353,4 +357,174 @@ resource "zitadel_user_grant" "additional_project" {
   project_id = zitadel_project.homelab.id
   user_id    = zitadel_human_user.additional[each.key].id
   role_keys  = ["user"]
+}
+
+# =============================================================================
+# App-Side OIDC Configuration (Terraform owns these, not ArgoCD)
+# =============================================================================
+
+# --- ArgoCD: Patch argocd-cm with OIDC config ---
+# Uses kubernetes_config_map_v1_data to merge into existing ConfigMap
+# without taking ownership of the entire resource (ArgoCD Helm owns it).
+resource "kubernetes_config_map_v1_data" "argocd_oidc" {
+  metadata {
+    name      = "argocd-cm"
+    namespace = "argocd"
+  }
+
+  data = {
+    "url" = var.argocd_url
+
+    "oidc.config" = yamlencode({
+      name     = "Zitadel"
+      issuer   = "http://${var.zitadel_ip}:8080"
+      clientID = zitadel_application_oidc.argocd.client_id
+      requestedScopes = [
+        "openid",
+        "profile",
+        "email",
+        "urn:zitadel:iam:org:project:roles"
+      ]
+    })
+  }
+
+  force = true
+
+  depends_on = [
+    kubernetes_secret_v1.argocd_oidc
+  ]
+}
+
+# --- Forgejo: Add Zitadel as OAuth2 authentication source ---
+# Forgejo requires auth sources to be added via CLI or admin UI.
+# This runs `gitea admin auth add-oauth` inside the Forgejo pod.
+resource "null_resource" "forgejo_oauth_source" {
+  triggers = {
+    client_id     = zitadel_application_oidc.forgejo.client_id
+    client_secret = zitadel_application_oidc.forgejo.client_secret
+    issuer_url    = "http://${var.zitadel_ip}:8080"
+  }
+
+  provisioner "local-exec" {
+    interpreter = ["/bin/bash", "-c"]
+    command     = <<-EOT
+      set -euo pipefail
+
+      KUBECONFIG="${var.kubeconfig_path}"
+      FORGEJO_POD=$(kubectl --kubeconfig="$KUBECONFIG" get pods -n forgejo -l app.kubernetes.io/name=forgejo -o jsonpath='{.items[0].metadata.name}')
+
+      # Check if auth source already exists
+      EXISTING=$(kubectl --kubeconfig="$KUBECONFIG" exec -n forgejo "$FORGEJO_POD" -- \
+        gitea admin auth list 2>/dev/null | grep -c "Zitadel" || true)
+
+      if [ "$EXISTING" -gt 0 ]; then
+        echo "Zitadel auth source already exists. Updating..."
+        # Get the source ID
+        SOURCE_ID=$(kubectl --kubeconfig="$KUBECONFIG" exec -n forgejo "$FORGEJO_POD" -- \
+          gitea admin auth list 2>/dev/null | grep "Zitadel" | awk '{print $1}')
+
+        kubectl --kubeconfig="$KUBECONFIG" exec -n forgejo "$FORGEJO_POD" -- \
+          gitea admin auth update-oauth \
+            --id "$SOURCE_ID" \
+            --name "Zitadel" \
+            --provider "openidConnect" \
+            --key "${zitadel_application_oidc.forgejo.client_id}" \
+            --secret "${zitadel_application_oidc.forgejo.client_secret}" \
+            --auto-discover-url "http://${var.zitadel_ip}:8080/.well-known/openid-configuration" \
+            --skip-local-2fa \
+            --scopes "openid profile email" \
+            --group-claim-name "" \
+            --admin-group "" \
+            --auto-discover-url "http://${var.zitadel_ip}:8080/.well-known/openid-configuration"
+      else
+        echo "Adding Zitadel auth source..."
+        kubectl --kubeconfig="$KUBECONFIG" exec -n forgejo "$FORGEJO_POD" -- \
+          gitea admin auth add-oauth \
+            --name "Zitadel" \
+            --provider "openidConnect" \
+            --key "${zitadel_application_oidc.forgejo.client_id}" \
+            --secret "${zitadel_application_oidc.forgejo.client_secret}" \
+            --auto-discover-url "http://${var.zitadel_ip}:8080/.well-known/openid-configuration" \
+            --skip-local-2fa \
+            --scopes "openid profile email"
+      fi
+    EOT
+  }
+
+  depends_on = [
+    kubernetes_secret_v1.forgejo_oidc
+  ]
+}
+
+# --- Harbor: Configure OIDC via REST API ---
+# Harbor's OIDC settings are stored in its internal database,
+# configured via PUT /api/v2.0/configurations.
+resource "null_resource" "harbor_oidc_config" {
+  triggers = {
+    client_id     = zitadel_application_oidc.harbor.client_id
+    client_secret = zitadel_application_oidc.harbor.client_secret
+    issuer_url    = "http://${var.zitadel_ip}:8080"
+  }
+
+  provisioner "local-exec" {
+    interpreter = ["/bin/bash", "-c"]
+    command     = <<-EOT
+      set -euo pipefail
+
+      HARBOR_URL="${var.harbor_url}"
+      HARBOR_PASS="${var.harbor_admin_password}"
+
+      curl -sf -X PUT "$HARBOR_URL/api/v2.0/configurations" \
+        -u "admin:$HARBOR_PASS" \
+        -H "Content-Type: application/json" \
+        -d '{
+          "auth_mode": "oidc_auth",
+          "oidc_name": "Zitadel",
+          "oidc_endpoint": "http://${var.zitadel_ip}:8080",
+          "oidc_client_id": "${zitadel_application_oidc.harbor.client_id}",
+          "oidc_client_secret": "${zitadel_application_oidc.harbor.client_secret}",
+          "oidc_scope": "openid,profile,email",
+          "oidc_verify_cert": false,
+          "oidc_auto_onboard": true,
+          "oidc_user_claim": "email",
+          "oidc_groups_claim": "groups",
+          "oidc_admin_group": "admin"
+        }'
+
+      echo "Harbor OIDC configuration applied."
+    EOT
+  }
+
+  depends_on = [
+    kubernetes_secret_v1.harbor_oidc
+  ]
+}
+
+# =============================================================================
+# Zitadel Instance Settings
+# =============================================================================
+
+# Allow both password and external IDP login
+resource "zitadel_default_login_policy" "default" {
+  user_login                  = true
+  allow_register              = false
+  allow_external_idp          = true
+  force_mfa                   = false
+  passwordless_type           = "PASSWORDLESS_TYPE_NOT_ALLOWED"
+  hide_password_reset         = false
+  multi_factors               = []
+  second_factors              = []
+  password_check_lifetime     = "240h"
+  external_login_check_lifetime = "12h"
+  mfa_init_skip_lifetime      = "720h"
+  second_factor_check_lifetime = "12h"
+  multi_factor_check_lifetime  = "12h"
+}
+
+# OIDC settings — token lifetimes
+resource "zitadel_default_oidc_settings" "default" {
+  access_token_lifetime          = "12h"
+  id_token_lifetime              = "12h"
+  refresh_token_idle_expiration  = "720h"
+  refresh_token_expiration       = "720h"
 }

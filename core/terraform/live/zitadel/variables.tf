@@ -105,3 +105,15 @@ variable "create_paperless_secret" {
   type        = bool
   default     = false
 }
+
+# --- App-side OIDC configuration ---
+variable "zitadel_ip" {
+  description = "Zitadel LoadBalancer IP (e.g., REDACTED_LB_IP). Used for ExternalDomain and issuer URL."
+  type        = string
+}
+
+variable "harbor_admin_password" {
+  description = "Harbor admin password for API authentication"
+  type        = string
+  sensitive   = true
+}
