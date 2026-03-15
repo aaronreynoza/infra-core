@@ -20,7 +20,7 @@ spec:
           masterkeySecretName: zitadel-credentials
           configmapConfig:
             ExternalSecure: false
-            ExternalDomain: zitadel.internal
+            ExternalDomain: "REDACTED_LB_IP"
             ExternalPort: 8080
             TLS:
               Enabled: false
