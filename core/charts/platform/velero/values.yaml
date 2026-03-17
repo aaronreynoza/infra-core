@@ -7,6 +7,9 @@
 # Required K8s secret: velero-aws-credentials
 #   Key: cloud (contains AWS credentials file format)
 # Created by Terraform from environments/<env>/secrets/
+#
+# Environment-specific overrides (bucket, region, existingSecret) live in
+# the prod repo under values/velero/values.yaml.
 
 # AWS plugin init container — required for S3 backup storage
 initContainers:
@@ -23,7 +26,7 @@ configuration:
   backupStorageLocation:
     - name: default
       provider: aws
-      bucket: "CHANGEME-velero-backups"  # TODO: Set your S3 bucket name in ArgoCD app manifest
+      bucket: "my-velero-backups"
       default: true
       accessMode: ReadWrite
       config:
@@ -38,10 +41,9 @@ configuration:
       config:
         region: us-east-1
 
-# AWS credentials from existing K8s secret
+# AWS credentials — set existingSecret in your environment override
 credentials:
   useSecret: true
-  existingSecret: velero-aws-credentials
 
 # Velero server resources (homelab-appropriate)
 resources:
@@ -84,3 +86,12 @@ schedules:
 
 # Disable snapshot CRD since we use file-system backups, not EBS snapshots
 snapshotsEnabled: false
+
+# Upgrade job resources
+upgradeJobResources:
+  requests:
+    cpu: 50m
+    memory: 128Mi
+  limits:
+    cpu: 200m
+    memory: 256Mi

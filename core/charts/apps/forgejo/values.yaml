@@ -1,14 +1,12 @@
-# Forgejo Helm Values — Reference Configuration
+# Forgejo Helm Values — Generic Configuration
 # Self-hosted Git server (Gitea fork)
 # Chart: oci://code.forgejo.org/forgejo-helm/forgejo
 # Docs: https://forgejo.org/docs/latest/admin/installation-helm/
 #
-# Secrets managed via SOPS — see docs/configuration.md
-# Required K8s secret: forgejo-credentials
-#   Keys: admin-username, admin-password, postgresql-password
-# Created by Terraform from environments/<env>/secrets/
+# Environment-specific overrides (DOMAIN, ROOT_URL, DB connection,
+# admin secret, additionalConfigFromEnvs) live in prod/values/forgejo/
 
-# Service - LoadBalancer via Cilium LB-IPAM (gets IP from REDACTED_LB_IP-250)
+# Service - LoadBalancer via Cilium LB-IPAM
 service:
   http:
     type: LoadBalancer
@@ -28,33 +26,27 @@ persistence:
 # Forgejo application config
 gitea:
   admin:
-    existingSecret: forgejo-credentials
     email: admin@localhost
 
   config:
     server:
-      # Domain will be the LB IP assigned by Cilium LB-IPAM
-      # Update after first deploy: kubectl get svc -n forgejo
-      DOMAIN: localhost
-      ROOT_URL: http://localhost:3000
       SSH_DOMAIN: ""
       DISABLE_SSH: true
 
     database:
       DB_TYPE: postgres
+      SSL_MODE: disable
 
     service:
       DISABLE_REGISTRATION: true
 
-    # Disable OAuth for now - will integrate with Zitadel later
     oauth2:
-      ENABLED: false
+      ENABLED: true
 
-    # Actions runner support
     actions:
       ENABLED: true
 
-    # Cache/session/queue - use built-in leveldb (no external redis)
+    # Cache/session/queue - use built-in memory/leveldb (no external redis)
     cache:
       ADAPTER: memory
     session:
@@ -62,32 +54,17 @@ gitea:
     queue:
       TYPE: level
 
-# PostgreSQL - internal subchart
+# Disable all subcharts - using CNPG for postgres, memory for cache
 postgresql:
-  enabled: true
-  global:
-    postgresql:
-      auth:
-        existingSecret: forgejo-credentials
-        secretKeys:
-          userPasswordKey: postgresql-password
-        database: forgejo
-        username: forgejo
-  primary:
-    persistence:
-      enabled: true
-      storageClass: longhorn
-      size: 5Gi
-    resources:
-      requests:
-        cpu: 50m
-        memory: 128Mi
-      limits:
-        cpu: 250m
-        memory: 256Mi
+  enabled: false
 
-# Disable redis-cluster - using built-in memory/leveldb
+postgresql-ha:
+  enabled: false
+
 redis-cluster:
+  enabled: false
+
+valkey-cluster:
   enabled: false
 
 # Disable test pods

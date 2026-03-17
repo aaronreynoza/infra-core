@@ -1,0 +1,37 @@
+mode: standalone
+cluster:
+  instances: 1
+  enablePDB: false
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+  storage:
+    size: 5Gi
+    storageClass: longhorn-db
+  walStorage:
+    enabled: true
+    size: 2Gi
+    storageClass: longhorn-db
+  postgresql:
+    parameters:
+      shared_buffers: "64MB"
+      effective_cache_size: "192MB"
+      work_mem: "4MB"
+      maintenance_work_mem: "32MB"
+      max_connections: "50"
+      random_page_cost: "1.1"
+      effective_io_concurrency: "200"
+      max_wal_size: "256MB"
+      min_wal_size: "64MB"
+      checkpoint_completion_target: "0.9"
+      log_min_duration_statement: "1000"
+  monitoring:
+    enabled: true
+    podMonitor:
+      enabled: true
+backups:
+  enabled: false

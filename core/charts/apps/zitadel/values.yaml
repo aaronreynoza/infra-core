@@ -1,66 +1,34 @@
-# Zitadel Helm Values — Reference Configuration
+# Zitadel Helm Values — Generic Configuration
 # Identity Provider and OAuth/OIDC server
 # Chart: https://charts.zitadel.com (zitadel)
 # Docs: https://zitadel.com/docs/self-hosting/deploy/kubernetes
 #
-# Secrets managed via SOPS — see docs/configuration.md
-# Required K8s secret: zitadel-credentials
-#   Keys: masterkey, postgresql-password, postgres-password
-# Created by Terraform from environments/<env>/secrets/
+# Environment-specific overrides (ExternalDomain, DB host, secrets)
+# are in the prod repo: values/zitadel/values.yaml
 #
 # Internal-only deployment via Cilium LB-IPAM (no ingress, no TLS termination)
 
 zitadel:
-  # Master key loaded from external secret
-  masterkeyExternalSecret:
-    name: zitadel-credentials
-    key: masterkey
-
-  # configmapConfig is merged into the ZITADEL runtime config
   configmapConfig:
     ExternalSecure: false
-    ExternalDomain: zitadel.internal
-    ExternalPort: 8080
     TLS:
       Enabled: false
     Database:
       Postgres:
-        Host: zitadel-postgresql
         Port: 5432
-        Database: zitadel
         User:
-          Username: zitadel
           SSL:
             Mode: disable
         Admin:
-          Username: postgres
           SSL:
             Mode: disable
+    DefaultInstance:
+      Features:
+        LoginV2:
+          Required: false
 
-  configSecretName: ""
-
-# Bitnami PostgreSQL subchart
-postgresql:
-  enabled: true
-  auth:
-    username: zitadel
-    database: zitadel
-    existingSecret: zitadel-credentials
-    secretKeys:
-      userPasswordKey: postgresql-password
-      adminPasswordKey: postgres-password
-  primary:
-    persistence:
-      enabled: true
-      storageClass: longhorn
-      size: 5Gi
-    resources:
-      requests:
-        cpu: 100m
-        memory: 256Mi
-      limits:
-        cpu: 500m
-        memory: 512Mi
+login:
+  enabled: false
 
 # Service — LoadBalancer for Cilium LB-IPAM
 service:

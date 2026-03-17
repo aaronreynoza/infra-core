@@ -1,0 +1,41 @@
+# Tempo - Distributed tracing backend
+# Monolithic mode (single process) for homelab
+# Source: infra-core (public)
+
+# Monolithic mode (single process) for homelab
+tempo:
+  storage:
+    trace:
+      backend: local
+      local:
+        path: /var/tempo/traces
+      wal:
+        path: /var/tempo/wal
+  receivers:
+    otlp:
+      protocols:
+        grpc:
+          endpoint: "0.0.0.0:4317"
+        http:
+          endpoint: "0.0.0.0:4318"
+  retention: 72h
+  reportingEnabled: false
+
+# Persistence
+persistence:
+  enabled: true
+  storageClassName: longhorn
+  size: 10Gi
+
+# Resources
+resources:
+  requests:
+    cpu: 100m
+    memory: 256Mi
+  limits:
+    cpu: 500m
+    memory: 1Gi
+
+# Service (ClusterIP - internal only)
+service:
+  type: ClusterIP

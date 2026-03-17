@@ -1,13 +1,11 @@
-# Harbor Helm Values — Reference Configuration
+# Harbor Helm Values — Generic Configuration
 # Container registry — internal-only deployment (HTTP, no TLS)
 # See: https://github.com/goharbor/harbor-helm
 #
-# Secrets managed via SOPS — see docs/configuration.md
-# Required K8s secret: harbor-credentials
-#   Keys: admin-password
-# Created by Terraform from environments/<env>/secrets/
+# Environment-specific overrides (externalURL, existingSecretAdminPassword)
+# are in the prod repo: values/harbor/values.yaml
 
-# Expose via LoadBalancer (Cilium LB-IPAM assigns IP from REDACTED_LB_IP-250)
+# Expose via LoadBalancer (Cilium LB-IPAM assigns IP)
 expose:
   type: loadBalancer
   tls:
@@ -16,12 +14,7 @@ expose:
     name: harbor
     annotations: {}
 
-# External URL — update once LB IP is assigned
-# Run: kubectl -n harbor get svc harbor to find the IP, then update this
-externalURL: "http://harbor.internal"
-
-# Admin password from existing secret
-existingSecretAdminPassword: harbor-credentials
+# Admin password key name (secret reference is env-specific)
 existingSecretAdminPasswordKey: admin-password
 
 # Persistence using Longhorn (single replica)

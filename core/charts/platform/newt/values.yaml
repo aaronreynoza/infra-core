@@ -2,21 +2,14 @@
 # Chart: fossorial/newt
 # Docs: https://github.com/fosrl/pangolin
 #
-# Credentials are managed via SOPS-encrypted secrets in environments/
-# Terraform creates the K8s secret, ArgoCD references it via existingSecretName
+# Credentials are managed via SOPS-encrypted secrets in the prod repo.
+# Terraform creates the K8s secret, ArgoCD references it via existingSecretName.
+# The secret name and key mappings are set in prod/values/newt/values.yaml.
 
 newtInstances:
   - name: "main-tunnel"
     enabled: true
     replicas: 1
-
-    # Auth from pre-existing K8s secret (created by Terraform from SOPS)
-    auth:
-      existingSecretName: newt-credentials
-      keys:
-        endpointKey: PANGOLIN_ENDPOINT
-        idKey: NEWT_ID
-        secretKey: NEWT_SECRET
 
     # Userspace WireGuard (no privileged mode needed)
     useNativeInterface: false

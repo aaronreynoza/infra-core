@@ -1,10 +1,12 @@
 # ArgoCD Configuration
-# Used for initial Helm install via Terraform. Once running, ArgoCD self-manages
-# via the ArgoCD Application in core/manifests/argocd/apps/argocd.yaml.
+# Generic values shared across all environments.
+# Env-specific overrides (if any) go in prod/values/argocd/values.yaml.
 
 server:
   extraArgs:
     - --insecure
+  service:
+    type: LoadBalancer
   resources:
     requests:
       cpu: 100m
@@ -51,6 +53,30 @@ dex:
   enabled: false
 
 configs:
+  cm:
+    resource.customizations.health.postgresql.cnpg.io_Cluster: |
+      hs = {}
+      if obj.status ~= nil then
+        if obj.status.phase == "Cluster in healthy state" then
+          hs.status = "Healthy"
+          hs.message = "Cluster is ready"
+        elseif obj.status.phase == "Setting up primary" or obj.status.phase == "Creating replica" or obj.status.phase == "Upgrading cluster" then
+          hs.status = "Progressing"
+          hs.message = obj.status.phase
+        else
+          hs.status = "Degraded"
+          hs.message = obj.status.phase or "Unknown phase"
+        end
+      else
+        hs.status = "Progressing"
+        hs.message = "Waiting for status"
+      end
+      return hs
+  rbac:
+    policy.csv: |
+      g, admin, role:admin
+      g, user, role:readonly
+    policy.default: role:readonly
   ssh:
     knownHosts: |
       github.com ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOMqqnkVzrm0SdG6UOoqKLsabgH5C9okWi0dh2l9GKJl
