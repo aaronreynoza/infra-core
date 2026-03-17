@@ -2,8 +2,8 @@
 
 This document tracks the implementation phases for the homelab project.
 
-**Current Phase**: Phase 3 (Multi-Environment Clusters)
-**Last Updated**: 2026-02-09
+**Current Phase**: MkDocs Docs Site (next publicly exposed app)
+**Last Updated**: 2026-03-17
 
 ---
 
@@ -14,13 +14,13 @@ This document tracks the implementation phases for the homelab project.
 | 0 | Code Review & Cleanup | ✅ Complete |
 | 1 | Repository Restructure | ✅ Complete |
 | 2 | Network & External Services | ✅ Complete |
-| 2.5 | Storage Infrastructure | ⏳ Pending |
-| 2.6 | Ops Maturity (guardrails, SOPs) | ⏳ Pending |
-| 3 | Multi-Environment Clusters | 🔄 In Progress |
-| 4 | Platform Services | ⏳ Pending |
-| 5 | Backup & Disaster Recovery | ⏳ Pending |
-| 6 | Observability | ⏳ Pending |
-| 7 | Applications | ⏳ Pending |
+| 2.5 | Storage Infrastructure | ❌ Deferred |
+| 2.6 | Ops Maturity (ArgoCD/GitOps) | ✅ Complete |
+| 3 | Multi-Environment Clusters | ✅ Prod Complete (Dev deferred) |
+| 4 | Platform Services | ✅ Complete |
+| 5 | Backup & Disaster Recovery | ✅ Velero Deployed |
+| 6 | Observability | ✅ Complete |
+| 7 | Applications | ⏳ Pending (racing app deferred) |
 | 8 | Future (GPU-dependent) | ⏳ Pending |
 
 ---
@@ -127,132 +127,97 @@ This document tracks the implementation phases for the homelab project.
 
 ---
 
-## Phase 2.5: Storage Infrastructure ⏳ PENDING
+## Phase 2.5: Storage Infrastructure ❌ PERMANENTLY DEFERRED
 
-**Goal**: Deploy TrueNAS for media storage, integrate with Kubernetes via NFS
+**Permanently deferred.** TrueNAS is not worth it for only 2 disks. Storage is handled by:
+- **ZFS on Proxmox** (hdd-mirror pool: 2x 4TB WD Gold, ~3.6TB)
+- **Longhorn on SSD** for app PVCs (databases, configs, platform services)
+- **NFS from Proxmox** for media stack (hdd-mirror/media-data dataset, exported to K8s)
 
 **Decision**: See `docs/decisions/002-truenas-storage.md`
 
-### 2.5.1 TrueNAS VM
-- [ ] Deploy TrueNAS VM on Proxmox (VLAN 10)
-- [ ] Allocate dedicated disk(s) for ZFS pool
-- [ ] Create ZFS datasets (media, downloads, backups)
-- [ ] Configure NFS shares for Kubernetes
+---
 
-### 2.5.2 Kubernetes Integration
-- [ ] Create NFS PersistentVolumes for media/downloads
-- [ ] Test NFS mounts from Kubernetes pod
-- [ ] Document storage split (Longhorn vs NFS)
+## Phase 2.6: Ops Maturity (ArgoCD/GitOps) ✅ COMPLETE
 
-### 2.5.3 Mobile Access
-- [ ] Configure TrueNAS mobile app or WebDAV
-- [ ] Test file upload from phone to media library
+**Goal**: ArgoCD-driven GitOps, CI/CD guardrails, secrets management
+
+- [x] ArgoCD deployed and sourcing apps from Forgejo
+- [x] SOPS + age for secrets management (replaced AWS Secrets Manager + ESO)
+- [x] Pre-commit hooks for secret detection
+- [x] Forgejo Actions CI/CD (mgmt VM runner + K8s runner)
+- [ ] Renovate for dependency updates (future)
+- [ ] Additional runbooks (future)
 
 ---
 
-## Phase 2.6: Ops Maturity ⏳ PENDING
-
-**Goal**: Add engineering guardrails and operational documentation (inspired by William's infra)
-
-### 2.6.1 Pre-commit Hooks
-- [ ] Add `.pre-commit-config.yaml` with terraform_fmt, tflint, trivy
-- [ ] Add yamllint, ansible-lint hooks
-- [ ] Add secret detection (gitleaks or similar)
-- [ ] Add no-commit-to-main protection
-
-### 2.6.2 SOPs (Standard Operating Procedures)
-- [ ] Create `docs/runbooks/secrets.md` (AWS Secrets Manager + ESO)
-- [ ] Create `docs/runbooks/backups.md` (Longhorn + Velero)
-- [ ] Create `docs/runbooks/upgrades.md` (Talos + K8s + platform components)
-- [ ] Create `docs/runbooks/destroy.md` (safe teardown + rebuild)
-- [ ] Create `docs/runbooks/troubleshooting.md` (common issues + fixes)
-
-### 2.6.3 Checklists
-- [ ] Create `docs/checklists/day0.md` (hypervisor/network/storage readiness)
-- [ ] Create `docs/checklists/day1.md` (cluster bootstrap validation)
-
-### 2.6.4 CI/CD Guardrails
-- [ ] Add GitHub Actions for pre-commit checks
-- [ ] Add Renovate for dependency updates
-- [ ] Pin Terraform provider versions with `.terraform.lock.hcl`
-
----
-
-## Phase 3: Multi-Environment Clusters
+## Phase 3: Multi-Environment Clusters ✅ PROD COMPLETE
 
 **Goal**: Deploy separate Kubernetes clusters for prod and dev
 
-### 3.1 Prod Cluster
-- [ ] Add Newt system extension to Talos image (Factory schematic)
-- [ ] Update Terraform to use new IP scheme (10.10.10.x)
-- [ ] Deploy control plane: prod-cp-01 (REDACTED_K8S_API), prod-cp-02 (10.10.10.11)
-- [ ] Deploy workers: prod-wk-01 (10.10.10.20), prod-wk-02 (10.10.10.21)
-- [ ] Configure Longhorn with appropriate replica count (2+)
-- [ ] Deploy ArgoCD pointing to homelab-config/apps/prod
+### 3.1 Prod Cluster ✅
+- [x] Add Newt as K8s pod (not system extension) for Pangolin connectivity
+- [x] Update Terraform to use new IP scheme (10.10.10.x)
+- [x] Deploy control plane: prod-cp-01 (REDACTED_K8S_API) — single CP, no HA
+- [x] Deploy workers: prod-wk-01 (10.10.10.20), prod-wk-02 (10.10.10.21)
+- [x] Configure Longhorn (replica: 1 currently, increase when more workers)
+- [x] Deploy ArgoCD pointing to Forgejo prod repo apps/
 
-### 3.2 Dev Cluster
-- [ ] Deploy control plane: dev-cp-01 (10.11.10.10), dev-cp-02 (10.11.10.11)
-- [ ] Deploy workers: dev-wk-01 (10.11.10.20), dev-wk-02 (10.11.10.21)
-- [ ] Configure Longhorn with replica count 1
-- [ ] Deploy ArgoCD pointing to homelab-config/apps/dev
+### 3.2 Dev Cluster — Deferred
+- Dev cluster deferred — single prod cluster sufficient for current needs
 
 ### 3.3 Separate Terraform State
-- [ ] Configure separate S3 paths for prod/dev state
-- [ ] Ensure state isolation between environments
+- [x] Configure S3 backend for prod state
+- Dev state deferred with dev cluster
 
 ### 3.4 Validate Pangolin Connectivity
-- [ ] Verify Newt connects to Pangolin VPS via WireGuard
-- [ ] Deploy first Pangolin resource to validate full traffic path
+- [x] Newt connects to Pangolin VPS via WireGuard
 - [ ] Install ctrld on OPNsense and configure split-horizon DNS (see Phase 2.4)
 
 ---
 
-## Phase 4: Platform Services
+## Phase 4: Platform Services ✅ COMPLETE
 
 **Goal**: Deploy core platform services on prod cluster
 
-### 4.1 Forgejo + Actions
-- [ ] Deploy Forgejo with Helm
-- [ ] Configure Forgejo Actions runners
-- [ ] Set up GitHub mirroring for repos
-- [ ] Create CI pipeline templates
+### 4.1 Forgejo + Actions ✅
+- [x] Deploy Forgejo with Helm
+- [x] Configure Forgejo Actions runners (mgmt VM runner + K8s runner)
+- [x] Forgejo is source of truth (GitHub becomes read-only mirror)
+- [x] CI pipeline workflows created (lint, build, Terraform plan/apply)
 
-### 4.2 Harbor Registry (Per Environment)
-- [ ] Deploy Harbor on prod cluster
-- [ ] Deploy Harbor on dev cluster
-- [ ] Configure storage (Longhorn PVC) for each
-- [ ] Set up vulnerability scanning
-- [ ] No cross-environment replication (isolated)
+### 4.2 Harbor Registry ✅
+- [x] Deploy Harbor on prod cluster
+- [x] Configure storage (Longhorn PVC)
+- [x] Set up vulnerability scanning
 
-### 4.3 External Secrets
-- [ ] Deploy External Secrets Operator
-- [ ] Configure AWS Secrets Manager backend
-- [ ] Create SecretStore resources
-- [ ] Migrate sensitive values to AWS Secrets Manager
+### 4.3 Secrets Management ✅ (SOPS + age, not ESO)
+- [x] SOPS + age encryption for all secrets
+- [x] Pre-commit hook prevents unencrypted secrets
+- [x] Terraform `carlpett/sops` provider v1.1.1
+- ~~External Secrets Operator~~ — replaced by SOPS + age
 
-### 4.4 Zitadel (Identity Provider)
-- [ ] Deploy Zitadel with Helm
-- [ ] Configure PostgreSQL backend (or use embedded)
-- [ ] Set up OAuth applications for each service
-- [ ] Integrate with Forgejo, Harbor, Grafana, etc.
-- [ ] Configure SSO across all services
+### 4.4 Zitadel (Identity Provider) ✅
+- [x] Deploy Zitadel with Helm (CNPG PostgreSQL backend)
+- [x] Terraform-driven OIDC configuration (zero manual steps)
+- [x] SSO working for ArgoCD, Forgejo, Grafana, Harbor
 
 ---
 
-## Phase 5: Backup & Disaster Recovery
+## Phase 5: Backup & Disaster Recovery ✅ VELERO DEPLOYED
 
 **Goal**: Implement comprehensive backup strategy
 
 ### 5.1 Longhorn Backups
-- [ ] Configure S3 backup target for Longhorn
+- [ ] Configure Backblaze B2 backup target for Longhorn
 - [ ] Set up recurring backup schedules (hourly snapshots, daily backups)
 - [ ] Configure backup retention policies
-- [ ] Test volume restore from S3
+- [ ] Test volume restore from B2
 
-### 5.2 Velero
-- [ ] Deploy Velero with AWS plugin
-- [ ] Configure S3 bucket for cluster backups
-- [ ] Set up scheduled backups (daily prod, weekly dev)
+### 5.2 Velero ✅
+- [x] Deploy Velero with AWS plugin (S3-compatible)
+- [x] Configure Backblaze B2 as backup target (not AWS S3)
+- [ ] Set up scheduled backups
 - [ ] Create backup/restore runbooks
 - [ ] Test full cluster restore procedure
 
@@ -264,20 +229,20 @@ This document tracks the implementation phases for the homelab project.
 
 ---
 
-## Phase 6: Observability
+## Phase 6: Observability ✅ COMPLETE
 
 **Goal**: Deploy monitoring and observability stack
 
-### 6.1 Grafana + InfluxDB
-- [ ] Deploy InfluxDB for metrics storage
-- [ ] Deploy Grafana with Helm
-- [ ] Configure InfluxDB as data source
-- [ ] Create dashboards for cluster health
-- [ ] Create dashboards for application metrics
+### 6.1 Monitoring Stack ✅
+- [x] Deploy kube-prometheus-stack (Prometheus + Grafana)
+- [x] Deploy Loki (log aggregation)
+- [x] Deploy Tempo (distributed tracing)
+- [x] Deploy Mimir (long-term metrics storage)
+- [x] Deploy OpenTelemetry Collector
+- [x] Grafana SSO via Zitadel
 
 ### 6.2 Hubble Integration
-- [ ] Enable Hubble UI in Cilium
-- [ ] Configure Hubble metrics export to InfluxDB
+- [x] Enable Hubble UI in Cilium
 - [ ] Create network observability dashboards
 
 ---
@@ -292,11 +257,8 @@ This document tracks the implementation phases for the homelab project.
 - [ ] Set up Longhorn volume with backups
 - [ ] Configure ingress/access
 
-### 7.2 Race Telemetry App
-- [ ] Set up development environment in dev cluster
-- [ ] Configure CI/CD pipeline in Forgejo
-- [ ] Deploy production version to prod cluster
-- [ ] Set up monitoring and alerting
+### 7.2 Race Telemetry App — Deferred
+- Racing app deferred — refining homelab infrastructure first
 
 ---
 

@@ -16,10 +16,10 @@
 ```
        ┌────────────────────────────┐
        │         AWS Cloud          │
-       │  ┌──────┐  ┌───────────┐   │
-       │  │  S3  │  │ Secrets   │   │
-       │  └──────┘  │ Manager   │   │
-       │  ┌──────┐  └───────────┘   │
+       │  ┌──────┐                  │
+       │  │  S3  │  (TF state)      │
+       │  └──────┘                  │
+       │  ┌──────┐                  │
        │  │DynDB │  (TF locks)      │
        │  └──────┘                  │
        └─────────────┬──────────────┘
@@ -65,14 +65,12 @@
        ┌─────────────┴──────────────┐
        │      Proxmox VE Host       │
        │                            │
-       │  ┌──────────┐ ┌─────────┐  │
-       │  │  PROD    │ │  DEV    │  │
-       │  │ Cluster  │ │ Cluster │  │
-       │  │ (Talos)  │ │ (Talos) │  │
-       │  │ 2xCP     │ │ 2xCP    │  │
-       │  │ 2xWK     │ │ 2xWK    │  │
-       │  │ +Newt    │ │ +Newt   │  │
-       │  └──────────┘ └─────────┘  │
+       │  ┌──────────────────────┐   │
+       │  │  PROD Cluster        │   │
+       │  │  (Talos Linux)       │   │
+       │  │  1x CP + 2x WK      │   │
+       │  │  + Newt (K8s pod)    │   │
+       │  └──────────────────────┘   │
        └────────────────────────────┘
 ```
 
@@ -109,13 +107,14 @@ Replaces Cloudflare Tunnel. See
   ┌────────────┴───────────────┐
   │  Kubernetes Cluster        │
   │                            │
-  │  Newt (Talos extension)    │
+  │  Newt (K8s pod)            │
   │  Receives WG traffic,      │
   │  proxies to K8s services   │
   │                            │
   │  Services:                 │
   │  Forgejo, Harbor,          │
-  │  Jellyfin, Race Telemetry  │
+  │  Jellyfin (planned),       │
+  │  MkDocs (planned)          │
   └────────────────────────────┘
 
   [x] No public IP on homelab
@@ -276,10 +275,10 @@ Additive layer -- no architecture changes needed.
   │  Forgejo FgActn  Zitadel   │
   │                            │
   │  OBSERVABILITY             │
-  │  Grafana InfluxDB Hubble   │
+  │  Grafana  Prometheus Hubble│
+  │  Mimir  Loki  Tempo  OTel │
   │                            │
-  │  APPLICATIONS              │
-  │  Race Telemetry (prod)     │
+  │  APPLICATIONS (planned)    │
   │  Jellyfin (media)          │
   │  Other personal services   │
   └────────────────────────────┘
@@ -287,19 +286,7 @@ Additive layer -- no architecture changes needed.
 
 ### Development Cluster
 
-```
-  ┌────────────────────────────┐
-  │  DEV K8s CLUSTER           │
-  │                            │
-  │  PLATFORM (same as prod)   │
-  │  ArgoCD  Cilium  Longhorn  │
-  │  Velero  Harbor  Newt      │
-  │                            │
-  │  APPLICATIONS              │
-  │  Race Telemetry (dev)      │
-  │  Homelab testing           │
-  └────────────────────────────┘
-```
+> **Not deployed.** Dev cluster is deferred. All work currently runs on the prod cluster.
 
 ---
 
@@ -320,15 +307,15 @@ Additive layer -- no architecture changes needed.
   └─────────────┘               │
                                 │
   ┌─────────────┐  ┌────────────┴──┐
-  │  Velero     │  │   AWS S3      │
+  │  Velero     │  │ Backblaze B2  │
   │  K8s state  ├─>│               │
   │  CRDs +     │  │ longhorn/     │
-  │  Secrets    │  │  prod/ + dev/ │
+  │  Secrets    │  │  prod/        │
   └─────────────┘  │ velero/       │
-                   │  prod/ + dev/ │
+                   │  prod/        │
                    └───────────────┘
 
-  Full cluster restore from S3
+  Full cluster restore from B2
   in case of complete failure.
 ```
 
@@ -337,23 +324,24 @@ Additive layer -- no architecture changes needed.
 ## Repository Structure & GitOps Flow
 
 ```
-  ┌────────────────┐ ┌────────────────┐
-  │homelab (Public)│ │ envs (Private) │
-  │                │ │                │
-  │ modules/       │ │ environments/  │
-  │  talos-cluster/<─┤  prod/         │
-  │  proxmox-vm/   │ │   main.tf      │
-  │  aws-backend/  │ │   tfvars       │
-  │                │ │   values/      │
-  │ charts/        │ │  dev/          │
-  │  platform/   <─┤ │ main.tf        │
-  │   argocd,      │ │   tfvars       │
-  │   cilium, etc  │ │   values/      │
-  │  apps/         │ │                │
-  │   harbor,      │ │ apps/          │
-  │   jellyfin     │ │  prod/         │
-  │                │ │  dev/          │
-  └────────────────┘ └────────────────┘
+  ┌─────────────────┐ ┌────────────────┐
+  │infra-core (Pub) │ │ prod (Private) │
+  │                 │ │                │
+  │ core/terraform/ │ │ apps/          │
+  │  modules/     <─┤ │  (ArgoCD apps) │
+  │   talos-cluster │ │                │
+  │   proxmox-vm   │ │ values/        │
+  │   aws-backend  │ │  (Helm values) │
+  │                 │ │                │
+  │ core/charts/    │ │ secrets/       │
+  │  platform/    <─┤ │  (SOPS-encrypted)│
+  │   argocd,       │ │                │
+  │   cilium, etc   │ │ terraform.tfvars│
+  │  apps/          │ │ backend.hcl    │
+  │   harbor, etc   │ │                │
+  │                 │ │                │
+  │ docs/           │ │                │
+  └─────────────────┘ └────────────────┘
 
   GITOPS FLOW:
 
@@ -364,6 +352,5 @@ Additive layer -- no architecture changes needed.
         |- Build Images -> Harbor
         '- Lint / Test
           -> ArgoCD detects changes
-            |- Prod: sync prod apps
-            '- Dev: sync dev apps
+            -> Sync prod apps
 ```

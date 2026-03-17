@@ -23,7 +23,7 @@ Use **SOPS** (Secrets OPerationS) with **age** encryption for all secret managem
 
 ### How It Works
 
-1. Secrets are encrypted with age and stored in `environments/` (private repo)
+1. Secrets are encrypted with age and stored in the `prod` repo (private)
 2. Terraform decrypts them at plan/apply time via the `carlpett/sops` provider
 3. Terraform creates Kubernetes secrets from decrypted values
 4. ArgoCD apps reference pre-existing secrets via `existingSecretName`
@@ -31,12 +31,12 @@ Use **SOPS** (Secrets OPerationS) with **age** encryption for all secret managem
 ### Architecture
 
 ```
-environments/
+prod/                                    # Private repo
 ├── .sops.yaml                          # Encryption rules + age public key
-├── prod/secrets/
+├── secrets/
 │   ├── proxmox-creds.yaml              # Encrypted Proxmox API token
 │   └── newt-credentials.yaml           # Encrypted Pangolin/Newt creds
-└── dev/secrets/                         # (future)
+└── ...
 ```
 
 **Terraform flow:**
@@ -94,7 +94,7 @@ kubernetes_secret (created by TF) → Helm chart existingSecretName
 
 - [x] SOPS + age installed
 - [x] Age keypair generated
-- [x] `.sops.yaml` configured in environments/
+- [x] `.sops.yaml` configured in prod repo
 - [x] Proxmox credentials migrated from AWS SM to SOPS
 - [x] Newt credentials encrypted with SOPS
 - [x] Terraform updated: `carlpett/sops` provider replaces `hashicorp/aws`

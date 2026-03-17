@@ -23,7 +23,7 @@ The original plan was to use **Cloudflare Tunnel** for service exposure. After d
 Use a three-component architecture:
 
 1. **Pangolin** on a Vultr VPS as the public entry point and reverse proxy
-2. **Newt** (Pangolin agent) inside the Talos cluster as a system extension
+2. **Newt** (Pangolin agent) inside the Talos cluster as a K8s pod
 3. **Control D + ctrld** on OPNsense for DNS resolution with per-VLAN policies
 
 ### Domains
@@ -67,7 +67,7 @@ Two domains are managed through Pangolin on the shared Vultr VPS -- one for infr
               HOMELAB       │       NETWORK
                             │
                    ┌────────┴─────────┐
-                   │  Newt (on Talos) │  <- Pangolin agent, system extension
+                   │  Newt (K8s pod)  │  <- Pangolin agent, deployed as pod
                    │                  │
                    │  Proxies traffic │
                    │  to cluster svc  │
@@ -149,7 +149,7 @@ This is configured in ctrld using domain-based rules that route internal domains
        - Pangolin auto-provisions Let's Encrypt TLS certificate
 
   3. TALOS CLUSTER
-     Talos image includes Newt system extension.
+     Newt runs as a K8s pod in the cluster.
      Newt establishes:
        - WebSocket to Pangolin (control plane coordination)
        - WireGuard tunnel to Gerbil (encrypted data transport)
@@ -217,7 +217,7 @@ This is configured in ctrld using domain-based rules that route internal domains
 - Depends on William's Vultr VPS (shared infrastructure)
 
 ### Neutral
-- Newt requires a custom Talos Factory image (new schematic with the extension)
+- Newt runs as a K8s pod (no custom Talos image required)
 - Pangolin dashboard is shared with William (separate user accounts)
 - Can add Cloudflare CDN/WAF in front of VPS later without changing the architecture
 
@@ -228,8 +228,8 @@ This is configured in ctrld using domain-based rules that route internal domains
 1. ~~**Deploy Pangolin stack on Vultr VPS**~~ ✅ — Traefik, Gerbil, Badger, Pangolin deployed (shared VPS with William)
 2. ~~**Configure Control D profiles**~~ ✅ — PROD and DEV profiles created, "Aaron-Homelab" endpoint provisioned
 3. ~~**Create Pangolin site**~~ ✅ — Homelab site created in Pangolin dashboard
-4. **Add Newt extension to Talos image** — Create new Factory schematic, update `talos_image_url`
-5. **Install ctrld on OPNsense** — Replace Unbound, configure per-VLAN policies
+4. ~~**Deploy Newt as K8s pod**~~ ✅ — Deployed via ArgoCD with SOPS-encrypted credentials
+5. **Install ctrld on OPNsense** — Replace Unbound, configure per-VLAN policies (pending)
 6. **Deploy static site** — First Pangolin resource to validate the full path
 7. **Configure split-horizon** — Internal domains resolve locally via ctrld rules
 8. **Migrate race telemetry app** — Expose via Pangolin once deployed

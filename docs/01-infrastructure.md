@@ -17,16 +17,15 @@ The homelab infrastructure runs on Proxmox VE and uses Talos Linux as the Kubern
 │  │      10.10.10.0/16      │  │      10.11.10.0/16      │      │
 │  │                         │  │                         │      │
 │  │  ┌─────────────────┐    │  │  ┌─────────────────┐    │      │
-│  │  │ prod-cp-01      │    │  │  │ dev-cp-01       │    │      │
-│  │  │ prod-cp-02      │    │  │  │ dev-cp-02       │    │      │
-│  │  │ (Control Plane) │    │  │  │ (Control Plane) │    │      │
-│  │  └─────────────────┘    │  │  └─────────────────┘    │      │
+│  │  │ prod-cp-01      │    │  │                         │      │
+│  │  │ (Control Plane) │    │  │  (Dev cluster not       │      │
+│  │  └─────────────────┘    │  │   currently deployed)   │      │
 │  │                         │  │                         │      │
-│  │  ┌─────────────────┐    │  │  ┌─────────────────┐    │      │
-│  │  │ prod-wk-01      │    │  │  │ dev-wk-01       │    │      │
-│  │  │ prod-wk-02      │    │  │  │ dev-wk-02       │    │      │
-│  │  │ (Workers)       │    │  │  │ (Workers)       │    │      │
-│  │  └─────────────────┘    │  │  └─────────────────┘    │      │
+│  │  ┌─────────────────┐    │  │                         │      │
+│  │  │ prod-wk-01      │    │  │                         │      │
+│  │  │ prod-wk-02      │    │  │                         │      │
+│  │  │ (Workers)       │    │  │                         │      │
+│  │  └─────────────────┘    │  │                         │      │
 │  └─────────────────────────┘  └─────────────────────────┘      │
 │                                                                 │
 └─────────────────────────────────────────────────────────────────┘
@@ -37,15 +36,17 @@ The homelab infrastructure runs on Proxmox VE and uses Talos Linux as the Kubern
 ### Directory Layout
 
 ```
-homelab/
-├── core/terraform/modules/      # Reusable modules
-│   ├── talos-cluster/          # Complete Talos K8s cluster
-│   ├── proxmox-vm/             # Generic VM provisioning
-│   └── aws-backend/            # S3 + DynamoDB for state
+infra-core/                          # This repo (public, reusable)
+├── core/terraform/modules/          # Reusable modules
+│   ├── talos-cluster/              # Complete Talos K8s cluster
+│   ├── proxmox-vm/                 # Generic VM provisioning
+│   └── aws-backend/                # S3 + DynamoDB for state
 │
-└── environments/
-    ├── prod/terraform/         # Production configuration
-    └── dev/terraform/          # Development configuration
+prod/                                # Separate private repo (aaron/prod on Forgejo)
+├── terraform.tfvars                 # Production configuration
+├── backend.hcl
+├── secrets/                         # SOPS-encrypted secrets
+└── apps/                            # ArgoCD Application manifests
 ```
 
 ### Modules
@@ -143,12 +144,12 @@ Creates AWS resources for Terraform state management.
 
 ## Environment Configuration
 
-Each environment (prod/dev) has its own Terraform configuration that consumes the core modules.
+The prod environment has its own Terraform configuration in the separate `prod` repo that consumes the core modules.
 
 ### Production Example
 
 ```hcl
-# environments/prod/terraform/main.tf
+# prod/terraform/main.tf
 
 module "cluster" {
   source = "../../../core/terraform/modules/talos-cluster"
@@ -158,8 +159,7 @@ module "cluster" {
   talos_image_url = "https://factory.talos.dev/image/..."
 
   control_planes = [
-    { name = "prod-cp-01", vm_id = 500, ip_address = "REDACTED_K8S_API" },
-    { name = "prod-cp-02", vm_id = 501, ip_address = "10.10.10.11" }
+    { name = "prod-cp-01", vm_id = 500, ip_address = "REDACTED_K8S_API" }
   ]
 
   workers = [
@@ -198,22 +198,22 @@ terraform {
 
 ### Control Plane Nodes
 
-| Resource | Production | Development |
-|----------|------------|-------------|
-| CPU Cores | 4 | 4 |
-| Memory | 8 GB | 8 GB |
-| Boot Disk | 50 GB | 50 GB |
-| Count | 2 | 2 |
+| Resource | Production |
+|----------|------------|
+| CPU Cores | 4 |
+| Memory | 8 GB |
+| Boot Disk | 50 GB |
+| Count | 1 |
 
 ### Worker Nodes
 
-| Resource | Production | Development |
-|----------|------------|-------------|
-| CPU Cores | 8 | 8 |
-| Memory | 32 GB | 32 GB |
-| Boot Disk | 50 GB | 50 GB |
-| Data Disk | 500 GB | 500 GB |
-| Count | 2 | 2 |
+| Resource | Production |
+|----------|------------|
+| CPU Cores | 8 |
+| Memory | 32 GB |
+| Boot Disk | 50 GB |
+| Data Disk | 500 GB |
+| Count | 2 |
 
 ## Talos Linux Configuration
 
@@ -244,9 +244,9 @@ provisioning:
 ## Commands
 
 ```bash
-# Initialize Terraform (first time)
-cd environments/prod/terraform
-terraform init
+# Initialize Terraform (first time, from infra-core repo root)
+cd core/terraform/live/network
+terraform init -backend-config=../../../../prod/backend.hcl
 
 # Plan changes
 terraform plan

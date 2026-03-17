@@ -1,35 +1,24 @@
 # Configuration Guide
 
-This repo is a **library** of reusable Terraform modules, Helm charts, and documentation. Your environment-specific configuration (IPs, hostnames, secrets, backend config) lives in a separate private `environments/` directory.
+This repo is a **library** of reusable Terraform modules, Helm charts, and documentation. Your environment-specific configuration (IPs, hostnames, secrets, backend config) lives in the separate private `prod` repo (`aaron/prod` on Forgejo).
 
 ## Architecture
 
 ```
-homelab/              (this repo — public, reusable)
+infra-core/           (this repo — public, reusable)
 ├── core/             # Terraform modules, Helm charts, Ansible
 ├── docs/             # Documentation
-└── .gitignore        # Excludes environments/
+└── .gitignore
 
-environments/         (your private config — gitignored, eventually its own repo)
+prod/                 (separate private repo — aaron/prod on Forgejo)
 ├── .sops.yaml            # SOPS encryption rules + age public key
-├── bootstrap/
-│   ├── backend.hcl
-│   └── terraform.tfvars
-├── network/
-│   ├── backend.hcl
-│   ├── terraform.tfvars
-│   ├── opnsense-backups/
-│   └── docs/             # Private runbooks with real IPs
-├── prod/
-│   ├── backend.hcl
-│   ├── terraform.tfvars
-│   └── secrets/          # SOPS-encrypted secret files
-│       ├── proxmox-creds.yaml
-│       └── newt-credentials.yaml
-└── dev/
-    ├── backend.hcl
-    ├── terraform.tfvars
-    └── secrets/          # SOPS-encrypted secret files
+├── apps/                 # ArgoCD Application manifests
+├── values/               # Environment-specific Helm values
+├── secrets/              # SOPS-encrypted secret files
+│   ├── proxmox-creds.yaml
+│   └── newt-credentials.yaml
+├── backend.hcl
+└── terraform.tfvars
 ```
 
 ---
@@ -39,40 +28,29 @@ environments/         (your private config — gitignored, eventually its own re
 ### 1. Create the directory structure
 
 ```bash
-mkdir -p environments/{bootstrap,network,prod,dev}
+mkdir -p prod/{secrets,apps,values}
 ```
 
 ### 2. Configure Terraform backends
 
-Each environment needs a `backend.hcl` file for S3 remote state. Create one per environment:
+Each environment needs a `backend.hcl` file for S3 remote state:
 
-**`environments/network/backend.hcl`**
+**`prod/backend.hcl`**
 ```hcl
 bucket         = "your-terraform-state-bucket"
-key            = "network/terraform.tfstate"
+key            = "prod/terraform.tfstate"
 region         = "us-east-1"
 dynamodb_table = "your-terraform-locks-table"
 encrypt        = true
 ```
-
-**`environments/bootstrap/backend.hcl`**
-```hcl
-bucket         = "your-terraform-state-bucket"
-key            = "bootstrap/terraform.tfstate"
-region         = "us-east-1"
-dynamodb_table = "your-terraform-locks-table"
-encrypt        = true
-```
-
-Repeat for `prod/` and `dev/` with unique `key` values.
 
 ### 3. Configure Terraform variables
 
-Each environment needs a `terraform.tfvars` file. Below are the variables for each configuration.
+The prod repo needs a `terraform.tfvars` file. Below are the variables for each configuration.
 
 ---
 
-## Network Environment (`environments/network/terraform.tfvars`)
+## Network Environment (`prod/terraform.tfvars` — network section)
 
 Deploys the OPNSense firewall/router VM.
 
@@ -115,7 +93,7 @@ wan_bridge = "vmbr1"
 lan_bridge = "vmbr0"
 ```
 
-## Bootstrap Environment (`environments/bootstrap/terraform.tfvars`)
+## Bootstrap Environment
 
 Creates AWS resources for Terraform state management (S3 bucket + DynamoDB table).
 
@@ -141,11 +119,11 @@ dynamodb_table_name = "mylab-terraform-locks"
 ```bash
 # Network
 cd core/terraform/live/network
-terraform init -backend-config=../../../../environments/network/backend.hcl
+terraform init -backend-config=../../../../prod/backend.hcl
 
 # Bootstrap
 cd core/terraform/bootstrap
-terraform init -backend-config=../../../environments/bootstrap/backend.hcl
+terraform init -backend-config=../../../prod/backend.hcl
 ```
 
 ### Plan and apply with variable file
@@ -153,20 +131,20 @@ terraform init -backend-config=../../../environments/bootstrap/backend.hcl
 ```bash
 # Network
 cd core/terraform/live/network
-terraform plan -var-file=../../../../environments/network/terraform.tfvars
-terraform apply -var-file=../../../../environments/network/terraform.tfvars
+terraform plan -var-file=../../../../prod/terraform.tfvars
+terraform apply -var-file=../../../../prod/terraform.tfvars
 
 # Bootstrap
 cd core/terraform/bootstrap
-terraform plan -var-file=../../../environments/bootstrap/terraform.tfvars
-terraform apply -var-file=../../../environments/bootstrap/terraform.tfvars
+terraform plan -var-file=../../../prod/terraform.tfvars
+terraform apply -var-file=../../../prod/terraform.tfvars
 ```
 
 ---
 
 ## Secrets Management (SOPS + age)
 
-Secrets are encrypted with [SOPS](https://github.com/getsops/sops) + [age](https://github.com/FiloSottile/age) and stored in `environments/<env>/secrets/`. See [ADR-004](decisions/004-sops-secrets-management.md) for rationale.
+Secrets are encrypted with [SOPS](https://github.com/getsops/sops) + [age](https://github.com/FiloSottile/age) and stored in `prod/secrets/`. See [ADR-004](decisions/004-sops-secrets-management.md) for rationale.
 
 ### Setup
 
@@ -182,21 +160,21 @@ age-keygen -o ~/.config/sops/age/keys.txt
 export SOPS_AGE_KEY_FILE="$HOME/.config/sops/age/keys.txt"
 ```
 
-Copy the public key from the keygen output into `environments/.sops.yaml`.
+Copy the public key from the keygen output into `prod/.sops.yaml`.
 
 ### Usage
 
 ```bash
-cd environments
+cd prod
 
 # Encrypt a new secret file
-sops -e -i prod/secrets/my-secret.yaml
+sops -e -i secrets/my-secret.yaml
 
 # Edit an encrypted file (decrypts in $EDITOR, re-encrypts on save)
-sops prod/secrets/my-secret.yaml
+sops secrets/my-secret.yaml
 
 # View decrypted contents
-sops -d prod/secrets/my-secret.yaml
+sops -d secrets/my-secret.yaml
 ```
 
 ### How Terraform uses secrets
@@ -243,16 +221,13 @@ Back up `~/.config/sops/age/keys.txt` securely (password manager, USB drive). If
 
 ---
 
-## Splitting into a Separate Repo
+## Two-Repo Architecture
 
-Eventually, `environments/` can become its own private Git repository:
+The environment-specific configuration now lives in its own private repository (`aaron/prod` on Forgejo). Clone both repos side by side:
 
 ```bash
-cd environments
-git init
-git remote add origin git@github.com:youruser/homelab-config.git
-git add -A && git commit -m "Initial environments config"
-git push -u origin main
+git clone http://10.10.10.222:3000/aaron/infra-core.git
+git clone http://10.10.10.222:3000/aaron/prod.git
 ```
 
-Then clone it alongside this repo and symlink or reference via relative paths.
+Terraform references the prod repo via relative paths (e.g., `../../../../prod/terraform.tfvars`).

@@ -60,24 +60,11 @@ metadata:
 - Kubernetes secrets stored in etcd (encrypted at rest via Talos)
 - No secrets in Git repository
 
-#### Planned: External Secrets Operator
-```yaml
-apiVersion: external-secrets.io/v1beta1
-kind: ExternalSecret
-metadata:
-  name: app-secrets
-spec:
-  secretStoreRef:
-    name: aws-secrets-manager
-    kind: SecretStore
-  target:
-    name: app-secrets
-  data:
-    - secretKey: database-password
-      remoteRef:
-        key: prod/database
-        property: password
-```
+#### Implemented: SOPS + age (ADR-004)
+
+Secrets are encrypted with SOPS + age and stored in the private `prod` repo. Terraform decrypts them at plan/apply time via the `carlpett/sops` provider and creates Kubernetes secrets. ArgoCD apps reference pre-existing secrets via `existingSecretName`.
+
+See [ADR-004](decisions/004-sops-secrets-management.md) for details.
 
 ### 5. Access Control
 
@@ -87,7 +74,7 @@ spec:
 
 #### Kubernetes RBAC
 - ArgoCD manages deployments (service account)
-- Human access via kubeconfig (to be integrated with SSO)
+- Human access via kubeconfig (integrated with Zitadel SSO)
 
 ### 6. GitOps Security
 
@@ -108,12 +95,12 @@ syncPolicy:
 
 #### Longhorn
 - Volume snapshots and replication
-- Backup target: AWS S3 (encrypted)
+- Backup target: Backblaze B2 (encrypted)
 
-#### Velero (Planned)
+#### Velero (Deployed)
 - Cluster state backups
 - Scheduled backups with retention policies
-- Tested restore procedures
+- Backup target: Backblaze B2
 
 ---
 
@@ -121,16 +108,16 @@ syncPolicy:
 
 ### High Priority
 
-#### 1. Identity Provider Integration (Zitadel)
+#### 1. Identity Provider (Zitadel) -- Implemented
 
-**Current State:** No centralized authentication
-**Target State:** SSO for all services
+**Status:** SSO fully working for ArgoCD, Forgejo, Grafana, Harbor via Zitadel OIDC.
 
 ```
 ┌─────────────┐     ┌─────────────┐     ┌─────────────┐
 │   User      │────▶│   Zitadel   │────▶│   Services  │
 │             │     │   (OIDC)    │     │             │
 │             │     │             │     │ - ArgoCD    │
+│             │     │             │     │ - Forgejo   │
 │             │     │             │     │ - Grafana   │
 │             │     │             │     │ - Harbor    │
 └─────────────┘     └─────────────┘     └─────────────┘
@@ -142,24 +129,23 @@ syncPolicy:
 - MFA enforcement
 - Audit logging
 
-#### 2. Cloudflare Tunnel (Zero Trust Access)
+#### 2. Pangolin + Newt (ADR-003) -- Implemented
 
-**Current State:** Services not publicly accessible
-**Target State:** Secure public access without exposed ports
+**Status:** Pangolin deployed on shared Vultr VPS. Newt running as K8s pod. Public access without exposed ports.
 
 ```
-Internet ──▶ Cloudflare ──▶ Tunnel ──▶ Kubernetes Services
+Internet ──▶ Pangolin (VPS) ──▶ WireGuard ──▶ Newt (K8s pod) ──▶ Services
                 │
                 ▼
-        Cloudflare Access
+             Badger
         (Authentication)
 ```
 
 **Benefits:**
-- No public IP required
+- No public IP on homelab
 - No port forwarding
-- DDoS protection included
-- Zero Trust authentication
+- Full ownership of traffic path
+- Per-resource auth via Badger
 
 #### 3. Network Policies
 
@@ -281,9 +267,9 @@ rules:
 - TLS certificates
 
 **Implementation:**
-- External Secrets Operator with rotation
+- SOPS + age for secret storage (manual rotation)
 - Cert-manager for TLS
-- Vault (alternative to AWS Secrets Manager)
+- OpenBao (future, if dynamic secrets needed)
 
 #### 9. Encryption in Transit
 
@@ -318,7 +304,7 @@ encryption:
 ### Application Layer
 
 - [x] ArgoCD for GitOps
-- [ ] SSO integration (Zitadel)
+- [x] SSO integration (Zitadel)
 - [ ] Container image signing
 - [ ] Runtime security monitoring
 - [ ] Vulnerability scanning
@@ -326,7 +312,7 @@ encryption:
 ### Access Control
 
 - [x] Minimal Proxmox API permissions
-- [ ] Centralized identity (Zitadel)
+- [x] Centralized identity (Zitadel)
 - [ ] MFA enforcement
 - [ ] Regular access reviews
 
@@ -350,10 +336,10 @@ encryption:
 
 | Feature | Security Impact | Effort | Priority |
 |---------|-----------------|--------|----------|
-| Zitadel SSO | High | Medium | P1 |
+| ~~Zitadel SSO~~ | High | Medium | ~~P1~~ Done |
 | Network Policies | High | Low | P1 |
-| Cloudflare Tunnel | High | Low | P1 |
-| External Secrets | Medium | Low | P2 |
+| ~~Pangolin + Newt~~ | High | Low | ~~P1~~ Done |
+| ~~SOPS + age~~ | Medium | Low | ~~P2~~ Done |
 | Image Signing | Medium | Medium | P2 |
 | Vulnerability Scanning | Medium | Low | P2 |
 | Runtime Monitoring | Medium | High | P3 |
@@ -367,7 +353,7 @@ While this is a homelab, following security best practices helps with:
 
 1. **Learning**: Understanding enterprise security patterns
 2. **Portfolio**: Demonstrating security awareness
-3. **Production Readiness**: The race telemetry app serves real clients
+3. **Production Readiness**: The race telemetry app (deferred) would serve real clients
 
 ### Relevant Frameworks
 

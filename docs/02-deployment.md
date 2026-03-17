@@ -97,8 +97,8 @@ See [04-opnsense.md](./04-opnsense.md) for detailed VLAN configuration.
 #### 3.1 Create terraform.tfvars
 
 ```bash
-# For production
-cd environments/prod/terraform
+# In the prod repo
+cd prod
 cp terraform.tfvars.example terraform.tfvars
 
 # Edit with your values
@@ -112,7 +112,7 @@ proxmox_host = "REDACTED_MGMT_IP0"
 proxmox_node = "pve"
 
 # Talos Image (get from factory.talos.dev)
-talos_image_url = "https://factory.talos.dev/image/YOUR_SCHEMATIC/v1.11.3/nocloud-amd64.raw.xz"
+talos_image_url = "https://factory.talos.dev/image/YOUR_SCHEMATIC/v1.12.5/nocloud-amd64.raw.xz"
 
 # Optional overrides
 # cluster_name = "homelab-prod"
@@ -139,7 +139,7 @@ export AWS_REGION="us-east-1"
 #### 4.1 Initialize Terraform
 
 ```bash
-cd environments/prod/terraform
+cd core/terraform/live/network
 
 # Initialize with backend configuration
 terraform init \
@@ -241,24 +241,9 @@ Deploy the Grafana stack when ready:
 7. Post-deployment (DNS, Backups, Monitoring)
 ```
 
-## Deploying Development Environment
+## Development Environment
 
-Repeat Phases 3-6 for the dev environment:
-
-```bash
-cd environments/dev/terraform
-cp terraform.tfvars.example terraform.tfvars
-# Edit terraform.tfvars with dev-specific values
-
-terraform init \
-  -backend-config="bucket=homelab-terraform-state" \
-  -backend-config="key=dev/infra.tfstate" \
-  -backend-config="region=us-east-1" \
-  -backend-config="dynamodb_table=terraform-locks"
-
-terraform plan
-terraform apply
-```
+A dev cluster on VLAN 11 is not currently deployed. When needed, create a separate environment repo and repeat Phases 3-6 with dev-specific values.
 
 ## Troubleshooting
 
@@ -316,7 +301,7 @@ argocd app sync cilium
 
 ```bash
 # Destroy infrastructure (WARNING: destructive)
-cd environments/prod/terraform
+cd core/terraform/live/network
 terraform destroy
 
 # Optionally clean up AWS backend

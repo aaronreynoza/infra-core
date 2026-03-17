@@ -1,3 +1,7 @@
+**DEFERRED: TrueNAS was permanently deferred. This issue is no longer actionable.**
+
+---
+
 # TrueNAS ZFS Replication to secondary-host
 
 **Priority**: Medium

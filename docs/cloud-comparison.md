@@ -69,7 +69,7 @@ Same number of hops, same pattern, same concepts.
     -> Cloudflare CDN/WAF (future)
     -> Vultr VPS (Traefik TLS + Badger auth)
     -> WireGuard tunnel
-    -> Newt (Talos extension)
+    -> Newt (K8s pod)
     -> K8s Pod
 
   AWS (EKS):
@@ -216,10 +216,10 @@ Talos is to your homelab what Bottlerocket is to EKS.
 
   SECRET MANAGEMENT:
 
-  AWS Secrets      AWS Secrets      Secret
-  Manager          Manager          Manager
-  + External       (native with     (native with
-   Secrets Op.     IRSA)            Workload ID)
+  SOPS + age       AWS Secrets      Secret
+  (encrypted in    Manager          Manager
+   Git, decrypted  (native with     (native with
+   by Terraform)   IRSA)            Workload ID)
 
   DNS SECURITY:
 
@@ -243,18 +243,17 @@ Talos is to your homelab what Bottlerocket is to EKS.
   Replication:     Replication:     Snapshots: yes
    cross-node       cross-AZ        cross-zone
 
-  FILE STORAGE (future):
+  FILE STORAGE:
 
-  TrueNAS (ZFS)    EFS / FSx        Filestore
-  NFS shares,      (managed NFS)    (managed NFS)
-  media, iSCSI
+  ZFS on Proxmox   EFS / FSx        Filestore
+  + NFS exports    (managed NFS)    (managed NFS)
 
   BACKUP / DR:
 
-  Velero -> S3     AWS Backup       GKE Backup
-  Longhorn -> S3   EBS Snapshots    PD Snapshots
-  TrueNAS ZFS      S3 Cross-Region  GCS multi-
-  replication      Replication      regional
+  Velero ->        AWS Backup       GKE Backup
+  Backblaze B2     EBS Snapshots    PD Snapshots
+  Longhorn snaps   S3 Cross-Region  GCS multi-
+                   Replication      regional
 
   TERRAFORM STATE:
 
@@ -309,8 +308,9 @@ Talos is to your homelab what Bottlerocket is to EKS.
   Grafana          CloudWatch       Cloud
   (dashboards)     (metrics+dash)   Monitoring
 
-  InfluxDB         CloudWatch       Cloud
-  (time-series)    Metrics / AMP    Monitoring/GMP
+  Prometheus /     CloudWatch       Cloud
+  Mimir            Metrics / AMP    Monitoring/GMP
+  (time-series)
 
   Hubble           VPC Flow Logs    VPC Flow Logs
   (network flows)  + Traffic Mirr.  + Packet Mirr.
@@ -343,10 +343,10 @@ Talos is to your homelab what Bottlerocket is to EKS.
 | **WAF** | Cloudflare (future) | AWS WAF | Cloud Armor |
 | **CDN** | Cloudflare (future) | CloudFront | Cloud CDN |
 | **Auth/SSO** | Zitadel+Badger | Cognito | Identity+IAP |
-| **Secrets** | AWS SM+ESO | Secrets Manager | Secret Manager |
+| **Secrets** | SOPS+age | Secrets Manager | Secret Manager |
 | **Block Storage** | Longhorn | EBS | Persistent Disk |
-| **File Storage** | TrueNAS (future) | EFS/FSx | Filestore |
-| **Backup** | Velero->S3 | AWS Backup | GKE Backup |
+| **File Storage** | ZFS on Proxmox+NFS | EFS/FSx | Filestore |
+| **Backup** | Velero->Backblaze B2 | AWS Backup | GKE Backup |
 | **TF State** | S3+DynamoDB | S3+DynamoDB | GCS |
 | **Source Control** | Forgejo | CodeCommit | Cloud Source |
 | **CI** | Forgejo Actions | CodeBuild | Cloud Build |
@@ -354,7 +354,7 @@ Talos is to your homelab what Bottlerocket is to EKS.
 | **GitOps** | ArgoCD | ArgoCD/Flux | Config Sync |
 | **IaC** | Terraform | TF/CloudForm. | TF/Depl. Mgr |
 | **Dashboards** | Grafana | CloudWatch | Cloud Monitor |
-| **Metrics** | InfluxDB | CW Metrics/AMP | GMP |
+| **Metrics** | Prometheus/Mimir | CW Metrics/AMP | GMP |
 | **Network Obs.** | Hubble | Flow Logs | Flow Logs |
 | **DNS Analytics** | Control D | R53 Query Logs | DNS Logging |
 

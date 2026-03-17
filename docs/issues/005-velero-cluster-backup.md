@@ -2,7 +2,7 @@
 
 **Priority**: Medium
 **Labels**: backup, disaster-recovery, production
-**Depends on**: K8s cluster running, AWS S3 bucket
+**Status**: Velero deployed, scheduled backups pending
 
 ## Problem
 
@@ -10,19 +10,19 @@ Longhorn backs up volume data, but not Kubernetes resources (Deployments, Servic
 
 ## Goal
 
-Deploy Velero for full cluster backup — K8s resources to S3, volume data via Longhorn integration or restic.
+Deploy Velero for full cluster backup — K8s resources to Backblaze B2 (S3-compatible), volume data via Longhorn integration or restic.
 
 ## Implementation
 
-1. **Deploy Velero** via Helm on prod cluster
-2. **Configure S3 backend** for K8s resource backups
+1. ~~**Deploy Velero** via Helm on prod cluster~~ — DONE
+2. ~~**Configure Backblaze B2 backend** (S3-compatible) for K8s resource backups~~ — DONE
 3. **Configure Longhorn CSI snapshot integration** (or restic for volume data)
-4. **Schedule backups**: daily prod, weekly dev
+4. **Schedule backups**: daily prod
 5. **Test full restore** to a clean cluster
 
 ## Acceptance Criteria
 
-- [ ] Velero deployed and backing up to S3
+- [x] Velero deployed and backing up to Backblaze B2 (S3-compatible)
 - [ ] Daily scheduled backups for prod namespace
 - [ ] Full restore tested: nuke cluster, restore from Velero, verify everything works
 - [ ] Backup retention: 30 daily, 12 weekly

@@ -64,24 +64,28 @@ Token format: `xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx`
 
 ---
 
-## 4. Store Credentials in AWS Secrets Manager
+## 4. Store Credentials with SOPS + age
 
 ```bash
-# Create the secret (first time only)
-aws secretsmanager create-secret \
-  --name "homelab/proxmox" \
-  --description "Proxmox VE API credentials" \
-  --secret-string '{"api_token_id": "root@pam!terraform", "api_token_secret": "YOUR_TOKEN_HERE"}' \
-  --region us-east-1
+# Install tools
+brew install sops age
 
-# Update existing secret (if already created)
-aws secretsmanager put-secret-value \
-  --secret-id "homelab/proxmox" \
-  --secret-string '{"api_token_id": "root@pam!terraform", "api_token_secret": "YOUR_TOKEN_HERE"}' \
-  --region us-east-1
+# Generate age keypair (one-time)
+mkdir -p ~/.config/sops/age
+age-keygen -o ~/.config/sops/age/keys.txt
 
-# Verify secret exists
-aws secretsmanager get-secret-value --secret-id "homelab/proxmox" --region us-east-1
+# Add to shell profile (~/.zshrc)
+export SOPS_AGE_KEY_FILE="$HOME/.config/sops/age/keys.txt"
+
+# Create and encrypt credentials in the prod repo
+cat > prod/secrets/proxmox-creds.yaml <<EOF
+api_token_id: "root@pam!terraform"
+api_token_secret: "YOUR_TOKEN_HERE"
+EOF
+cd prod && sops -e -i secrets/proxmox-creds.yaml
+
+# Verify decryption works
+sops -d secrets/proxmox-creds.yaml
 ```
 
 ---
@@ -95,10 +99,10 @@ cd core/terraform/live/network
 terraform init
 
 # Plan (verify what will be created)
-terraform plan -var-file=../../../../environments/network/terraform.tfvars
+terraform plan -var-file=../../../../prod/terraform.tfvars
 
 # Apply
-terraform apply -var-file=../../../../environments/network/terraform.tfvars
+terraform apply -var-file=../../../../prod/terraform.tfvars
 ```
 
 After apply, complete OPNSense installation manually (see `docs/04-opnsense.md`).
@@ -120,13 +124,11 @@ aws s3 ls s3://homelab-terraform-state-<account-id>/ --recursive
 
 ## Environment-Specific tfvars
 
-Configuration files are in `environments/<env>/terraform.tfvars`:
+Configuration files are in the `prod` repo:
 
 | Environment | File | Purpose |
 |-------------|------|---------|
-| network | `environments/network/terraform.tfvars` | OPNSense firewall |
-| prod | `environments/prod/terraform.tfvars` | Production K8s cluster |
-| dev | `environments/dev/terraform.tfvars` | Development K8s cluster |
+| prod | `prod/terraform.tfvars` | Production K8s cluster + OPNSense |
 
 ---
 
@@ -136,8 +138,8 @@ Configuration files are in `environments/<env>/terraform.tfvars`:
 # Check AWS identity
 aws sts get-caller-identity
 
-# List secrets
-aws secretsmanager list-secrets --region us-east-1
+# Decrypt a secret
+sops -d prod/secrets/proxmox-creds.yaml
 
 # Check terraform state in S3
 aws s3 ls s3://homelab-terraform-state-<account-id>/ --recursive

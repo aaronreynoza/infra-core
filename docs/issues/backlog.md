@@ -4,10 +4,8 @@ Tasks identified during cluster setup that are not needed for the initial deploy
 
 ## Priority 1: Ops Maturity (Next Sprint)
 
-### Templatize environment-specific values
-- **Why:** Cilium `k8sServiceHost: "REDACTED_K8S_API"` and Pangolin URLs are hardcoded in ArgoCD manifests
-- **Fix:** Use `templatefile()` in `environments/prod/terraform/main.tf` to render manifests with env-specific variables, or move manifests to `environments/<env>/manifests/`
-- **Blocks:** Dev cluster deployment
+### ~~Templatize environment-specific values~~ → RESOLVED (2026-03-17)
+- **Resolved:** Fixed Cilium `k8sServiceHost` (was broken by history rewrite). ArgoCD now sources app manifests from Forgejo prod repo `apps/` directory with env-specific values.
 
 ### ~~Store Newt credentials in AWS Secrets Manager~~ → DONE (SOPS + age)
 - **Resolved:** Migrated to SOPS + age encryption (ADR-004). All secrets in `environments/prod/secrets/` encrypted at rest. AWS SM dependency removed. Proxmox creds also migrated.
@@ -24,10 +22,9 @@ Tasks identified during cluster setup that are not needed for the initial deploy
 
 ## Priority 2: Production Hardening
 
-### TrueNAS VM for NFS storage
-- **Decision doc:** `docs/decisions/002-truenas-storage.md`
-- **Plan:** `docs/superpowers/plans/` (TrueNAS plan exists)
-- **Why deferred:** Longhorn on local disks works for initial deployment
+### ~~TrueNAS VM for NFS storage~~ → PERMANENTLY DEFERRED
+- **Decision:** TrueNAS not worth it for 2 disks. Storage: ZFS on Proxmox + Longhorn + NFS from Proxmox.
+- See "Won't Do" section below.
 
 ### ctrld on OPNSense for DNS management
 - **Decision doc:** `docs/decisions/003-pangolin-controld-architecture.md`
@@ -40,9 +37,9 @@ Tasks identified during cluster setup that are not needed for the initial deploy
 - **Fix:** OPNSense has a REST API at `/api/`. Could use Terraform `http` provider or community `browningluke/opnsense` provider
 - **Why deferred:** OPNSense is already configured correctly, rules rarely change
 
-### Velero + Longhorn backups to S3
-- **Why:** No disaster recovery for persistent data
-- **Fix:** Deploy Velero via ArgoCD, configure S3 backend
+### ~~Velero + Longhorn backups~~ → DEPLOYED
+- **Resolved:** Velero deployed via ArgoCD. Target is Backblaze B2 (S3-compatible), not AWS S3.
+- **Remaining:** Configure scheduled backups, test full restore procedure.
 - **Issue:** `docs/issues/005-velero-cluster-backup.md`
 
 ### CARP HA for OPNSense
@@ -86,6 +83,9 @@ Tasks identified during cluster setup that are not needed for the initial deploy
 ### Cloudflare Tunnel
 - **Why not:** See ADR-003. Conflicts with learning goals and traffic ownership.
 
+### TrueNAS
+- **Why not:** Only 2 HDDs available — not worth the overhead of a dedicated TrueNAS VM. ZFS pool managed directly on Proxmox (hdd-mirror), NFS exported to K8s for media.
+
 ---
 
-**Last Updated:** 2026-03-12
+**Last Updated:** 2026-03-17

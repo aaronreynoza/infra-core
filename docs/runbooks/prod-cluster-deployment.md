@@ -3,7 +3,7 @@
 This runbook documents the complete deployment of the production Talos Linux Kubernetes cluster on Proxmox VE. It covers every step from pre-requisites through a running cluster, including all issues encountered and their fixes. Use this as the definitive reference for rebuilding or troubleshooting the prod cluster.
 
 **Date deployed:** 2026-03-11
-**Talos version:** v1.11.3
+**Talos version:** v1.12.5
 **Kubernetes version:** 1.32.1
 **Proxmox host:** daytona
 **Network:** PROD VLAN 10 (10.10.10.0/16)
@@ -64,11 +64,11 @@ Before starting, ensure all of the following are in place:
 
 ### Credentials and Tools
 
-- [ ] AWS CLI configured (`aws sts get-caller-identity` must succeed)
-- [ ] Proxmox API token stored in AWS Secrets Manager at `homelab/proxmox` with keys `api_token_id` and `api_token_secret`
+- [ ] SOPS + age configured (`export SOPS_AGE_KEY_FILE=~/.config/sops/age/keys.txt`)
+- [ ] Proxmox API token stored in SOPS-encrypted file (`environments/prod/secrets/`) with keys `api_token_id` and `api_token_secret`
 - [ ] SSH agent running with the Proxmox host key loaded (`ssh-add -l` shows the key)
 - [ ] `terraform` >= 1.9.0 installed
-- [ ] `talosctl` installed (matching Talos version v1.11.3)
+- [ ] `talosctl` installed (matching Talos version v1.12.5)
 - [ ] `kubectl` installed
 - [ ] `helm` installed
 
@@ -79,9 +79,10 @@ Before starting, ensure all of the following are in place:
 ssh root@<PROXMOX_HOST_IP> 'hostname'
 # Expected: daytona
 
-# Test AWS credentials
-aws sts get-caller-identity
-# Expected: shows account <AWS_ACCOUNT_ID>
+# Test SOPS decryption
+export SOPS_AGE_KEY_FILE=~/.config/sops/age/keys.txt
+sops -d environments/prod/secrets/proxmox-creds.yaml
+# Expected: shows decrypted Proxmox credentials
 ```
 
 ---
@@ -104,7 +105,7 @@ encrypt        = true
 
 This file wires up the Proxmox and Talos providers and calls the `talos-cluster` module. Key design decisions:
 
-- Proxmox credentials are fetched from AWS Secrets Manager (not hardcoded)
+- Proxmox credentials are decrypted from SOPS-encrypted files (not hardcoded)
 - S3 backend for remote state (no local tfstate files)
 - The module source points to `../../../core/terraform/modules/talos-cluster`
 
@@ -123,25 +124,19 @@ terraform {
       source  = "siderolabs/talos"
       version = ">= 0.8.0"
     }
-    aws = {
-      source  = "hashicorp/aws"
-      version = ">= 5.0"
+    sops = {
+      source  = "carlpett/sops"
+      version = ">= 1.1.1"
     }
   }
 }
 
-provider "aws" {
-  region = "us-east-1"
-}
-
-data "aws_secretsmanager_secret_version" "proxmox" {
-  secret_id = "homelab/proxmox"
+data "sops_file" "proxmox_creds" {
+  source_file = "../secrets/proxmox-creds.yaml"
 }
 
 locals {
-  proxmox_creds = jsondecode(
-    data.aws_secretsmanager_secret_version.proxmox.secret_string
-  )
+  proxmox_creds = data.sops_file.proxmox_creds.data
 }
 
 provider "proxmox" {
@@ -199,7 +194,7 @@ proxmox_node     = "daytona"
 proxmox_ssh_user = "root"
 
 # Talos image — .raw.zst format (NOT .raw.xz — see Issue #1 below)
-talos_image_url = "https://factory.talos.dev/image/<SCHEMATIC_ID>/v1.11.3/nocloud-amd64.raw.zst"
+talos_image_url = "https://factory.talos.dev/image/<SCHEMATIC_ID>/v1.12.5/nocloud-amd64.raw.zst"
 
 # Cluster
 cluster_name = "homelab-prod"
@@ -261,7 +256,7 @@ The Talos image must include system extensions for QEMU guest agent and iSCSI (r
 
 1. Go to https://factory.talos.dev
 2. Select:
-   - **Talos version**: v1.11.3
+   - **Talos version**: v1.12.5
    - **Platform**: nocloud
    - **Architecture**: amd64
 3. Add extensions:
@@ -274,7 +269,7 @@ The Talos image must include system extensions for QEMU guest agent and iSCSI (r
 
 The resulting URL should look like:
 ```
-https://factory.talos.dev/image/b15572a23ba3e735d0be57b006a5740f56bab22727abc87a89135a274658e2db/v1.11.3/nocloud-amd64.raw.zst
+https://factory.talos.dev/image/b15572a23ba3e735d0be57b006a5740f56bab22727abc87a89135a274658e2db/v1.12.5/nocloud-amd64.raw.zst
 ```
 
 ---
@@ -591,17 +586,17 @@ This section documents every issue hit during deployment, in the order they were
 
 ### Issue #4: Talos provider generating incompatible configs
 
-**Problem:** `terraform apply` succeeded in applying machine configs, but the Talos nodes rejected the config with errors about unknown fields. Specifically, the config included `grubUseUKICmdline: true` which is not recognized by Talos v1.11.3.
+**Problem:** `terraform apply` succeeded in applying machine configs, but the Talos nodes rejected the config with errors about unknown fields. Specifically, the config included `grubUseUKICmdline: true` which is not recognized by Talos v1.12.5.
 
-**Root cause:** The `talos_machine_configuration` data source defaults to the latest Talos schema version if `talos_version` is not explicitly set. The latest schema included fields that are incompatible with v1.11.3.
+**Root cause:** The `talos_machine_configuration` data source defaults to the latest Talos schema version if `talos_version` is not explicitly set. The latest schema included fields that are incompatible with v1.12.5.
 
-**Fix:** Added `talos_version = var.talos_version` to both `data "talos_machine_configuration"` blocks (control_plane and worker) in the talos-cluster module. The variable defaults to `"v1.11.3"`.
+**Fix:** Added `talos_version = var.talos_version` to both `data "talos_machine_configuration"` blocks (control_plane and worker) in the talos-cluster module. The variable defaults to `"v1.12.5"`.
 
 **Where:** `core/terraform/modules/talos-cluster/main.tf` (both talos_machine_configuration data sources), `core/terraform/modules/talos-cluster/variables.tf` (talos_version variable)
 
 ### Issue #5: Kubernetes version too new
 
-**Problem:** Similar to Issue #4 — the Talos provider defaulted to Kubernetes 1.35.0, which is not compatible with Talos v1.11.3. Kubelet failed to start.
+**Problem:** Similar to Issue #4 — the Talos provider defaulted to Kubernetes 1.35.0, which is not compatible with Talos v1.12.5. Kubelet failed to start.
 
 **Fix:** Added `kubernetes_version = var.kubernetes_version` to both `data "talos_machine_configuration"` blocks. The variable defaults to `"1.32.1"`.
 
@@ -694,7 +689,7 @@ The following steps were performed manually and should eventually be automated (
 
 ## Current State
 
-As of 2026-03-11:
+As of 2026-03-17:
 
 | Component | Status |
 |-----------|--------|
@@ -704,18 +699,22 @@ As of 2026-03-11:
 | Kubernetes API | Accessible at https://REDACTED_K8S_API:6443 |
 | etcd | Running, healthy |
 | kubelet | Running on all nodes |
-| Node status | NotReady (no CNI) |
-| Cilium | Not installed |
-| Longhorn | Not installed |
-| ArgoCD | Not installed |
+| Node status | Ready |
+| Talos version | v1.12.5 |
+| Cilium | Deployed (CNI + Hubble + LB-IPAM) |
+| Longhorn | Deployed (SSD storage, replica: 1) |
+| ArgoCD | Deployed (sourcing apps from Forgejo) |
+| Platform apps | Forgejo, Harbor, Zitadel, Velero, kube-prometheus-stack, Loki, Tempo, Mimir, OTel Collector, CNPG |
+| Zitadel SSO | Working for ArgoCD, Forgejo, Grafana, Harbor |
+| CI/CD | Forgejo Actions (mgmt VM runner + K8s runner) |
 
 ### Next steps (in order)
 
-1. Install Cilium (nodes become Ready)
-2. Install Longhorn (persistent storage)
-3. Install ArgoCD (GitOps)
-4. Deploy Newt for Pangolin connectivity
-5. Deploy first application
+1. Set up GitHub push mirrors from Forgejo
+2. MkDocs docs site (first publicly exposed app via Pangolin)
+3. Observability tuning (dashboards, alerts)
+4. Production readiness (Velero test restore, network policies)
+5. Media platform (*arr stack + Jellyfin + Navidrome)
 
 ---
 
@@ -768,4 +767,4 @@ terraform force-unlock <LOCK_ID>
 
 ---
 
-**Last Updated:** 2026-03-11
+**Last Updated:** 2026-03-17

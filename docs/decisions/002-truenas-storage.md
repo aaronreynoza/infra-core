@@ -1,6 +1,8 @@
 # ADR-002: TrueNAS Storage for Media Files
 
-**Status:** Proposed
+**NOTE: This decision was superseded in March 2026. TrueNAS was permanently deferred — not worth the overhead for 2 disks. Storage is now: Longhorn on SSD for app PVCs, ZFS mirror on Proxmox (hdd-mirror pool) for media via NFS, Backblaze B2 for off-site backup.**
+
+**Status:** Superseded
 **Date:** 2026-02-01
 **Author:** Aaron Valdez
 

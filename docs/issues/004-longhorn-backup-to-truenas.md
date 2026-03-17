@@ -1,3 +1,7 @@
+**SUPERSEDED: TrueNAS was permanently deferred. Longhorn backups go to Backblaze B2 via Velero instead.**
+
+---
+
 # Longhorn Backup Target on TrueNAS
 
 **Priority**: Medium

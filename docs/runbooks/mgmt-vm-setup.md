@@ -12,12 +12,12 @@ On the Proxmox host (SSH or web shell):
     cd /var/lib/vz/template/iso
     wget https://cloud.debian.org/images/cloud/bookworm/latest/debian-12-generic-amd64.qcow2
 
-## 2. Create VM 99 in Proxmox
+## 2. Create VM 110 in Proxmox
 
 In the Proxmox web UI (https://REDACTED_PVE_IP:8006):
 
 1. Click **Create VM**
-2. **General**: VM ID = `99`, Name = `mgmt`
+2. **General**: VM ID = `110`, Name = `mgmt`
 3. **OS**: Do not use any media (we'll import the disk)
 4. **System**: BIOS = Default, SCSI Controller = VirtIO SCSI
 5. **Disks**: Delete the default disk (we'll import the cloud image)
@@ -30,32 +30,32 @@ In the Proxmox web UI (https://REDACTED_PVE_IP:8006):
 
 On the Proxmox host shell:
 
-    qm importdisk 99 /var/lib/vz/template/iso/debian-12-generic-amd64.qcow2 local-lvm
-    qm set 99 --scsihw virtio-scsi-pci --scsi0 local-lvm:vm-99-disk-0
-    qm resize 99 scsi0 32G
-    qm set 99 --boot order=scsi0
-    qm set 99 --serial0 socket --vga serial0
+    qm importdisk 110 /var/lib/vz/template/iso/debian-12-generic-amd64.qcow2 local-lvm
+    qm set 110 --scsihw virtio-scsi-pci --scsi0 local-lvm:vm-110-disk-0
+    qm resize 110 scsi0 32G
+    qm set 110 --boot order=scsi0
+    qm set 110 --serial0 socket --vga serial0
 
 ## 4. Configure Cloud-Init
 
-    qm set 99 --ide2 local-lvm:cloudinit
+    qm set 110 --ide2 local-lvm:cloudinit
     # First, copy your SSH public key to the Proxmox host
     # From workstation:
     #   scp ~/.ssh/id_ed25519.pub root@REDACTED_PVE_IP:/tmp/mgmt_key.pub
 
-    qm set 99 --ciuser operator
-    qm set 99 --sshkeys /tmp/mgmt_key.pub
-    qm set 99 --ipconfig0 ip=REDACTED_MGMT_IP/24,gw=192.168.1.1
-    qm set 99 --nameserver 1.1.1.1
-    qm set 99 --searchdomain local
+    qm set 110 --ciuser operator
+    qm set 110 --sshkeys /tmp/mgmt_key.pub
+    qm set 110 --ipconfig0 ip=REDACTED_MGMT_IP/24,gw=192.168.1.1
+    qm set 110 --nameserver 1.1.1.1
+    qm set 110 --searchdomain local
 
 ## 5. Set Auto-Start
 
-    qm set 99 --onboot 1 --startup order=2
+    qm set 110 --onboot 1 --startup order=2
 
 ## 6. Start the VM
 
-    qm start 99
+    qm start 110
 
 ## 7. Verify SSH Access
 
@@ -89,12 +89,12 @@ These cannot be automated (contain secrets):
 
 ### Clone repos
     ssh operator@REDACTED_MGMT_IP
-    git clone https://github.com/aaronreynoza/homelab.git ~/homelab
-    git clone <environments-repo-url> ~/environments
+    git clone http://10.10.10.222:3000/aaron/infra-core.git ~/infra-core
+    git clone http://10.10.10.222:3000/aaron/prod.git ~/prod
 
 ### Copy kubeconfig and talosconfig
-    scp environments/prod/kubeconfig operator@REDACTED_MGMT_IP:~/.kube/config
-    scp environments/prod/talosconfig operator@REDACTED_MGMT_IP:~/.talos/config
+    scp prod/kubeconfig operator@REDACTED_MGMT_IP:~/.kube/config
+    scp prod/talosconfig operator@REDACTED_MGMT_IP:~/.talos/config
 
 ## 10. Verify
 
