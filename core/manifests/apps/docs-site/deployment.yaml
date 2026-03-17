@@ -17,8 +17,8 @@ spec:
     spec:
       containers:
         - name: caddy
-          # Override image in prod ArgoCD Application manifest
-          image: registry.example.com/platform/docs:v1.0.0
+          # Image tag updated automatically by docs-build CI workflow
+          image: registry.example.com/platform/docs:latest
           ports:
             - containerPort: 80
           volumeMounts:
