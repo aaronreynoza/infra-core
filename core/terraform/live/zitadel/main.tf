@@ -4,10 +4,16 @@
 
 # --- Zitadel provider ---
 # JWT key extracted from K8s: kubectl get secret iam-admin -n zitadel -o jsonpath='{.data.iam-admin\.json}' | base64 -d > ~/.config/zitadel-key.json
+# Connects via HTTPS/443 through the Cilium Gateway with ALPN h2 support.
+# Gateway has wildcard TLS cert from cert-manager (Let's Encrypt production).
+# Split-horizon DNS resolves zitadel.aaron.reynoza.org → 10.10.10.228 (gateway IP).
+# Issuer matches: Zitadel ExternalSecure=true → https://zitadel.aaron.reynoza.org
+#
+# IMPORTANT: Requires split-horizon DNS (OPNSense or /etc/hosts).
 provider "zitadel" {
   domain           = replace(replace(var.zitadel_url, "https://", ""), "http://", "")
-  port             = var.zitadel_port
-  insecure         = var.zitadel_insecure
+  port             = "443"
+  insecure         = false
   jwt_profile_file = var.zitadel_key_file
 }
 

@@ -4,16 +4,16 @@ variable "zitadel_url" {
   type        = string
 }
 
-variable "zitadel_port" {
-  description = "Zitadel port"
+variable "zitadel_internal_domain" {
+  description = "Zitadel internal domain/IP for Terraform provider (direct access, no Pangolin)"
   type        = string
-  default     = "443"
+  default     = "10.10.10.225"
 }
 
-variable "zitadel_insecure" {
-  description = "Whether to use insecure (non-TLS) connection to Zitadel"
-  type        = bool
-  default     = false
+variable "zitadel_internal_port" {
+  description = "Zitadel internal port"
+  type        = string
+  default     = "8080"
 }
 
 variable "zitadel_org_id" {
@@ -24,7 +24,7 @@ variable "zitadel_org_id" {
 variable "zitadel_key_file" {
   description = "Path to Zitadel JWT service account key file (JSON)"
   type        = string
-  default     = "~/.config/zitadel-key.json"
+  default     = null # Set via TF_VAR_zitadel_key_file or -var (must be absolute path, ~ not expanded)
 }
 
 # --- Kubeconfig ---

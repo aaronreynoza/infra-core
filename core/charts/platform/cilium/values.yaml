@@ -54,6 +54,7 @@ externalIPs:
 # Gateway API — single ingress gateway replaces per-service LoadBalancer IPs
 gatewayAPI:
   enabled: true
+  enableAlpn: true  # Required for gRPC (h2) through TLS-terminated gateway
 
 # Single-node operator (resource constrained)
 operator:
