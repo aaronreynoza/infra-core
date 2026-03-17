@@ -5,9 +5,9 @@
 # --- Zitadel provider ---
 # JWT key extracted from K8s: kubectl get secret iam-admin -n zitadel -o jsonpath='{.data.iam-admin\.json}' | base64 -d > ~/.config/zitadel-key.json
 provider "zitadel" {
-  domain           = replace(replace(var.zitadel_url, "http://", ""), "/:[0-9]+$/", "")
+  domain           = replace(replace(var.zitadel_url, "https://", ""), "http://", "")
   port             = var.zitadel_port
-  insecure         = true  # No TLS in internal network
+  insecure         = var.zitadel_insecure
   jwt_profile_file = var.zitadel_key_file
 }
 
@@ -45,7 +45,7 @@ resource "zitadel_application_oidc" "argocd" {
   app_type             = "OIDC_APP_TYPE_USER_AGENT"
   auth_method_type     = "OIDC_AUTH_METHOD_TYPE_NONE"  # PKCE
   post_logout_redirect_uris = [var.argocd_url]
-  dev_mode             = true  # Allow HTTP redirect URIs
+  dev_mode             = false
 
 
 }
@@ -72,7 +72,7 @@ resource "zitadel_application_oidc" "forgejo" {
   app_type             = "OIDC_APP_TYPE_WEB"
   auth_method_type     = "OIDC_AUTH_METHOD_TYPE_POST"
   post_logout_redirect_uris = [var.forgejo_url]
-  dev_mode             = true
+  dev_mode             = false
 
 
 }
@@ -100,7 +100,7 @@ resource "zitadel_application_oidc" "harbor" {
   app_type             = "OIDC_APP_TYPE_WEB"
   auth_method_type     = "OIDC_AUTH_METHOD_TYPE_POST"
   post_logout_redirect_uris = [var.harbor_url]
-  dev_mode             = true
+  dev_mode             = false
 
 
 }
@@ -128,7 +128,7 @@ resource "zitadel_application_oidc" "grafana" {
   app_type             = "OIDC_APP_TYPE_WEB"
   auth_method_type     = "OIDC_AUTH_METHOD_TYPE_BASIC"
   post_logout_redirect_uris = [var.grafana_url]
-  dev_mode             = true
+  dev_mode             = false
 
 
 }
@@ -370,7 +370,7 @@ resource "kubernetes_config_map_v1_data" "argocd_oidc" {
 
     "oidc.config" = yamlencode({
       name     = "Zitadel"
-      issuer   = "http://${var.zitadel_ip}:8080"
+      issuer   = var.zitadel_url
       clientID = zitadel_application_oidc.argocd.client_id
       requestedScopes = [
         "openid",
@@ -395,7 +395,7 @@ resource "null_resource" "forgejo_oauth_source" {
   triggers = {
     client_id     = zitadel_application_oidc.forgejo.client_id
     client_secret = zitadel_application_oidc.forgejo.client_secret
-    issuer_url    = "http://${var.zitadel_ip}:8080"
+    issuer_url    = "${var.zitadel_url}"
   }
 
   provisioner "local-exec" {
@@ -423,12 +423,12 @@ resource "null_resource" "forgejo_oauth_source" {
             --provider "openidConnect" \
             --key "${zitadel_application_oidc.forgejo.client_id}" \
             --secret "${zitadel_application_oidc.forgejo.client_secret}" \
-            --auto-discover-url "http://${var.zitadel_ip}:8080/.well-known/openid-configuration" \
+            --auto-discover-url "${var.zitadel_url}/.well-known/openid-configuration" \
             --skip-local-2fa \
             --scopes "openid profile email" \
             --group-claim-name "" \
             --admin-group "" \
-            --auto-discover-url "http://${var.zitadel_ip}:8080/.well-known/openid-configuration"
+            --auto-discover-url "${var.zitadel_url}/.well-known/openid-configuration"
       else
         echo "Adding Zitadel auth source..."
         kubectl --kubeconfig="$KUBECONFIG" exec -n forgejo "$FORGEJO_POD" -- \
@@ -437,7 +437,7 @@ resource "null_resource" "forgejo_oauth_source" {
             --provider "openidConnect" \
             --key "${zitadel_application_oidc.forgejo.client_id}" \
             --secret "${zitadel_application_oidc.forgejo.client_secret}" \
-            --auto-discover-url "http://${var.zitadel_ip}:8080/.well-known/openid-configuration" \
+            --auto-discover-url "${var.zitadel_url}/.well-known/openid-configuration" \
             --skip-local-2fa \
             --scopes "openid profile email"
       fi
@@ -456,7 +456,7 @@ resource "null_resource" "harbor_oidc_config" {
   triggers = {
     client_id     = zitadel_application_oidc.harbor.client_id
     client_secret = zitadel_application_oidc.harbor.client_secret
-    issuer_url    = "http://${var.zitadel_ip}:8080"
+    issuer_url    = "${var.zitadel_url}"
   }
 
   provisioner "local-exec" {
@@ -473,7 +473,7 @@ resource "null_resource" "harbor_oidc_config" {
         -d '{
           "auth_mode": "oidc_auth",
           "oidc_name": "Zitadel",
-          "oidc_endpoint": "http://${var.zitadel_ip}:8080",
+          "oidc_endpoint": "${var.zitadel_url}",
           "oidc_client_id": "${zitadel_application_oidc.harbor.client_id}",
           "oidc_client_secret": "${zitadel_application_oidc.harbor.client_secret}",
           "oidc_scope": "openid,profile,email",

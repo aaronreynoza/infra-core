@@ -1,13 +1,19 @@
 # --- Zitadel connection ---
 variable "zitadel_url" {
-  description = "Zitadel instance URL (e.g., http://10.10.10.X:8080)"
+  description = "Zitadel instance URL (e.g., https://zitadel.example.org)"
   type        = string
 }
 
 variable "zitadel_port" {
   description = "Zitadel port"
   type        = string
-  default     = "8080"
+  default     = "443"
+}
+
+variable "zitadel_insecure" {
+  description = "Whether to use insecure (non-TLS) connection to Zitadel"
+  type        = bool
+  default     = false
 }
 
 variable "zitadel_org_id" {
@@ -28,24 +34,24 @@ variable "kubeconfig_path" {
   default     = "~/.kube/config"
 }
 
-# --- Redirect URIs (populated from kubectl get svc output) ---
+# --- App URLs ---
 variable "argocd_url" {
-  description = "ArgoCD base URL (e.g., http://REDACTED_LB_IP:8080)"
+  description = "ArgoCD base URL (e.g., https://argocd.example.org)"
   type        = string
 }
 
 variable "forgejo_url" {
-  description = "Forgejo base URL (e.g., http://REDACTED_LB_IP:3000)"
+  description = "Forgejo base URL (e.g., https://forgejo.example.org)"
   type        = string
 }
 
 variable "harbor_url" {
-  description = "Harbor base URL (e.g., http://REDACTED_LB_IP)"
+  description = "Harbor base URL (e.g., https://harbor.example.org)"
   type        = string
 }
 
 variable "grafana_url" {
-  description = "Grafana base URL (e.g., http://REDACTED_LB_IP:3000)"
+  description = "Grafana base URL (e.g., https://grafana.example.org)"
   type        = string
 }
 
@@ -106,8 +112,3 @@ variable "create_paperless_secret" {
   default     = false
 }
 
-# --- App-side OIDC configuration ---
-variable "zitadel_ip" {
-  description = "Zitadel LoadBalancer IP (e.g., REDACTED_LB_IP). Used for ExternalDomain and issuer URL."
-  type        = string
-}
