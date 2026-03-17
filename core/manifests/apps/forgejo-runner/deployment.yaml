@@ -1,0 +1,57 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: forgejo-runner
+  namespace: forgejo-runner
+  labels:
+    app: forgejo-runner
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: forgejo-runner
+  template:
+    metadata:
+      labels:
+        app: forgejo-runner
+    spec:
+      initContainers:
+        - name: register
+          image: code.forgejo.org/forgejo/runner:6.3.1
+          command: ["/bin/sh", "-c"]
+          args:
+            - |
+              if [ ! -f /data/.runner ]; then
+                forgejo-runner register \
+                  --instance http://forgejo-http.forgejo.svc.cluster.local:3000 \
+                  --token "$(cat /secrets/token)" \
+                  --labels "k8s:host" \
+                  --name k8s-runner \
+                  --no-interactive
+              fi
+          volumeMounts:
+            - name: runner-data
+              mountPath: /data
+            - name: runner-secret
+              mountPath: /secrets
+              readOnly: true
+      containers:
+        - name: runner
+          image: code.forgejo.org/forgejo/runner:6.3.1
+          command: ["forgejo-runner", "daemon"]
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: "1"
+              memory: 512Mi
+          volumeMounts:
+            - name: runner-data
+              mountPath: /data
+      volumes:
+        - name: runner-data
+          emptyDir: {}
+        - name: runner-secret
+          secret:
+            secretName: forgejo-runner-secret
