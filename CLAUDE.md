@@ -99,15 +99,14 @@ Environments are **fully isolated** - no inter-VLAN communication.
 - ~~Docs overhaul~~ — 18 files updated to match current state (2026-03-17)
 
 **Next Tasks** (in order):
-1. Cilium Gateway API (single ingress → wildcard DNS, replace per-service LBs)
-2. Split-horizon DNS (ControlD on OPNSense + CoreDNS custom zone)
-3. Zitadel OIDC redirect URI update (terraform apply)
-4. OpenClaw deployment (WhatsApp AI agent)
-5. MkDocs docs site (trigger first CI build)
-6. Observability tuning (dashboards, alerts)
-7. Security hardening (CiliumNetworkPolicies, WireGuard, Trivy, Falco, Kyverno)
-8. Security audit (full stack review)
-9. Media platform, Immich, Paperless
+1. Ollama + Open WebUI + LiteLLM + GPU passthrough
+2. Update Zitadel OIDC redirect URIs for new subdomains (terraform apply)
+3. Configure ControlD split-horizon for internal access
+4. MkDocs docs site (trigger first CI build)
+5. Observability tuning (dashboards, alerts)
+6. Self-hosted media platform (*arr stack + Jellyfin + Navidrome)
+8. Immich (Google Photos replacement)
+9. Paperless-ngx (document OCR/management)
 
 See [docs/issues/backlog.md](docs/issues/backlog.md) and `internal-docs/master-plan.md` for full roadmap.
 
