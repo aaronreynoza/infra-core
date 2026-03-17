@@ -1,0 +1,59 @@
+# Open WebUI Helm Values — Generic Configuration
+# AI chat interface (ChatGPT-style UI)
+# Chart: open-webui/open-webui
+# Docs: https://docs.openwebui.com/
+#
+# Environment-specific overrides (API URLs, secrets, SSO)
+# live in prod/values/open-webui/
+
+# Image — pin version for reproducibility
+image:
+  repository: ghcr.io/open-webui/open-webui
+  tag: "0.8.10"
+  pullPolicy: IfNotPresent
+
+# Service — LoadBalancer via Cilium LB-IPAM
+service:
+  type: LoadBalancer
+  port: 80
+  containerPort: 8080
+
+# Ingress disabled — direct LB access via Pangolin
+ingress:
+  enabled: false
+
+# Persistence — Longhorn SSD for chat history and user data
+persistence:
+  enabled: true
+  size: 5Gi
+  storageClass: longhorn
+  accessModes:
+    - ReadWriteOnce
+
+# Resources — appropriate for homelab
+resources:
+  requests:
+    cpu: 100m
+    memory: 256Mi
+  limits:
+    cpu: 500m
+    memory: 512Mi
+
+# Disable bundled Ollama — we deploy our own
+ollama:
+  enabled: false
+
+# Disable bundled Pipelines — using LiteLLM as proxy instead
+pipelines:
+  enabled: false
+
+# Disable bundled Tika
+tika:
+  enabled: false
+
+# Disable websocket redis (single replica, not needed)
+websocket:
+  enabled: false
+
+# Single replica
+replicaCount: 1
