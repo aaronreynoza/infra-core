@@ -271,25 +271,27 @@ Aaron does NOT need William for:
 |------|--------|-------------|
 | 1 | Done | Deploy Pangolin stack on VPS (ADR-003) |
 | 2 | Done | Get Newt online in K8s cluster |
-| 3 | **Next** | Create Pangolin resources for each subdomain |
+| 3 | Done | Create Pangolin resources for each subdomain |
 | 4 | Pending | Configure ControlD split-horizon for internal access |
-| 5 | Pending | Update app configs for new domains |
-| 6 | Pending | Update Zitadel OIDC redirect URLs for `*.aaron.reynoza.org` |
+| 5 | Done | Update app configs for new domains |
+| 6 | Pending | Update Zitadel OIDC redirect URLs (`terraform apply`) |
 | 7 | Pending | Test external access end-to-end |
 | 8 | Pending | Test internal split-horizon access |
 | 9 | Future | Deploy cert-manager for local HTTPS (Option B, if needed) |
 
-### Step 3: Create Pangolin Resources
+### Step 3: Create Pangolin Resources — DONE
 
-In the Pangolin dashboard, create a resource for each service:
+Resources are managed as IaC via `infra-core/scripts/pangolin/pangolin-resources.py` with config in `prod/pangolin/`. The script syncs desired state from `resources.yaml` against the Pangolin API.
 
-1. Navigate to Sites > Aaron Homelab
-2. Add Resource:
-   - **Domain**: `argocd.aaron.reynoza.org`
-   - **Target**: `http://10.10.10.221:443`
-   - **Access**: Private
-3. Pangolin auto-provisions a Let's Encrypt cert
-4. Repeat for each service in the service mapping table
+```bash
+python3 scripts/pangolin/pangolin-resources.py \
+  --config prod/pangolin/config.yaml \
+  --resources prod/pangolin/resources.yaml \
+  sync --dry-run  # preview changes
+  sync             # apply changes
+```
+
+Resources can also be created manually in the Pangolin dashboard (Resources → Public → Add Resource).
 
 ### Step 5: Update App Configs
 
@@ -349,7 +351,7 @@ No DNS changes. No Cloudflare edits. No VPS configuration. No certificate manage
 ### Negative
 
 - Internal HTTPS requires either the VPS hop (Option A) or cert-manager (Option B)
-- Pangolin dashboard is manual (resources are not GitOps-managed yet)
+- Pangolin resources managed via Python script + API (not fully GitOps yet — no CI trigger)
 - Split-horizon requires maintaining ControlD records in sync with LB-IPAM assignments
 - VPS is a single point of failure for external access
 

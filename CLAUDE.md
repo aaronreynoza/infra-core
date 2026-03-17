@@ -44,8 +44,14 @@ Environments are **fully isolated** - no inter-VLAN communication.
 - **GitHub**: Read-only mirror for portfolio visibility
 - **ArgoCD**: Sources all apps from Forgejo prod repo `apps/` directory
 
+### Service URLs (via Pangolin)
+- All services at `*.aaron.reynoza.org` with auto TLS via Pangolin
+- `forgejo.aaron.reynoza.org`, `harbor.aaron.reynoza.org`, `argocd.aaron.reynoza.org`, `grafana.aaron.reynoza.org`, `zitadel.aaron.reynoza.org`
+- Pangolin resources managed via `scripts/pangolin/pangolin-resources.py`
+- Newt (K8s pod) maintains WireGuard tunnel to Pangolin VPS
+
 ### External Services (Operational)
-- **Pangolin** on Vultr VPS — deployed and configured (shared with William)
+- **Pangolin** on Vultr VPS — deployed, Newt tunnel online, 5 public HTTPS resources
 - **Control D** — "Aaron-Homelab" endpoint provisioned, PROD/DEV profiles created
 - **Backblaze B2** — off-site backup for irreplaceable personal media
 
@@ -77,7 +83,7 @@ Environments are **fully isolated** - no inter-VLAN communication.
 
 ## Work Status
 
-**Current Phase**: CI/CD Complete, Docs Site Next
+**Current Phase**: Subdomain Migration Done, LLM Stack Next
 **Branch**: `main`
 
 **Completed:**
@@ -86,16 +92,19 @@ Environments are **fully isolated** - no inter-VLAN communication.
 - ~~Phase 6: Zitadel SSO~~ — Terraform-driven OIDC for ArgoCD, Forgejo, Grafana, Harbor (2026-03-14)
 - ~~Phase 4: Forgejo migration + two-repo split~~ — Source of truth on Forgejo, repos renamed to infra-core/prod (2026-03-16)
 - ~~Phase 5: CI/CD pipelines~~ — Mgmt VM runner + K8s runner, 4 workflow files (2026-03-17)
-- ~~DNS instability~~ — Fixed (Cilium k8sServiceHost broken by history rewrite) (2026-03-17)
+- ~~DNS fix~~ — Cilium k8sServiceHost broken by history rewrite (2026-03-17)
+- ~~Repo split remediation~~ — All 14 Helm apps converted to multi-source, Harbor/root/tempo fixes (2026-03-17)
+- ~~GitHub push mirrors~~ — Repos renamed, Forgejo push mirrors with sync_on_commit (2026-03-17)
+- ~~Subdomain migration~~ — All services at `*.aaron.reynoza.org` via Pangolin, IaC script (2026-03-17)
+- ~~Docs overhaul~~ — 18 files updated to match current state (2026-03-17)
 
 **Next Tasks** (in order):
-1. Set up GitHub push mirrors from Forgejo
-2. MkDocs docs site (first publicly exposed app via Pangolin)
-3. Observability tuning (dashboards, alerts)
-4. Production readiness (Velero test restore, network policies)
-5. Self-hosted media platform (*arr stack + Jellyfin + Navidrome)
-6. Ollama + Open WebUI + LiteLLM + GPU passthrough
-7. Uptime Kuma + public Grafana dashboard
+1. Ollama + Open WebUI + LiteLLM + GPU passthrough
+2. Update Zitadel OIDC redirect URIs for new subdomains (terraform apply)
+3. Configure ControlD split-horizon for internal access
+4. MkDocs docs site (trigger first CI build)
+5. Observability tuning (dashboards, alerts)
+6. Self-hosted media platform (*arr stack + Jellyfin + Navidrome)
 8. Immich (Google Photos replacement)
 9. Paperless-ngx (document OCR/management)
 
