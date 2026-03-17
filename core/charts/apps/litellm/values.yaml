@@ -1,0 +1,58 @@
+# LiteLLM Proxy — Generic Configuration
+# Central API gateway for LLM routing (Ollama + Claude)
+# Chart: oci://docker.litellm.ai/berriai/litellm-helm
+# Docs: https://docs.litellm.ai/docs/proxy/configs
+#
+# Environment-specific overrides (API keys, master key) live in prod/values/litellm/
+
+replicaCount: 1
+
+image:
+  repository: ghcr.io/berriai/litellm-database
+  pullPolicy: IfNotPresent
+  tag: "v1.81.13"
+
+# Service — ClusterIP, other apps reach it via litellm.ai.svc.cluster.local:4000
+service:
+  type: ClusterIP
+  port: 4000
+
+ingress:
+  enabled: false
+
+# Disable standalone PostgreSQL — stateless proxy mode
+db:
+  deployStandalone: false
+  useExisting: false
+
+# Disable migration job (no database)
+migrationJob:
+  enabled: false
+
+# Resources
+resources:
+  requests:
+    cpu: 100m
+    memory: 128Mi
+  limits:
+    cpu: 500m
+    memory: 256Mi
+
+# Model routing config — API keys injected via env vars in prod override
+proxy_config:
+  model_list:
+    - model_name: fast
+      litellm_params:
+        model: ollama/llama3.1:8b-q4_0
+        api_base: http://ollama.ai.svc.cluster.local:11434
+    - model_name: code
+      litellm_params:
+        model: ollama/qwen2.5-coder:14b-q4_0
+        api_base: http://ollama.ai.svc.cluster.local:11434
+    - model_name: smart
+      litellm_params:
+        model: anthropic/claude-sonnet-4-20250514
+        # api_key resolved from ANTHROPIC_API_KEY env var
+        api_key: os.environ/ANTHROPIC_API_KEY
+  general_settings:
+    master_key: os.environ/LITELLM_MASTER_KEY
