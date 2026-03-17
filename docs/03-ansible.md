@@ -28,8 +28,7 @@ core/ansible/
 ├── group_vars/
 │   └── all.yml                # Global variables
 ├── playbooks/
-│   ├── install-argocd.yml     # ArgoCD installation
-│   └── install-apps.yml       # Root app deployment
+│   └── install-argocd.yml     # ArgoCD installation
 └── roles/                     # (Future: custom roles)
 ```
 
@@ -81,27 +80,6 @@ ansible-playbook -i inventories/local/hosts.ini playbooks/install-argocd.yml
 - Uses Helm for installation (industry standard)
 - Applies custom values from `core/charts/platform/argocd/values.yaml`
 - Waits for deployment readiness before completing
-
-### install-apps.yml
-
-Deploys the root ArgoCD Application which triggers the app-of-apps pattern.
-
-**Tasks:**
-1. Apply root Application manifest
-2. Wait for child applications to sync and become healthy
-
-**Usage:**
-```bash
-ansible-playbook -i inventories/local/hosts.ini playbooks/install-apps.yml
-```
-
-**Variables:**
-```yaml
-vars:
-  argocd_namespace: "argocd"
-  root_app_file: "{{ (playbook_dir | dirname | dirname) ~ '/apps/cluster/root.yaml' }}"
-  child_apps: [cilium-namespace, cilium, longhorn-namespace, longhorn]
-```
 
 ## How Ansible Interacts with Kubernetes
 
@@ -229,22 +207,7 @@ core/ansible/roles/
 
 ## Integration with GitOps
 
-Ansible's role is intentionally minimal - it only:
-1. Bootstraps ArgoCD
-2. Applies the root Application
-
-After this, ArgoCD takes over all application management via GitOps:
-
-```
-┌─────────────────────────────────────────────────────────────────┐
-│                        Git Repository                           │
-│  environments/prod/apps/                                        │
-│    ├── root.yaml          ◄─── Applied by Ansible (once)       │
-│    ├── cilium.yaml        ◄─── Synced by ArgoCD (continuous)   │
-│    ├── longhorn.yaml      ◄─── Synced by ArgoCD (continuous)   │
-│    └── ...                                                      │
-└─────────────────────────────────────────────────────────────────┘
-```
+Ansible's role is intentionally minimal - it only bootstraps ArgoCD. After that, ArgoCD takes over all application management via GitOps. The root Application is applied directly with `kubectl` or through the ArgoCD UI.
 
 ## Troubleshooting
 

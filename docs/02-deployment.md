@@ -199,19 +199,7 @@ vim inventories/local/hosts.ini
 ansible-playbook -i inventories/local/hosts.ini playbooks/install-argocd.yml
 ```
 
-#### 5.2 Deploy Applications via GitOps
-
-```bash
-# Apply the root application (app-of-apps pattern)
-ansible-playbook -i inventories/local/hosts.ini playbooks/install-apps.yml
-
-# This deploys:
-# - Cilium (CNI)
-# - Longhorn (Storage)
-# - Any other enabled applications
-```
-
-#### 5.3 Verify Deployment
+#### 5.2 Verify Deployment
 
 ```bash
 # Check ArgoCD applications
@@ -238,8 +226,8 @@ Configure Velero for cluster backups (see [05-security.md](./05-security.md)).
 #### 6.3 Enable Monitoring
 
 Deploy the Grafana stack when ready:
-1. Update `core/charts/defaults.yaml` to enable Grafana
-2. Create ArgoCD Application for Grafana in your environment
+1. Create ArgoCD Application for Grafana in your environment
+2. Configure values in the prod repo under `apps/`
 
 ## Deployment Order Summary
 

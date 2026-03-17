@@ -22,22 +22,32 @@ Environments are **fully isolated** - no inter-VLAN communication.
 ## Current State
 
 ### Infrastructure
-- **Proxmox Hosts**: Two nodes with VLAN-aware bridges
-- **OPNSense** (VM on primary host):
+- **Proxmox Hosts**: Two nodes with VLAN-aware bridges (pve currently off)
+- **OPNSense** (VM 100 on daytona):
   - WAN: DHCP on management network, SSH/HTTPS accessible
   - VLAN 10 (PROD): 10.10.10.1/16
   - VLAN 11 (DEV): 10.11.10.1/16
-- **K8s**: Single cluster on Talos Linux v1.11.3 (to be migrated to VLANs)
+- **K8s**: Talos Linux v1.12.5, 1 CP + 2 workers on VLAN 10
+- **Management VM** (VM 110): Debian 12, dual-homed, Ansible-configured
 
 ### Deployed Applications
-- Cilium (CNI + Hubble)
-- Longhorn (storage, replica: 1)
-- ArgoCD (GitOps)
+- Cilium (CNI + Hubble + LB-IPAM)
+- Longhorn (storage on SSD, replica: 1)
+- ArgoCD (GitOps, sourcing from Forgejo)
+- Forgejo, Harbor, Zitadel, Velero
+- kube-prometheus-stack, Loki, Tempo, Mimir, OTel Collector, CNPG
+- Zitadel SSO for ArgoCD, Forgejo, Grafana, Harbor
+
+### Git Architecture
+- **Forgejo**: Source of truth (http://10.10.10.222:3000)
+- **Two repos**: infra-core (public, reusable) + prod (private, env-specific)
+- **GitHub**: Read-only mirror for portfolio visibility
+- **ArgoCD**: Sources all apps from Forgejo prod repo `apps/` directory
 
 ### External Services (Operational)
-- **Pangolin** on Vultr VPS — deployed and configured (shared with William), dashboard accessible
+- **Pangolin** on Vultr VPS — deployed and configured (shared with William)
 - **Control D** — "Aaron-Homelab" endpoint provisioned, PROD/DEV profiles created
-- Remaining: Newt integration into Talos, ctrld installation on OPNsense
+- **Backblaze B2** — off-site backup for irreplaceable personal media
 
 ### Technology Stack
 - **Virtualization**: Proxmox VE
@@ -46,6 +56,7 @@ Environments are **fully isolated** - no inter-VLAN communication.
 - **Config Mgmt**: Ansible
 - **GitOps**: ArgoCD (app-of-apps)
 - **Remote State**: AWS S3 + DynamoDB
+- **CI/CD**: Forgejo Actions (mgmt VM runner + K8s runner)
 
 ---
 
@@ -53,31 +64,35 @@ Environments are **fully isolated** - no inter-VLAN communication.
 
 - **Cilium** as CNI (with Hubble observability)
 - **Talos Linux** for immutable, secure cluster OS
-- **Two-repo architecture**: homelab (public) + environments (private)
+- **Two-repo architecture**: infra-core (public) + prod (private)
 - **Harbor** per environment (isolated registries)
 - **Pangolin** on Vultr VPS for public access (replaces Cloudflare Tunnel — see ADR-003)
 - **Control D + ctrld** for DNS management with per-VLAN policies (replaces Unbound on OPNsense)
 - **Newt** (Talos system extension) as Pangolin agent inside the cluster
-- **Zitadel** for SSO/OAuth
-- **Velero + Longhorn** for backup/DR to AWS S3
+- **Zitadel** for SSO/OAuth (Terraform-driven, zero manual steps)
+- **Velero + Longhorn** for backup/DR to Backblaze B2
+- **Backblaze B2** for off-site backups (not AWS S3)
 
 ---
 
 ## Work Status
 
-**Current Phase**: GitOps Infrastructure Complete
+**Current Phase**: CI/CD Complete, Docs Site Next
 **Branch**: `main`
 
 **Completed:**
-- ~~Management VM (ID 110)~~ — Ansible-configured, dual-homed (2026-03-14)
-- ~~Zitadel SSO~~ — Terraform-driven OIDC for ArgoCD, Forgejo, Grafana, Harbor (2026-03-14)
-- ~~Forgejo migration + two-repo split~~ — Git source of truth on Forgejo, public repo history purged (2026-03-16)
+- ~~Phase 1: Platform Apps~~ — All deployed and running via ArgoCD (2026-03-12)
+- ~~Phase 3: Management VM (ID 110)~~ — Ansible-configured, dual-homed, quorum fix automated (2026-03-14)
+- ~~Phase 6: Zitadel SSO~~ — Terraform-driven OIDC for ArgoCD, Forgejo, Grafana, Harbor (2026-03-14)
+- ~~Phase 4: Forgejo migration + two-repo split~~ — Source of truth on Forgejo, repos renamed to infra-core/prod (2026-03-16)
+- ~~Phase 5: CI/CD pipelines~~ — Mgmt VM runner + K8s runner, 4 workflow files (2026-03-17)
+- ~~DNS instability~~ — Fixed (Cilium k8sServiceHost broken by history rewrite) (2026-03-17)
 
 **Next Tasks** (in order):
-1. Register Forgejo Actions runner on mgmt VM
-2. Set up GitHub push mirrors from Forgejo
-3. Replace hardcoded IPs with subdomains (Control D or CoreDNS)
-4. MkDocs docs site (first publicly exposed app via Pangolin)
+1. Set up GitHub push mirrors from Forgejo
+2. MkDocs docs site (first publicly exposed app via Pangolin)
+3. Observability tuning (dashboards, alerts)
+4. Production readiness (Velero test restore, network policies)
 5. Self-hosted media platform (*arr stack + Jellyfin + Navidrome)
 6. Ollama + Open WebUI + LiteLLM + GPU passthrough
 7. Uptime Kuma + public Grafana dashboard
@@ -91,7 +106,7 @@ See [docs/issues/backlog.md](docs/issues/backlog.md) and `internal-docs/master-p
 ## Directory Structure
 
 ```
-homelab/                     # This repo (public, reusable)
+infra-core/                  # This repo (public, reusable)
 ├── core/                    # Reusable modules (open source ready)
 │   ├── terraform/modules/   # talos-cluster, proxmox-vm, aws-backend
 │   ├── terraform/live/      # Live terraform configs (parameterized)
@@ -107,11 +122,11 @@ homelab/                     # This repo (public, reusable)
     ├── runbooks/            # Operational procedures
     └── decisions/           # Architecture Decision Records
 
-environments/                # Private (gitignored, see docs/configuration.md)
-├── network/                 # Shared network infra (OPNSense)
-├── bootstrap/               # AWS backend bootstrap
-├── prod/                    # Prod K8s cluster
-└── dev/                     # Dev K8s cluster
+prod/                        # Private repo (env-specific config + secrets)
+├── apps/                    # ArgoCD Application manifests (sourced by ArgoCD)
+├── values/                  # Environment-specific Helm values
+├── secrets/                 # SOPS-encrypted secrets
+└── ...
 ```
 
 ---
@@ -119,10 +134,10 @@ environments/                # Private (gitignored, see docs/configuration.md)
 ## Commands Reference
 
 ```bash
-# Terraform (with external config)
+# Terraform (with external config from prod repo)
 cd core/terraform/live/network
-terraform init -backend-config=../../../../environments/network/backend.hcl
-terraform plan -var-file=../../../../environments/network/terraform.tfvars
+terraform init -backend-config=../../../../prod/backend.hcl
+terraform plan -var-file=../../../../prod/terraform.tfvars
 
 # Ansible
 cd core/ansible
