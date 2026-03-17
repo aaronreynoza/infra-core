@@ -31,7 +31,7 @@ variable "zitadel_key_file" {
 variable "kubeconfig_path" {
   description = "Path to kubeconfig file for Kubernetes provider"
   type        = string
-  default     = "~/.kube/config"
+  default     = null # Set via TF_VAR_kubeconfig_path or -var (must be absolute path, ~ not expanded)
 }
 
 # --- App URLs ---

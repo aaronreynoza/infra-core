@@ -42,6 +42,7 @@ resource "zitadel_project" "homelab" {
 
 # --- ArgoCD (PKCE, no client secret needed) ---
 resource "zitadel_application_oidc" "argocd" {
+  org_id     = var.zitadel_org_id
   project_id = zitadel_project.homelab.id
   name       = "ArgoCD"
 
@@ -69,6 +70,7 @@ resource "kubernetes_secret_v1" "argocd_oidc" {
 
 # --- Forgejo ---
 resource "zitadel_application_oidc" "forgejo" {
+  org_id     = var.zitadel_org_id
   project_id = zitadel_project.homelab.id
   name       = "Forgejo"
 
@@ -97,6 +99,7 @@ resource "kubernetes_secret_v1" "forgejo_oidc" {
 
 # --- Harbor ---
 resource "zitadel_application_oidc" "harbor" {
+  org_id     = var.zitadel_org_id
   project_id = zitadel_project.homelab.id
   name       = "Harbor"
 
@@ -125,6 +128,7 @@ resource "kubernetes_secret_v1" "harbor_oidc" {
 
 # --- Grafana ---
 resource "zitadel_application_oidc" "grafana" {
+  org_id     = var.zitadel_org_id
   project_id = zitadel_project.homelab.id
   name       = "Grafana"
 
@@ -160,6 +164,7 @@ resource "kubernetes_secret_v1" "grafana_oidc" {
 # =============================================================================
 
 resource "zitadel_application_oidc" "jellyfin" {
+  org_id     = var.zitadel_org_id
   project_id = zitadel_project.homelab.id
   name       = "Jellyfin"
 
@@ -186,6 +191,7 @@ resource "kubernetes_secret_v1" "jellyfin_oidc" {
 }
 
 resource "zitadel_application_oidc" "navidrome" {
+  org_id     = var.zitadel_org_id
   project_id = zitadel_project.homelab.id
   name       = "Navidrome"
 
@@ -212,6 +218,7 @@ resource "kubernetes_secret_v1" "navidrome_oidc" {
 }
 
 resource "zitadel_application_oidc" "openwebui" {
+  org_id     = var.zitadel_org_id
   project_id = zitadel_project.homelab.id
   name       = "Open WebUI"
 
@@ -238,6 +245,7 @@ resource "kubernetes_secret_v1" "openwebui_oidc" {
 }
 
 resource "zitadel_application_oidc" "immich" {
+  org_id     = var.zitadel_org_id
   project_id = zitadel_project.homelab.id
   name       = "Immich"
 
@@ -264,6 +272,7 @@ resource "kubernetes_secret_v1" "immich_oidc" {
 }
 
 resource "zitadel_application_oidc" "paperless" {
+  org_id     = var.zitadel_org_id
   project_id = zitadel_project.homelab.id
   name       = "Paperless-ngx"
 
