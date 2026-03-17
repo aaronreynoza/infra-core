@@ -1,0 +1,133 @@
+# Plane CE Helm Values — Generic Configuration
+# Self-hosted project management (Jira alternative)
+# Chart: plane/plane-ce
+# Docs: https://developers.plane.so/self-hosting/methods/kubernetes
+#
+# Environment-specific overrides (secrets, domain)
+# live in prod/values/plane/
+
+# Pin version for reproducibility
+planeVersion: v1.2.0
+
+# Disable chart-managed ingress — we use Cilium Gateway HTTPRoute
+ingress:
+  enabled: false
+
+# PostgreSQL — bundled, Longhorn storage
+postgres:
+  local_setup: true
+  image: postgres:15.7-alpine
+  storageClass: longhorn
+  volumeSize: 10Gi
+  pullPolicy: IfNotPresent
+
+# Redis (Valkey) — bundled, Longhorn storage
+redis:
+  local_setup: true
+  image: valkey/valkey:7.2.11-alpine
+  storageClass: longhorn
+  volumeSize: 1Gi
+  pullPolicy: IfNotPresent
+
+# RabbitMQ — bundled, Longhorn storage
+rabbitmq:
+  local_setup: true
+  image: rabbitmq:3.13.6-management-alpine
+  storageClass: longhorn
+  volumeSize: 1Gi
+  pullPolicy: IfNotPresent
+  default_user: plane
+  default_password: plane
+
+# MinIO — bundled object storage, Longhorn storage
+minio:
+  image: minio/minio:latest
+  image_mc: minio/mc:latest
+  local_setup: true
+  storageClass: longhorn
+  volumeSize: 10Gi
+  pullPolicy: IfNotPresent
+  root_user: admin
+  root_password: password
+  env:
+    minio_endpoint_ssl: false
+
+# Web frontend
+web:
+  replicas: 1
+  image: artifacts.plane.so/makeplane/plane-frontend
+  pullPolicy: IfNotPresent
+  memoryRequest: 50Mi
+  memoryLimit: 512Mi
+  cpuRequest: 50m
+  cpuLimit: 500m
+
+# Space (public project pages)
+space:
+  replicas: 1
+  image: artifacts.plane.so/makeplane/plane-space
+  pullPolicy: IfNotPresent
+  memoryRequest: 50Mi
+  memoryLimit: 512Mi
+  cpuRequest: 50m
+  cpuLimit: 500m
+
+# Admin panel
+admin:
+  replicas: 1
+  image: artifacts.plane.so/makeplane/plane-admin
+  pullPolicy: IfNotPresent
+  memoryRequest: 50Mi
+  memoryLimit: 512Mi
+  cpuRequest: 50m
+  cpuLimit: 500m
+
+# Live collaboration service
+live:
+  replicas: 1
+  image: artifacts.plane.so/makeplane/plane-live
+  pullPolicy: IfNotPresent
+  memoryRequest: 50Mi
+  memoryLimit: 512Mi
+  cpuRequest: 50m
+  cpuLimit: 500m
+
+# API backend
+api:
+  replicas: 1
+  image: artifacts.plane.so/makeplane/plane-backend
+  pullPolicy: IfNotPresent
+  memoryRequest: 50Mi
+  memoryLimit: 1000Mi
+  cpuRequest: 50m
+  cpuLimit: 500m
+
+# Background worker
+worker:
+  replicas: 1
+  image: artifacts.plane.so/makeplane/plane-backend
+  pullPolicy: IfNotPresent
+  memoryRequest: 50Mi
+  memoryLimit: 1000Mi
+  cpuRequest: 50m
+  cpuLimit: 500m
+
+# Beat worker (scheduled tasks)
+beatworker:
+  replicas: 1
+  image: artifacts.plane.so/makeplane/plane-backend
+  pullPolicy: IfNotPresent
+  memoryRequest: 50Mi
+  memoryLimit: 512Mi
+  cpuRequest: 50m
+  cpuLimit: 500m
+
+# Environment variables
+env:
+  pgdb_username: plane
+  pgdb_password: plane
+  pgdb_name: plane
+  docstore_bucket: "uploads"
+  doc_upload_size_limit: "5242880"
+  api_key_rate_limit: "60/minute"
+  default_cluster_domain: cluster.local
