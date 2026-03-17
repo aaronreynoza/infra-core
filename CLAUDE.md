@@ -65,24 +65,24 @@ Environments are **fully isolated** - no inter-VLAN communication.
 
 ## Work Status
 
-**Current Phase**: Platform Apps Deployed, Starting Docs Site
+**Current Phase**: GitOps Infrastructure Complete
 **Branch**: `main`
 
-**Platform Apps Complete** (2026-03-13):
-- All platform apps deployed via ArgoCD and Synced/Healthy ✅
-- CloudNativePG operator + clusters for Forgejo and Zitadel ✅
-- Cilium LB-IPAM assigning IPs (REDACTED_LB_IP-225) ✅
-- Monitoring stack: kube-prometheus-stack, Loki, Tempo, Mimir, OTel Collector ✅
-- Apps verified: nginx-test, ArgoCD, Forgejo, Harbor, Grafana, Zitadel ✅
+**Completed:**
+- ~~Management VM (ID 110)~~ — Ansible-configured, dual-homed (2026-03-14)
+- ~~Zitadel SSO~~ — Terraform-driven OIDC for ArgoCD, Forgejo, Grafana, Harbor (2026-03-14)
+- ~~Forgejo migration + two-repo split~~ — Git source of truth on Forgejo, public repo history purged (2026-03-16)
 
 **Next Tasks** (in order):
-1. Set up MkDocs Material docs site (first publicly exposed app)
-2. Build and push to Harbor, create ArgoCD Application
-3. Create Pangolin resource for public access
-4. Set up Management VM (ID 99)
-5. Migrate Git source of truth to Forgejo
-6. Forgejo Actions CI/CD
-7. Zitadel SSO integration
+1. Register Forgejo Actions runner on mgmt VM
+2. Set up GitHub push mirrors from Forgejo
+3. Replace hardcoded IPs with subdomains (Control D or CoreDNS)
+4. MkDocs docs site (first publicly exposed app via Pangolin)
+5. Self-hosted media platform (*arr stack + Jellyfin + Navidrome)
+6. Ollama + Open WebUI + LiteLLM + GPU passthrough
+7. Uptime Kuma + public Grafana dashboard
+8. Immich (Google Photos replacement)
+9. Paperless-ngx (document OCR/management)
 
 See [docs/issues/backlog.md](docs/issues/backlog.md) and `internal-docs/master-plan.md` for full roadmap.
 
