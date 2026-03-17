@@ -1,0 +1,9 @@
+# Reflector — syncs K8s secrets across namespaces
+# Chart: emberstack/reflector
+resources:
+  requests:
+    cpu: 50m
+    memory: 64Mi
+  limits:
+    cpu: 100m
+    memory: 128Mi
