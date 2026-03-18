@@ -157,8 +157,6 @@ app-template:
               enabled: false
             startup:
               enabled: false
-                timeoutSeconds: 5
-                failureThreshold: 12
 
   # ConfigMap — gateway config and shell aliases
   configMaps:
