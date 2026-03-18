@@ -89,44 +89,11 @@ app-template:
               memory: 2Gi
           probes:
             liveness:
-              enabled: true
-              type: Custom
-              spec:
-                exec:
-                  command:
-                    - curl
-                    - -sf
-                    - http://127.0.0.1:18789/healthz
-                initialDelaySeconds: 30
-                periodSeconds: 30
-                timeoutSeconds: 5
-                failureThreshold: 3
+              enabled: false
             readiness:
-              enabled: true
-              type: Custom
-              spec:
-                exec:
-                  command:
-                    - curl
-                    - -sf
-                    - http://127.0.0.1:18789/healthz
-                initialDelaySeconds: 10
-                periodSeconds: 10
-                timeoutSeconds: 5
-                failureThreshold: 3
+              enabled: false
             startup:
-              enabled: true
-              type: Custom
-              spec:
-                exec:
-                  command:
-                    - curl
-                    - -sf
-                    - http://127.0.0.1:18789/healthz
-                initialDelaySeconds: 5
-                periodSeconds: 5
-                timeoutSeconds: 5
-                failureThreshold: 30
+              enabled: false
 
         # chromium sidecar disabled — not needed for messaging agent
         # Re-enable when browser automation is required
