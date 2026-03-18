@@ -1,0 +1,28 @@
+# Coder Helm Values — Generic Configuration
+# Cloud development environments on Kubernetes
+# Chart: https://helm.coder.com/v2 (coder)
+# Docs: https://coder.com/docs/install/kubernetes
+#
+# Environment-specific overrides (ACCESS_URL, PG connection, OIDC)
+# live in prod/values/coder/
+
+coder:
+  replicaCount: 1
+
+  # Service - ClusterIP (exposed via Cilium Gateway)
+  service:
+    enable: true
+    type: ClusterIP
+
+  # Ingress disabled - we use Cilium Gateway API
+  ingress:
+    enable: false
+
+  # Resource limits - appropriate for homelab
+  resources:
+    requests:
+      cpu: 500m
+      memory: 512Mi
+    limits:
+      cpu: "2"
+      memory: 2Gi
