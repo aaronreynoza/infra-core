@@ -2,16 +2,30 @@
 # Creates OIDC applications in Zitadel and distributes client secrets as K8s secrets.
 # Run from mgmt VM with kubeconfig and SOPS age key available.
 
+# --- URL construction from base_domain ---
+# Subdomains are app identity (public, not secret).
+# base_domain is environment-specific (set in prod tfvars).
+locals {
+  zitadel_url   = "https://zitadel.${var.base_domain}"
+  argocd_url    = "https://argocd.${var.base_domain}"
+  forgejo_url   = "https://forgejo.${var.base_domain}"
+  harbor_url    = "https://harbor.${var.base_domain}"
+  grafana_url   = "https://grafana.${var.base_domain}"
+  openwebui_url = "https://chat.${var.base_domain}"
+  plane_url     = "https://plane.${var.base_domain}"
+  jellyfin_url  = "https://jellyfin.${var.base_domain}"
+  navidrome_url = "https://navidrome.${var.base_domain}"
+  immich_url    = "https://immich.${var.base_domain}"
+  paperless_url = "https://paperless.${var.base_domain}"
+}
+
 # --- Zitadel provider ---
 # JWT key extracted from K8s: kubectl get secret iam-admin -n zitadel -o jsonpath='{.data.iam-admin\.json}' | base64 -d > ~/.config/zitadel-key.json
-# Connects via HTTPS/443 through the Cilium Gateway with ALPN h2 support.
-# Gateway has wildcard TLS cert from cert-manager (Let's Encrypt production).
-# Split-horizon DNS resolves zitadel.aaron.reynoza.org → 10.10.10.228 (gateway IP).
-# Issuer matches: Zitadel ExternalSecure=true → https://zitadel.aaron.reynoza.org
-#
-# IMPORTANT: Requires split-horizon DNS (OPNSense or /etc/hosts).
+# Connects via HTTPS/443 through the Cilium Gateway.
+# Requires GRPC_ENFORCE_ALPN_ENABLED=false until Cilium fixes ALPN (cilium/cilium#39484).
+# Requires split-horizon DNS (OPNSense or /etc/hosts).
 provider "zitadel" {
-  domain           = replace(replace(var.zitadel_url, "https://", ""), "http://", "")
+  domain           = "zitadel.${var.base_domain}"
   port             = "443"
   insecure         = false
   jwt_profile_file = var.zitadel_key_file
@@ -46,15 +60,13 @@ resource "zitadel_application_oidc" "argocd" {
   project_id = zitadel_project.homelab.id
   name       = "ArgoCD"
 
-  redirect_uris        = ["${var.argocd_url}/auth/callback"]
-  response_types       = ["OIDC_RESPONSE_TYPE_CODE"]
-  grant_types          = ["OIDC_GRANT_TYPE_AUTHORIZATION_CODE"]
-  app_type             = "OIDC_APP_TYPE_USER_AGENT"
-  auth_method_type     = "OIDC_AUTH_METHOD_TYPE_NONE"  # PKCE
-  post_logout_redirect_uris = [var.argocd_url]
-  dev_mode             = false
-
-
+  redirect_uris             = ["${local.argocd_url}/auth/callback"]
+  response_types            = ["OIDC_RESPONSE_TYPE_CODE"]
+  grant_types               = ["OIDC_GRANT_TYPE_AUTHORIZATION_CODE"]
+  app_type                  = "OIDC_APP_TYPE_USER_AGENT"
+  auth_method_type          = "OIDC_AUTH_METHOD_TYPE_NONE" # PKCE
+  post_logout_redirect_uris = [local.argocd_url]
+  dev_mode                  = false
 }
 
 resource "kubernetes_secret_v1" "argocd_oidc" {
@@ -74,15 +86,13 @@ resource "zitadel_application_oidc" "forgejo" {
   project_id = zitadel_project.homelab.id
   name       = "Forgejo"
 
-  redirect_uris        = ["${var.forgejo_url}/user/oauth2/Zitadel/callback"]
-  response_types       = ["OIDC_RESPONSE_TYPE_CODE"]
-  grant_types          = ["OIDC_GRANT_TYPE_AUTHORIZATION_CODE"]
-  app_type             = "OIDC_APP_TYPE_WEB"
-  auth_method_type     = "OIDC_AUTH_METHOD_TYPE_POST"
-  post_logout_redirect_uris = [var.forgejo_url]
-  dev_mode             = false
-
-
+  redirect_uris             = ["${local.forgejo_url}/user/oauth2/Zitadel/callback"]
+  response_types            = ["OIDC_RESPONSE_TYPE_CODE"]
+  grant_types               = ["OIDC_GRANT_TYPE_AUTHORIZATION_CODE"]
+  app_type                  = "OIDC_APP_TYPE_WEB"
+  auth_method_type          = "OIDC_AUTH_METHOD_TYPE_POST"
+  post_logout_redirect_uris = [local.forgejo_url]
+  dev_mode                  = false
 }
 
 resource "kubernetes_secret_v1" "forgejo_oidc" {
@@ -103,15 +113,13 @@ resource "zitadel_application_oidc" "harbor" {
   project_id = zitadel_project.homelab.id
   name       = "Harbor"
 
-  redirect_uris        = ["${var.harbor_url}/c/oidc/callback"]
-  response_types       = ["OIDC_RESPONSE_TYPE_CODE"]
-  grant_types          = ["OIDC_GRANT_TYPE_AUTHORIZATION_CODE"]
-  app_type             = "OIDC_APP_TYPE_WEB"
-  auth_method_type     = "OIDC_AUTH_METHOD_TYPE_POST"
-  post_logout_redirect_uris = [var.harbor_url]
-  dev_mode             = false
-
-
+  redirect_uris             = ["${local.harbor_url}/c/oidc/callback"]
+  response_types            = ["OIDC_RESPONSE_TYPE_CODE"]
+  grant_types               = ["OIDC_GRANT_TYPE_AUTHORIZATION_CODE"]
+  app_type                  = "OIDC_APP_TYPE_WEB"
+  auth_method_type          = "OIDC_AUTH_METHOD_TYPE_POST"
+  post_logout_redirect_uris = [local.harbor_url]
+  dev_mode                  = false
 }
 
 resource "kubernetes_secret_v1" "harbor_oidc" {
@@ -132,15 +140,13 @@ resource "zitadel_application_oidc" "grafana" {
   project_id = zitadel_project.homelab.id
   name       = "Grafana"
 
-  redirect_uris        = ["${var.grafana_url}/login/generic_oauth"]
-  response_types       = ["OIDC_RESPONSE_TYPE_CODE"]
-  grant_types          = ["OIDC_GRANT_TYPE_AUTHORIZATION_CODE"]
-  app_type             = "OIDC_APP_TYPE_WEB"
-  auth_method_type     = "OIDC_AUTH_METHOD_TYPE_BASIC"
-  post_logout_redirect_uris = [var.grafana_url]
-  dev_mode             = false
-
-
+  redirect_uris             = ["${local.grafana_url}/login/generic_oauth"]
+  response_types            = ["OIDC_RESPONSE_TYPE_CODE"]
+  grant_types               = ["OIDC_GRANT_TYPE_AUTHORIZATION_CODE"]
+  app_type                  = "OIDC_APP_TYPE_WEB"
+  auth_method_type          = "OIDC_AUTH_METHOD_TYPE_BASIC"
+  post_logout_redirect_uris = [local.grafana_url]
+  dev_mode                  = false
 }
 
 resource "kubernetes_secret_v1" "grafana_oidc" {
@@ -152,28 +158,83 @@ resource "kubernetes_secret_v1" "grafana_oidc" {
   data = {
     GF_AUTH_GENERIC_OAUTH_CLIENT_ID     = zitadel_application_oidc.grafana.client_id
     GF_AUTH_GENERIC_OAUTH_CLIENT_SECRET = zitadel_application_oidc.grafana.client_secret
-    GF_AUTH_GENERIC_OAUTH_AUTH_URL      = "${var.zitadel_url}/oauth/v2/authorize"
-    GF_AUTH_GENERIC_OAUTH_TOKEN_URL     = "${var.zitadel_url}/oauth/v2/token"
-    GF_AUTH_GENERIC_OAUTH_API_URL       = "${var.zitadel_url}/oidc/v1/userinfo"
-    GF_SERVER_ROOT_URL                  = var.grafana_url
+    GF_AUTH_GENERIC_OAUTH_AUTH_URL      = "${local.zitadel_url}/oauth/v2/authorize"
+    GF_AUTH_GENERIC_OAUTH_TOKEN_URL     = "${local.zitadel_url}/oauth/v2/token"
+    GF_AUTH_GENERIC_OAUTH_API_URL       = "${local.zitadel_url}/oidc/v1/userinfo"
+    GF_SERVER_ROOT_URL                  = local.grafana_url
   }
 }
 
 # =============================================================================
-# Future Apps — OIDC app always created, K8s secret gated by toggle variable
+# Apps — OIDC app + K8s secret (gated by toggle for undeployed apps)
 # =============================================================================
 
+# --- Open WebUI ---
+resource "zitadel_application_oidc" "openwebui" {
+  org_id     = var.zitadel_org_id
+  project_id = zitadel_project.homelab.id
+  name       = "Open WebUI"
+
+  redirect_uris             = ["${local.openwebui_url}/oauth/oidc/callback"]
+  response_types            = ["OIDC_RESPONSE_TYPE_CODE"]
+  grant_types               = ["OIDC_GRANT_TYPE_AUTHORIZATION_CODE"]
+  app_type                  = "OIDC_APP_TYPE_WEB"
+  auth_method_type          = "OIDC_AUTH_METHOD_TYPE_POST"
+  post_logout_redirect_uris = [local.openwebui_url]
+  dev_mode                  = false
+}
+
+resource "kubernetes_secret_v1" "openwebui_oidc" {
+  metadata {
+    name      = "open-webui-oidc-secrets"
+    namespace = "ai"
+  }
+
+  data = {
+    client-id     = zitadel_application_oidc.openwebui.client_id
+    client-secret = zitadel_application_oidc.openwebui.client_secret
+  }
+}
+
+# --- Plane ---
+resource "zitadel_application_oidc" "plane" {
+  org_id     = var.zitadel_org_id
+  project_id = zitadel_project.homelab.id
+  name       = "Plane"
+
+  redirect_uris             = ["${local.plane_url}/auth/oidc/callback/"]
+  response_types            = ["OIDC_RESPONSE_TYPE_CODE"]
+  grant_types               = ["OIDC_GRANT_TYPE_AUTHORIZATION_CODE"]
+  app_type                  = "OIDC_APP_TYPE_WEB"
+  auth_method_type          = "OIDC_AUTH_METHOD_TYPE_POST"
+  post_logout_redirect_uris = ["${local.plane_url}/auth/oidc/logout/"]
+  dev_mode                  = false
+}
+
+resource "kubernetes_secret_v1" "plane_oidc" {
+  metadata {
+    name      = "plane-oidc-secrets"
+    namespace = "management"
+  }
+
+  data = {
+    client-id     = zitadel_application_oidc.plane.client_id
+    client-secret = zitadel_application_oidc.plane.client_secret
+  }
+}
+
+# --- Jellyfin ---
 resource "zitadel_application_oidc" "jellyfin" {
   org_id     = var.zitadel_org_id
   project_id = zitadel_project.homelab.id
   name       = "Jellyfin"
 
-  redirect_uris    = ["http://jellyfin.internal/sso/OID/redirect/Zitadel"]
+  redirect_uris    = ["${local.jellyfin_url}/sso/OID/redirect/Zitadel"]
   response_types   = ["OIDC_RESPONSE_TYPE_CODE"]
   grant_types      = ["OIDC_GRANT_TYPE_AUTHORIZATION_CODE"]
   app_type         = "OIDC_APP_TYPE_WEB"
   auth_method_type = "OIDC_AUTH_METHOD_TYPE_POST"
-  dev_mode         = true
+  dev_mode         = false
 }
 
 resource "kubernetes_secret_v1" "jellyfin_oidc" {
@@ -190,17 +251,18 @@ resource "kubernetes_secret_v1" "jellyfin_oidc" {
   }
 }
 
+# --- Navidrome ---
 resource "zitadel_application_oidc" "navidrome" {
   org_id     = var.zitadel_org_id
   project_id = zitadel_project.homelab.id
   name       = "Navidrome"
 
-  redirect_uris    = ["http://navidrome.internal/app/callback"]
+  redirect_uris    = ["${local.navidrome_url}/app/callback"]
   response_types   = ["OIDC_RESPONSE_TYPE_CODE"]
   grant_types      = ["OIDC_GRANT_TYPE_AUTHORIZATION_CODE"]
   app_type         = "OIDC_APP_TYPE_WEB"
   auth_method_type = "OIDC_AUTH_METHOD_TYPE_POST"
-  dev_mode         = true
+  dev_mode         = false
 }
 
 resource "kubernetes_secret_v1" "navidrome_oidc" {
@@ -217,44 +279,18 @@ resource "kubernetes_secret_v1" "navidrome_oidc" {
   }
 }
 
-resource "zitadel_application_oidc" "openwebui" {
-  org_id     = var.zitadel_org_id
-  project_id = zitadel_project.homelab.id
-  name       = "Open WebUI"
-
-  redirect_uris    = ["http://openwebui.internal/oauth/oidc/callback"]
-  response_types   = ["OIDC_RESPONSE_TYPE_CODE"]
-  grant_types      = ["OIDC_GRANT_TYPE_AUTHORIZATION_CODE"]
-  app_type         = "OIDC_APP_TYPE_WEB"
-  auth_method_type = "OIDC_AUTH_METHOD_TYPE_POST"
-  dev_mode         = true
-}
-
-resource "kubernetes_secret_v1" "openwebui_oidc" {
-  count = var.create_openwebui_secret ? 1 : 0
-
-  metadata {
-    name      = "open-webui-oidc-secrets"
-    namespace = "ai"
-  }
-
-  data = {
-    client-id     = zitadel_application_oidc.openwebui.client_id
-    client-secret = zitadel_application_oidc.openwebui.client_secret
-  }
-}
-
+# --- Immich ---
 resource "zitadel_application_oidc" "immich" {
   org_id     = var.zitadel_org_id
   project_id = zitadel_project.homelab.id
   name       = "Immich"
 
-  redirect_uris    = ["http://immich.internal/auth/login"]
+  redirect_uris    = ["${local.immich_url}/auth/login"]
   response_types   = ["OIDC_RESPONSE_TYPE_CODE"]
   grant_types      = ["OIDC_GRANT_TYPE_AUTHORIZATION_CODE"]
   app_type         = "OIDC_APP_TYPE_WEB"
   auth_method_type = "OIDC_AUTH_METHOD_TYPE_POST"
-  dev_mode         = true
+  dev_mode         = false
 }
 
 resource "kubernetes_secret_v1" "immich_oidc" {
@@ -271,17 +307,18 @@ resource "kubernetes_secret_v1" "immich_oidc" {
   }
 }
 
+# --- Paperless-ngx ---
 resource "zitadel_application_oidc" "paperless" {
   org_id     = var.zitadel_org_id
   project_id = zitadel_project.homelab.id
   name       = "Paperless-ngx"
 
-  redirect_uris    = ["http://paperless.internal/accounts/oidc/zitadel/login/callback/"]
+  redirect_uris    = ["${local.paperless_url}/accounts/oidc/zitadel/login/callback/"]
   response_types   = ["OIDC_RESPONSE_TYPE_CODE"]
   grant_types      = ["OIDC_GRANT_TYPE_AUTHORIZATION_CODE"]
   app_type         = "OIDC_APP_TYPE_WEB"
   auth_method_type = "OIDC_AUTH_METHOD_TYPE_POST"
-  dev_mode         = true
+  dev_mode         = false
 }
 
 resource "kubernetes_secret_v1" "paperless_oidc" {
@@ -335,7 +372,7 @@ resource "zitadel_human_user" "admin" {
   last_name          = var.admin_last_name
   email              = var.admin_email
   is_email_verified  = true
-  initial_password   = random_password.initial_user_password.result  # Must be changed on first login
+  initial_password   = random_password.initial_user_password.result
 }
 
 resource "zitadel_user_grant" "admin_project" {
@@ -379,8 +416,6 @@ resource "zitadel_user_grant" "additional_project" {
 # =============================================================================
 
 # --- ArgoCD: Patch argocd-cm with OIDC config ---
-# Uses kubernetes_config_map_v1_data to merge into existing ConfigMap
-# without taking ownership of the entire resource (ArgoCD Helm owns it).
 resource "kubernetes_config_map_v1_data" "argocd_oidc" {
   metadata {
     name      = "argocd-cm"
@@ -388,11 +423,11 @@ resource "kubernetes_config_map_v1_data" "argocd_oidc" {
   }
 
   data = {
-    "url" = var.argocd_url
+    "url" = local.argocd_url
 
     "oidc.config" = yamlencode({
       name     = "Zitadel"
-      issuer   = var.zitadel_url
+      issuer   = local.zitadel_url
       clientID = zitadel_application_oidc.argocd.client_id
       requestedScopes = [
         "openid",
@@ -411,13 +446,11 @@ resource "kubernetes_config_map_v1_data" "argocd_oidc" {
 }
 
 # --- Forgejo: Add Zitadel as OAuth2 authentication source ---
-# Forgejo requires auth sources to be added via CLI or admin UI.
-# This runs `gitea admin auth add-oauth` inside the Forgejo pod.
 resource "null_resource" "forgejo_oauth_source" {
   triggers = {
     client_id     = zitadel_application_oidc.forgejo.client_id
     client_secret = zitadel_application_oidc.forgejo.client_secret
-    issuer_url    = "${var.zitadel_url}"
+    issuer_url    = local.zitadel_url
   }
 
   provisioner "local-exec" {
@@ -434,7 +467,6 @@ resource "null_resource" "forgejo_oauth_source" {
 
       if [ "$EXISTING" -gt 0 ]; then
         echo "Zitadel auth source already exists. Updating..."
-        # Get the source ID
         SOURCE_ID=$(kubectl --kubeconfig="$KUBECONFIG" exec -n forgejo "$FORGEJO_POD" -- \
           gitea admin auth list 2>/dev/null | grep "Zitadel" | awk '{print $1}')
 
@@ -445,12 +477,11 @@ resource "null_resource" "forgejo_oauth_source" {
             --provider "openidConnect" \
             --key "${zitadel_application_oidc.forgejo.client_id}" \
             --secret "${zitadel_application_oidc.forgejo.client_secret}" \
-            --auto-discover-url "${var.zitadel_url}/.well-known/openid-configuration" \
+            --auto-discover-url "${local.zitadel_url}/.well-known/openid-configuration" \
             --skip-local-2fa \
             --scopes "openid profile email" \
             --group-claim-name "" \
-            --admin-group "" \
-            --auto-discover-url "${var.zitadel_url}/.well-known/openid-configuration"
+            --admin-group ""
       else
         echo "Adding Zitadel auth source..."
         kubectl --kubeconfig="$KUBECONFIG" exec -n forgejo "$FORGEJO_POD" -- \
@@ -459,7 +490,7 @@ resource "null_resource" "forgejo_oauth_source" {
             --provider "openidConnect" \
             --key "${zitadel_application_oidc.forgejo.client_id}" \
             --secret "${zitadel_application_oidc.forgejo.client_secret}" \
-            --auto-discover-url "${var.zitadel_url}/.well-known/openid-configuration" \
+            --auto-discover-url "${local.zitadel_url}/.well-known/openid-configuration" \
             --skip-local-2fa \
             --scopes "openid profile email"
       fi
@@ -472,13 +503,11 @@ resource "null_resource" "forgejo_oauth_source" {
 }
 
 # --- Harbor: Configure OIDC via REST API ---
-# Harbor's OIDC settings are stored in its internal database,
-# configured via PUT /api/v2.0/configurations.
 resource "null_resource" "harbor_oidc_config" {
   triggers = {
     client_id     = zitadel_application_oidc.harbor.client_id
     client_secret = zitadel_application_oidc.harbor.client_secret
-    issuer_url    = "${var.zitadel_url}"
+    issuer_url    = local.zitadel_url
   }
 
   provisioner "local-exec" {
@@ -486,7 +515,7 @@ resource "null_resource" "harbor_oidc_config" {
     command     = <<-EOT
       set -euo pipefail
 
-      HARBOR_URL="${var.harbor_url}"
+      HARBOR_URL="${local.harbor_url}"
       HARBOR_PASS=$(kubectl --kubeconfig="${var.kubeconfig_path}" get secret harbor-credentials -n harbor -o jsonpath='{.data.admin-password}' | base64 -d)
 
       curl -sf -X PUT "$HARBOR_URL/api/v2.0/configurations" \
@@ -495,7 +524,7 @@ resource "null_resource" "harbor_oidc_config" {
         -d '{
           "auth_mode": "oidc_auth",
           "oidc_name": "Zitadel",
-          "oidc_endpoint": "${var.zitadel_url}",
+          "oidc_endpoint": "${local.zitadel_url}",
           "oidc_client_id": "${zitadel_application_oidc.harbor.client_id}",
           "oidc_client_secret": "${zitadel_application_oidc.harbor.client_secret}",
           "oidc_scope": "openid,profile,email",
@@ -519,7 +548,6 @@ resource "null_resource" "harbor_oidc_config" {
 # Zitadel Instance Settings
 # =============================================================================
 
-# Allow both password and external IDP login
 resource "zitadel_default_login_policy" "default" {
   user_login                    = true
   allow_register                = false
@@ -529,7 +557,7 @@ resource "zitadel_default_login_policy" "default" {
   passwordless_type             = "PASSWORDLESS_TYPE_NOT_ALLOWED"
   hide_password_reset           = false
   ignore_unknown_usernames      = false
-  default_redirect_uri          = "${var.zitadel_url}/ui/console"
+  default_redirect_uri          = "${local.zitadel_url}/ui/console"
   multi_factors                 = []
   second_factors                = []
   password_check_lifetime       = "240h"
@@ -539,7 +567,6 @@ resource "zitadel_default_login_policy" "default" {
   multi_factor_check_lifetime   = "12h"
 }
 
-# OIDC settings — token lifetimes
 resource "zitadel_default_oidc_settings" "default" {
   access_token_lifetime          = "12h"
   id_token_lifetime              = "12h"
