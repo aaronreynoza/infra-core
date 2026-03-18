@@ -226,8 +226,8 @@ Back up `~/.config/sops/age/keys.txt` securely (password manager, USB drive). If
 The environment-specific configuration now lives in its own private repository (`aaron/prod` on Forgejo). Clone both repos side by side:
 
 ```bash
-git clone http://10.10.10.222:3000/aaron/infra-core.git
-git clone http://10.10.10.222:3000/aaron/prod.git
+git clone https://forgejo.aaron.reynoza.org/aaron/infra-core.git
+git clone https://forgejo.aaron.reynoza.org/aaron/prod.git
 ```
 
 Terraform references the prod repo via relative paths (e.g., `../../../../prod/terraform.tfvars`).

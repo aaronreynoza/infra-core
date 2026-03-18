@@ -32,7 +32,7 @@ Dual-purpose: Forgejo Actions runner for Terraform/infra automation + break-glas
 ### Network Design
 
 ```
-Workstation (192.168.1.x)
+Workstation (REDACTED_MGMT_IP)
     |
     | SSH (management network, no OPNSense dependency)
     v
@@ -60,7 +60,7 @@ K8s nodes (10.10.10.x), Forgejo, Harbor, ArgoCD
 
 ### Security
 
-- SSH: key-only, AllowUsers=operator, from 192.168.1.0/24 only
+- SSH: key-only, AllowUsers=operator, from management network CIDR only
 - Firewall (ufw): SSH inbound from mgmt net only
 - Credentials: file permissions 600, dedicated non-root user for runner
 - Age key at ~/.config/sops/age/keys.txt

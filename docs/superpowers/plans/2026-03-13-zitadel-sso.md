@@ -319,7 +319,7 @@ harbor_url  = "http://<HARBOR_IP>"
 grafana_url = "http://<GRAFANA_IP>:3000"
 
 # Admin user
-admin_email      = "aaron@reynoza.org"
+admin_email      = "<ADMIN_EMAIL>"
 admin_first_name = "Aaron"
 admin_last_name  = "Valdez"
 
@@ -668,7 +668,7 @@ resource "zitadel_human_user" "admin" {
   last_name          = var.admin_last_name
   email              = var.admin_email
   is_email_verified  = true
-  initial_password   = "ChangeMe123!"  # Must be changed on first login
+  initial_password   = random_password.initial_user_password.result  # Must be changed on first login
 }
 
 resource "zitadel_user_grant" "admin_project" {
@@ -691,7 +691,7 @@ resource "zitadel_human_user" "additional" {
   last_name          = each.value.last_name
   email              = each.value.email
   is_email_verified  = true
-  initial_password   = "ChangeMe123!"
+  initial_password   = random_password.initial_user_password.result
 }
 
 resource "zitadel_user_grant" "additional_project" {

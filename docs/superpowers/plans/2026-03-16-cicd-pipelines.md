@@ -33,7 +33,7 @@
 
 ```bash
 curl -s -H "Authorization: token <FORGEJO_ADMIN_TOKEN>" \
-  http://10.10.10.222:3000/api/v1/admin/runners/registration-token \
+  https://forgejo.aaron.reynoza.org/api/v1/admin/runners/registration-token \
   -X POST
 ```
 
@@ -42,8 +42,8 @@ Save the `token` value from the response.
 - [ ] **Step 2: Register the runner on mgmt VM**
 
 ```bash
-ssh admin@192.168.1.10 "forgejo-runner register \
-  --instance http://10.10.10.222:3000 \
+ssh admin@REDACTED_MGMT_IP "forgejo-runner register \
+  --instance https://forgejo.aaron.reynoza.org \
   --token <TOKEN_FROM_STEP_1> \
   --labels infra \
   --name mgmt-infra-runner \
@@ -53,7 +53,7 @@ ssh admin@192.168.1.10 "forgejo-runner register \
 - [ ] **Step 3: Start the runner service**
 
 ```bash
-ssh admin@192.168.1.10 "sudo systemctl enable --now forgejo-runner && sudo systemctl status forgejo-runner"
+ssh admin@REDACTED_MGMT_IP "sudo systemctl enable --now forgejo-runner && sudo systemctl status forgejo-runner"
 ```
 
 Expected: Active (running).
@@ -62,7 +62,7 @@ Expected: Active (running).
 
 ```bash
 curl -s -H "Authorization: token <FORGEJO_ADMIN_TOKEN>" \
-  http://10.10.10.222:3000/api/v1/admin/runners | python3 -c "import sys,json; [print(r['name'], r['status']) for r in json.load(sys.stdin)]"
+  https://forgejo.aaron.reynoza.org/api/v1/admin/runners | python3 -c "import sys,json; [print(r['name'], r['status']) for r in json.load(sys.stdin)]"
 ```
 
 Expected: `mgmt-infra-runner` with status `online`.
@@ -77,7 +77,7 @@ Expected: `mgmt-infra-runner` with status `online`.
 
 ```bash
 curl -s -H "Authorization: token <FORGEJO_ADMIN_TOKEN>" \
-  http://10.10.10.222:3000/api/v1/admin/runners/registration-token \
+  https://forgejo.aaron.reynoza.org/api/v1/admin/runners/registration-token \
   -X POST
 ```
 
@@ -169,7 +169,7 @@ metadata:
 spec:
   project: default
   source:
-    repoURL: http://10.10.10.222:3000/aaron/infra-core.git
+    repoURL: https://forgejo.aaron.reynoza.org/aaron/infra-core.git
     targetRevision: main
     path: core/manifests/apps/forgejo-runner
   destination:
@@ -207,7 +207,7 @@ kubectl get pods -n forgejo-runner
 # Expected: forgejo-runner pod Running
 
 curl -s -H "Authorization: token <FORGEJO_ADMIN_TOKEN>" \
-  http://10.10.10.222:3000/api/v1/admin/runners | python3 -c "import sys,json; [print(r['name'], r['status']) for r in json.load(sys.stdin)]"
+  https://forgejo.aaron.reynoza.org/api/v1/admin/runners | python3 -c "import sys,json; [print(r['name'], r['status']) for r in json.load(sys.stdin)]"
 # Expected: both mgmt-infra-runner and k8s-runner online
 ```
 
@@ -459,7 +459,7 @@ After completing all chunks:
 
 | Runner | Label | Location | Jobs |
 |--------|-------|----------|------|
-| mgmt-infra-runner | `infra` | Mgmt VM (192.168.1.10) | terraform plan/apply, manifest validation |
+| mgmt-infra-runner | `infra` | Mgmt VM (REDACTED_MGMT_IP) | terraform plan/apply, manifest validation |
 | k8s-runner | `k8s` | K8s pod (forgejo-runner ns) | linting, shellcheck, yamllint, container builds |
 
 | Workflow | Repo | Trigger | Runner |

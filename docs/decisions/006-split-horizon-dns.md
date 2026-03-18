@@ -8,7 +8,7 @@
 
 ## Context
 
-After migrating services from IP-based access (`http://10.10.10.225:8080`) to subdomain-based access via Pangolin (`https://zitadel.aaron.reynoza.org`), internal access is broken. All DNS queries for `*.aaron.reynoza.org` resolve to the Pangolin VPS public IP (`207.246.115.3`), causing traffic to hairpin: leave the home network, hit the VPS, then tunnel back in via WireGuard.
+After migrating services from IP-based access (`http://<LB_IP>:8080`) to subdomain-based access via Pangolin (`https://zitadel.aaron.reynoza.org`), internal access is broken. All DNS queries for `*.aaron.reynoza.org` resolve to the Pangolin VPS public IP (`<VPS_IP>`), causing traffic to hairpin: leave the home network, hit the VPS, then tunnel back in via WireGuard.
 
 This creates three problems:
 
@@ -27,9 +27,9 @@ Split-horizon means the same domain resolves to different IPs depending on where
 ```
 SAME DOMAIN: zitadel.aaron.reynoza.org
 
-  From the internet  → 207.246.115.3  (Pangolin VPS — external path)
-  From VLAN 10       → 10.10.10.225   (Cilium LB IP — direct)
-  From a K8s pod     → 10.10.10.225   (Cilium LB IP — direct)
+  From the internet  → <VPS_IP>  (Pangolin VPS — external path)
+  From VLAN 10       → <LB_IP>   (Cilium LB IP — direct)
+  From a K8s pod     → <LB_IP>   (Cilium LB IP — direct)
 ```
 
 External users go through Pangolin (TLS + WireGuard tunnel). Internal users connect directly — no VPS, no tunnel, no internet round-trip.
@@ -44,7 +44,7 @@ Workstation / Pod
        | DNS: zitadel.aaron.reynoza.org?
        v
   Cloudflare DNS
-  → 207.246.115.3 (VPS)
+  → <VPS_IP> (VPS)
        |
   Pangolin VPS (internet round-trip!)
        |
@@ -61,7 +61,7 @@ Traffic hairpins through the internet. gRPC fails through Pangolin's HTTP proxy.
 ┌──────────────────────────────────────────────────┐
 │  EXTERNAL USER                                    │
 │       |                                           │
-│  Cloudflare DNS → 207.246.115.3 (Pangolin VPS)  │
+│  Cloudflare DNS → <VPS_IP> (Pangolin VPS)  │
 │       |                                           │
 │  Pangolin → WireGuard → Newt → K8s Service       │
 └──────────────────────────────────────────────────┘
@@ -72,7 +72,7 @@ Traffic hairpins through the internet. gRPC fails through Pangolin's HTTP proxy.
 │  Workstation          K8s Pod                     │
 │       |                    |                      │
 │  ctrld (OPNSense)    CoreDNS (cluster)           │
-│  → 10.10.10.225      → 10.10.10.225             │
+│  → <LB_IP>      → <LB_IP>             │
 │       |                    |                      │
 │       └────────┬───────────┘                      │
 │                |                                  │
@@ -95,7 +95,7 @@ Pod DNS query: zitadel.aaron.reynoza.org?
        |
    CoreDNS
        |
-       ├─ Match *.aaron.reynoza.org? → YES → return 10.10.10.225
+       ├─ Match *.aaron.reynoza.org? → YES → return <LB_IP>
        |
        └─ No match? → forward to OPNSense → Cloudflare (normal)
 ```
@@ -111,7 +111,7 @@ Workstation DNS query: zitadel.aaron.reynoza.org?
        |
    OPNSense (ctrld)
        |
-       ├─ Match *.aaron.reynoza.org? → YES → return 10.10.10.225
+       ├─ Match *.aaron.reynoza.org? → YES → return <LB_IP>
        |
        └─ No match? → forward to ControlD/Cloudflare (normal)
 ```
@@ -127,12 +127,12 @@ Workstation DNS query: zitadel.aaron.reynoza.org?
 
 | Subdomain | Internal LB IP | Service |
 |-----------|---------------|---------|
-| `argocd.aaron.reynoza.org` | 10.10.10.221 | ArgoCD |
-| `forgejo.aaron.reynoza.org` | 10.10.10.222 | Forgejo |
-| `harbor.aaron.reynoza.org` | 10.10.10.223 | Harbor |
-| `grafana.aaron.reynoza.org` | 10.10.10.224 | Grafana |
-| `zitadel.aaron.reynoza.org` | 10.10.10.225 | Zitadel |
-| `chat.aaron.reynoza.org` | 10.10.10.227 | Open WebUI |
+| `argocd.aaron.reynoza.org` | `<LB_IP>` | ArgoCD |
+| `forgejo.aaron.reynoza.org` | `<LB_IP>` | Forgejo |
+| `harbor.aaron.reynoza.org` | `<LB_IP>` | Harbor |
+| `grafana.aaron.reynoza.org` | `<LB_IP>` | Grafana |
+| `zitadel.aaron.reynoza.org` | `<LB_IP>` | Zitadel |
+| `chat.aaron.reynoza.org` | `<LB_IP>` | Open WebUI |
 
 ## External Access (Outside the Network)
 
@@ -167,12 +167,12 @@ Add to the CoreDNS Corefile:
 ```
 aaron.reynoza.org {
     hosts {
-        10.10.10.221 argocd.aaron.reynoza.org
-        10.10.10.222 forgejo.aaron.reynoza.org
-        10.10.10.223 harbor.aaron.reynoza.org
-        10.10.10.224 grafana.aaron.reynoza.org
-        10.10.10.225 zitadel.aaron.reynoza.org
-        10.10.10.227 chat.aaron.reynoza.org
+        <LB_IP> argocd.aaron.reynoza.org
+        <LB_IP> forgejo.aaron.reynoza.org
+        <LB_IP> harbor.aaron.reynoza.org
+        <LB_IP> grafana.aaron.reynoza.org
+        <LB_IP> zitadel.aaron.reynoza.org
+        <LB_IP> chat.aaron.reynoza.org
         fallthrough
     }
 }

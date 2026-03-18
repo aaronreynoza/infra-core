@@ -344,7 +344,7 @@ If bootstrap times out:
 
 ## Step 4: Management-to-VLAN Routing
 
-Your workstation (on the management network 192.168.1.0/24) needs to reach nodes on PROD VLAN 10 (10.10.10.0/16) through OPNSense. This does not work by default and requires several configuration changes.
+Your workstation (on the management network REDACTED_MGMT_CIDR) needs to reach nodes on PROD VLAN 10 (10.10.10.0/16) through OPNSense. This does not work by default and requires several configuration changes.
 
 **Full details:** See [mgmt-to-vlan-routing.md](mgmt-to-vlan-routing.md)
 
@@ -353,7 +353,7 @@ Your workstation (on the management network 192.168.1.0/24) needs to reach nodes
 #### On OPNSense:
 
 1. **Firewall > Rules > WAN**: Add rule — Pass, Source: WAN net, Destination: PROD net (10.10.10.0/16)
-2. **Firewall > NAT > Outbound**: Switch to Hybrid mode, add manual "Do not NAT" rule for Source 10.10.0.0/16 -> Destination 192.168.1.0/24
+2. **Firewall > NAT > Outbound**: Switch to Hybrid mode, add manual "Do not NAT" rule for Source 10.10.0.0/16 -> Destination REDACTED_MGMT_CIDR
 3. **Firewall > Settings > Advanced**: Check "Disable reply-to" (prevents pf from dropping routed return traffic)
 
 #### On your Mac:
@@ -576,7 +576,7 @@ This section documents every issue hit during deployment, in the order they were
 
 ### Issue #3: Management-to-VLAN routing
 
-**Problem:** After VMs booted on PROD VLAN (10.10.10.0/16), the Mac on the management network (192.168.1.0/24) could not reach them. `ping REDACTED_K8S_API` timed out, `nc -zv REDACTED_K8S_API 6443` returned "Can't assign requested address".
+**Problem:** After VMs booted on PROD VLAN (10.10.10.0/16), the Mac on the management network (REDACTED_MGMT_CIDR) could not reach them. `ping REDACTED_K8S_API` timed out, `nc -zv REDACTED_K8S_API 6443` returned "Can't assign requested address".
 
 **Root cause:** Three interacting issues — outbound NAT rewriting return traffic, reply-to dropping asymmetric traffic, and missing WAN firewall rules.
 

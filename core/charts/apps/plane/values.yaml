@@ -49,7 +49,7 @@ minio:
   pullPolicy: IfNotPresent
   assign_cluster_ip: true
   root_user: admin
-  root_password: password
+  root_password: ""  # Set in prod overlay
   env:
     minio_endpoint_ssl: false
 

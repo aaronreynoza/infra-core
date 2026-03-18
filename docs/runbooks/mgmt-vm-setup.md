@@ -45,7 +45,7 @@ On the Proxmox host shell:
 
     qm set 110 --ciuser operator
     qm set 110 --sshkeys /tmp/mgmt_key.pub
-    qm set 110 --ipconfig0 ip=REDACTED_MGMT_IP/24,gw=192.168.1.1
+    qm set 110 --ipconfig0 ip=REDACTED_MGMT_IP/24,gw=REDACTED_MGMT_GW
     qm set 110 --nameserver 1.1.1.1
     qm set 110 --searchdomain local
 
@@ -89,8 +89,8 @@ These cannot be automated (contain secrets):
 
 ### Clone repos
     ssh operator@REDACTED_MGMT_IP
-    git clone http://10.10.10.222:3000/aaron/infra-core.git ~/infra-core
-    git clone http://10.10.10.222:3000/aaron/prod.git ~/prod
+    git clone https://forgejo.aaron.reynoza.org/aaron/infra-core.git ~/infra-core
+    git clone https://forgejo.aaron.reynoza.org/aaron/prod.git ~/prod
 
 ### Copy kubeconfig and talosconfig
     scp prod/kubeconfig operator@REDACTED_MGMT_IP:~/.kube/config

@@ -18,5 +18,5 @@ These files are draft issues for tracking remaining work. The prod cluster (1 CP
 
 ```bash
 # Use the Forgejo web UI or API to create issues from these files
-# Forgejo issue tracker: http://10.10.10.222:3000/<org>/<repo>/issues
+# Forgejo issue tracker: https://forgejo.aaron.reynoza.org/<org>/<repo>/issues
 ```

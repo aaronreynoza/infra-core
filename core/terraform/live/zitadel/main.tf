@@ -320,6 +320,13 @@ resource "zitadel_project_role" "user" {
 # User Management
 # =============================================================================
 
+# --- Initial password (must be changed on first login) ---
+resource "random_password" "initial_user_password" {
+  length           = 24
+  special          = true
+  override_special = "!@#$%&*"
+}
+
 # --- Admin user ---
 resource "zitadel_human_user" "admin" {
   org_id             = var.zitadel_org_id
@@ -328,7 +335,7 @@ resource "zitadel_human_user" "admin" {
   last_name          = var.admin_last_name
   email              = var.admin_email
   is_email_verified  = true
-  initial_password   = "ChangeMe123!"  # Must be changed on first login
+  initial_password   = random_password.initial_user_password.result  # Must be changed on first login
 }
 
 resource "zitadel_user_grant" "admin_project" {
@@ -356,7 +363,7 @@ resource "zitadel_human_user" "additional" {
   last_name          = each.value.last_name
   email              = each.value.email
   is_email_verified  = true
-  initial_password   = "ChangeMe123!"
+  initial_password   = random_password.initial_user_password.result
 }
 
 resource "zitadel_user_grant" "additional_project" {
@@ -522,7 +529,7 @@ resource "zitadel_default_login_policy" "default" {
   passwordless_type             = "PASSWORDLESS_TYPE_NOT_ALLOWED"
   hide_password_reset           = false
   ignore_unknown_usernames      = false
-  default_redirect_uri          = var.argocd_url
+  default_redirect_uri          = "${var.zitadel_url}/ui/console"
   multi_factors                 = []
   second_factors                = []
   password_check_lifetime       = "240h"

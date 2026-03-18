@@ -144,7 +144,7 @@ spec:
 
 ```
 1. git-filter-repo on the public homelab repo to remove:
-   - All hardcoded IPs (10.10.10.*, 192.168.1.*)
+   - All hardcoded IPs (internal LB IPs, management network IPs)
    - OIDC client IDs (e.g., REDACTED_CLIENT_ID)
    - Any secrets that leaked into commits
    - References to environments/ directory contents

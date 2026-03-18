@@ -96,7 +96,7 @@ On the Proxmox host shell:
 
     qm set 99 --ciuser operator
     qm set 99 --sshkeys /tmp/mgmt_key.pub
-    qm set 99 --ipconfig0 ip=REDACTED_MGMT_IP/24,gw=192.168.1.1
+    qm set 99 --ipconfig0 ip=REDACTED_MGMT_IP/24,gw=REDACTED_MGMT_GW
     qm set 99 --nameserver 1.1.1.1
     qm set 99 --searchdomain local
 
@@ -351,7 +351,7 @@ git commit -m "feat: add mgmt-base Ansible role"
 - Create: `core/ansible/roles/mgmt-network/tasks/main.yml`
 - Create: `core/ansible/roles/mgmt-network/templates/interfaces.j2`
 
-**Context:** Configures the VLAN 10 tagged interface so the VM can reach K8s nodes, Forgejo, Harbor, etc. on 10.10.10.0/16. The management network (untagged, 192.168.1.0/24) is already configured by cloud-init. The VLAN interface is added on top.
+**Context:** Configures the VLAN 10 tagged interface so the VM can reach K8s nodes, Forgejo, Harbor, etc. on 10.10.10.0/16. The management network (untagged, REDACTED_MGMT_CIDR) is already configured by cloud-init. The VLAN interface is added on top.
 
 Debian 12 uses `/etc/network/interfaces` for network config. The cloud-init config handles the primary interface (ens18 or similar). We add a VLAN sub-interface.
 
@@ -429,7 +429,7 @@ ChallengeResponseAuthentication no
 UsePAM yes
 
 # Restrict to operator user from management network
-AllowUsers operator@192.168.1.*
+AllowUsers operator@{{ mgmt_ssh_allow_pattern }}
 
 # Security
 X11Forwarding no
@@ -472,7 +472,7 @@ ClientAliveCountMax 2
     rule: allow
     port: "22"
     proto: tcp
-    src: 192.168.1.0/24
+    src: "{{ mgmt_network_cidr }}"
 
 - name: Enable UFW
   community.general.ufw:

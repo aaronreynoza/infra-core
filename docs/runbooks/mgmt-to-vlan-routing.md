@@ -1,6 +1,6 @@
 # Management Network to VLAN Routing Fix
 
-This runbook fixes bidirectional routing between the management network (192.168.1.0/24) and PROD/DEV VLANs (10.10.0.0/16, 10.11.0.0/16) through OPNSense.
+This runbook fixes bidirectional routing between the management network (REDACTED_MGMT_CIDR) and PROD/DEV VLANs (10.10.0.0/16, 10.11.0.0/16) through OPNSense.
 
 ## Problem
 
@@ -15,7 +15,7 @@ Devices on the management network (e.g., your Mac at <WORKSTATION_IP>) cannot re
 
 Three interacting issues:
 
-1. **Outbound NAT rewrites return traffic**: Automatic outbound NAT translates ALL traffic from PROD exiting the WAN interface, including traffic to 192.168.1.0/24. Return packets from REDACTED_K8S_API to <WORKSTATION_IP> get source-rewritten to <OPNSENSE_WAN_IP>, breaking end-to-end connectivity.
+1. **Outbound NAT rewrites return traffic**: Automatic outbound NAT translates ALL traffic from PROD exiting the WAN interface, including traffic to REDACTED_MGMT_CIDR. Return packets from REDACTED_K8S_API to <WORKSTATION_IP> get source-rewritten to <OPNSENSE_WAN_IP>, breaking end-to-end connectivity.
 
 2. **reply-to directive causes asymmetric routing drops**: OPNSense adds `reply-to` to WAN rules by default, forcing replies out the originating interface. Routed traffic (WAN->PROD) has replies entering on PROD, which pf drops as not matching the WAN state table.
 
@@ -35,7 +35,7 @@ Three interacting issues:
 | Interface | WAN |
 | Protocol | any |
 | Source | 10.10.0.0/16 (PROD net) |
-| Destination | 192.168.1.0/24 |
+| Destination | REDACTED_MGMT_CIDR |
 | Translation | **Do not NAT** |
 | Description | No NAT: PROD to management |
 
@@ -44,7 +44,7 @@ Three interacting issues:
 | Setting | Value |
 |---------|-------|
 | Source | 10.11.0.0/16 (DEV net) |
-| Destination | 192.168.1.0/24 |
+| Destination | REDACTED_MGMT_CIDR |
 | Translation | **Do not NAT** |
 | Description | No NAT: DEV to management |
 
@@ -120,7 +120,7 @@ OPNSense WAN (<OPNSENSE_WAN_IP>)
   |
   | WAN rule: Pass WAN net -> PROD net
   | Routes to PROD interface (10.10.10.1)
-  | NO NAT applied (hybrid rule excludes 192.168.1.0/24)
+  | NO NAT applied (hybrid rule excludes REDACTED_MGMT_CIDR)
   v
 OPNSense PROD (10.10.10.1)
   |
@@ -132,7 +132,7 @@ Talos Node (REDACTED_K8S_API)
   v
 OPNSense PROD (10.10.10.1)
   |
-  | Routes to WAN (192.168.1.0/24 is on WAN interface)
+  | Routes to WAN (REDACTED_MGMT_CIDR is on WAN interface)
   | NO NAT (hybrid rule), NO reply-to drop
   v
 OPNSense WAN (<OPNSENSE_WAN_IP>)

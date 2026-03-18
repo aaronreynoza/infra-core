@@ -29,7 +29,7 @@ When the laptop is on the **office router**, it shares L2 with OPNSense WAN. The
 2. OPNSense forwards to PROD VLAN
 3. Reply comes back to OPNSense, which sends it back to laptop (same L2)
 
-When the laptop is on the **room wifi** (home router), even though it's on the same 192.168.1.0/24 subnet:
+When the laptop is on the **room wifi** (home router), even though it's on the same REDACTED_MGMT_CIDR subnet:
 1. Laptop sends packet toward <OPNSENSE_WAN_IP>, but it goes through the **home router first**
 2. The home router doesn't have a route for 10.10.10.0/16 — it may drop/misroute the return traffic
 3. Even if the forward path works, the return path fails: OPNSense sends the reply to the laptop's IP, but the packet goes to the home router, which may not forward it correctly to the room wifi segment

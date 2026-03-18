@@ -675,7 +675,7 @@ grafana_url = "http://REDACTED_LB_IP:3000"
 harbor_admin_password = "<from harbor-credentials secret>"
 
 # Admin user
-admin_email      = "aaron@reynoza.org"
+admin_email      = "<ADMIN_EMAIL>"
 admin_first_name = "Aaron"
 admin_last_name  = "Valdez"
 
@@ -786,7 +786,7 @@ kubectl get cm argocd-cm -n argocd -o jsonpath='{.data.url}'
 
 - [ ] **Step 2: Test OIDC login**
 
-Open `http://REDACTED_LB_IP` in browser. Click "Log in via Zitadel". Authenticate with `aaron@reynoza.org` / `ChangeMe123!` (or whatever was set). Should redirect back to ArgoCD with admin role.
+Open `http://REDACTED_LB_IP` in browser. Click "Log in via Zitadel". Authenticate with `<ADMIN_EMAIL>` / `<INITIAL_PASSWORD>` (or whatever was set). Should redirect back to ArgoCD with admin role.
 
 - [ ] **Step 3: Verify local admin fallback**
 

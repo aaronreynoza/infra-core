@@ -18,7 +18,7 @@ jobs:
       - name: Set image variables
         run: |
           SHORT_SHA=$(echo "${{ github.sha }}" | cut -c1-7)
-          REGISTRY="10.10.10.223"
+          REGISTRY="harbor.aaron.reynoza.org"
           IMAGE="${REGISTRY}/platform/docs"
           echo "SHORT_SHA=${SHORT_SHA}" >> "$GITHUB_ENV"
           echo "IMAGE=${IMAGE}" >> "$GITHUB_ENV"
@@ -33,11 +33,11 @@ jobs:
 
       - name: Push to Harbor
         run: |
-          echo "${{ secrets.HARBOR_PASSWORD }}" | docker login 10.10.10.223 \
+          echo "${{ secrets.HARBOR_PASSWORD }}" | docker login harbor.aaron.reynoza.org \
             -u "${{ secrets.HARBOR_USERNAME }}" --password-stdin
           docker push "${{ env.IMAGE }}:${{ env.SHORT_SHA }}"
           docker push "${{ env.IMAGE }}:latest"
-          docker logout 10.10.10.223
+          docker logout harbor.aaron.reynoza.org
 
       - name: Update deployment manifest
         run: |

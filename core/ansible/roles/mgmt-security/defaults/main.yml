@@ -1,3 +1,5 @@
 ---
 # Default management network CIDR — override in inventory or group_vars
-mgmt_network_cidr: "192.168.1.0/24"
+mgmt_network_cidr: "CHANGE_ME_MGMT_CIDR"
+# SSH AllowUsers pattern — must match your management network
+mgmt_ssh_allow_pattern: "CHANGE_ME_MGMT_PATTERN"  # e.g., "192.168.1.*"

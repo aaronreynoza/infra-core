@@ -150,7 +150,7 @@ Existing prod-specific manifests (cilium, longhorn) preserved."
 
 - [ ] **Step 1: Log in to Forgejo via Zitadel**
 
-Open `http://REDACTED_LB_IP:3000` and sign in with Zitadel (`aaron@reynoza.org`).
+Open `http://REDACTED_LB_IP:3000` and sign in with Zitadel (`<ADMIN_EMAIL>`).
 
 - [ ] **Step 2: Create the private repo on Forgejo**
 
@@ -183,7 +183,7 @@ git remote add origin http://REDACTED_LB_IP:3000/<your-username>/homelab-env.git
 git push -u origin main
 ```
 
-Replace `<your-username>` with your Forgejo username (from Zitadel — likely `aaron@reynoza.org` or the username part).
+Replace `<your-username>` with your Forgejo username (from Zitadel — likely `<ADMIN_EMAIL>` or the username part).
 
 - [ ] **Step 6: Push public repo to Forgejo**
 

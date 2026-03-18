@@ -5,7 +5,7 @@ metadata:
 spec:
   acme:
     server: https://acme-staging-v02.api.letsencrypt.org/directory
-    email: aaron@reynoza.org
+    email: admin@example.com  # Replace with your email
     privateKeySecretRef:
       name: letsencrypt-staging-account
     solvers:
@@ -22,7 +22,7 @@ metadata:
 spec:
   acme:
     server: https://acme-v02.api.letsencrypt.org/directory
-    email: aaron@reynoza.org
+    email: admin@example.com  # Replace with your email
     privateKeySecretRef:
       name: letsencrypt-production-account
     solvers:

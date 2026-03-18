@@ -55,8 +55,8 @@ ControlD with ctrld on OPNSense provides split-horizon resolution so that intern
 
 | Source | Query | Resolves To | Path |
 |--------|-------|-------------|------|
-| Internet user | `forgejo.aaron.reynoza.org` | `207.246.115.3` (VPS) | Through Pangolin tunnel |
-| VLAN 10 device | `forgejo.aaron.reynoza.org` | `10.10.10.222` (LB IP) | Direct to K8s service |
+| Internet user | `forgejo.aaron.reynoza.org` | `<VPS_IP>` (VPS) | Through Pangolin tunnel |
+| VLAN 10 device | `forgejo.aaron.reynoza.org` | `<LB_IP>` (LB IP) | Direct to K8s service |
 
 ---
 
@@ -69,7 +69,7 @@ ControlD with ctrld on OPNSense provides split-horizon resolution so that intern
                            |
                            v
                    Cloudflare DNS
-                   *.reynoza.org -> 207.246.115.3
+                   *.reynoza.org -> <VPS_IP>
                            |
                            v
               +---------------------------+
@@ -179,11 +179,11 @@ ControlD with ctrld on OPNSense provides split-horizon resolution so that intern
 
 | Service | LB IP | Port | Pangolin Resource Domain |
 |---------|-------|------|--------------------------|
-| ArgoCD | 10.10.10.221 | 443 | `argocd.aaron.reynoza.org` |
-| Forgejo | 10.10.10.222 | 3000 | `forgejo.aaron.reynoza.org` |
-| Harbor | 10.10.10.223 | 80 | `harbor.aaron.reynoza.org` |
-| Grafana | 10.10.10.224 | 80 | `grafana.aaron.reynoza.org` |
-| Zitadel | 10.10.10.225 | 8080 | `zitadel.aaron.reynoza.org` |
+| ArgoCD | `<LB_IP>` | 443 | `argocd.aaron.reynoza.org` |
+| Forgejo | `<LB_IP>` | 3000 | `forgejo.aaron.reynoza.org` |
+| Harbor | `<LB_IP>` | 80 | `harbor.aaron.reynoza.org` |
+| Grafana | `<LB_IP>` | 80 | `grafana.aaron.reynoza.org` |
+| Zitadel | `<LB_IP>` | 8080 | `zitadel.aaron.reynoza.org` |
 
 ### Pangolin Resource Configuration
 
@@ -193,14 +193,14 @@ For each service, create a "Resource" in the Pangolin dashboard:
 |---------|-------|-------------------|
 | Domain | The public subdomain | `argocd.aaron.reynoza.org` |
 | Site | The Newt-connected site | Aaron Homelab |
-| Target | LB IP and port | `http://10.10.10.221:443` |
+| Target | LB IP and port | `http://<LB_IP>:443` |
 | Access | Public or Private | Private (Badger auth) |
 
 Newt runs as a pod inside the cluster, so it can reach Cilium LB IPs directly. Alternatively, targets can use cluster-internal DNS if Newt resolves it:
 
 ```
 # LB IP target (simpler, always works)
-http://10.10.10.221:443
+http://<LB_IP>:443
 
 # Cluster DNS target (works if Newt uses cluster DNS)
 http://argocd-server.argocd.svc.cluster.local:443
@@ -217,11 +217,11 @@ Configure these in the ControlD "Aaron-Homelab" profile or via ctrld domain rule
 *.aaron.reynoza.org    -> forward to local resolver
 
 # Specific overrides (if wildcard forwarding is not available)
-argocd.aaron.reynoza.org   -> 10.10.10.221
-forgejo.aaron.reynoza.org  -> 10.10.10.222
-harbor.aaron.reynoza.org   -> 10.10.10.223
-grafana.aaron.reynoza.org  -> 10.10.10.224
-zitadel.aaron.reynoza.org  -> 10.10.10.225
+argocd.aaron.reynoza.org   -> <LB_IP>
+forgejo.aaron.reynoza.org  -> <LB_IP>
+harbor.aaron.reynoza.org   -> <LB_IP>
+grafana.aaron.reynoza.org  -> <LB_IP>
+zitadel.aaron.reynoza.org  -> <LB_IP>
 ```
 
 ---
@@ -232,7 +232,7 @@ zitadel.aaron.reynoza.org  -> 10.10.10.225
 
 | Component | Details |
 |-----------|---------|
-| Cloudflare DNS | `reynoza.org` zone, `*.reynoza.org` wildcard A record pointing to `207.246.115.3` |
+| Cloudflare DNS | `reynoza.org` zone, `*.reynoza.org` wildcard A record pointing to `<VPS_IP>` |
 | Vultr VPS | Shared NixOS host running Pangolin stack (Traefik, Gerbil, Badger, Pangolin) |
 | Pangolin admin | User accounts, global settings |
 
@@ -311,7 +311,7 @@ All four SSO-integrated apps (ArgoCD, Forgejo, Grafana, Harbor) have OIDC redire
 
 ```
 # Old (IP-based)
-http://10.10.10.222:3000/user/oauth2/Zitadel/callback
+https://forgejo.aaron.reynoza.org/user/oauth2/Zitadel/callback
 
 # New (subdomain-based)
 https://forgejo.aaron.reynoza.org/user/oauth2/Zitadel/callback
