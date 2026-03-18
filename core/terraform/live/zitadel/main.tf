@@ -26,11 +26,10 @@ locals {
 # Requires split-horizon DNS (OPNSense or /etc/hosts).
 provider "zitadel" {
   domain           = "zitadel.${var.base_domain}"
-  port             = "8080"
-  insecure         = true
+  port             = "443"
+  insecure         = false
   jwt_profile_file = var.zitadel_key_file
 }
-# TODO: Switch to port 443 + insecure=false after cert-manager deploys TLS on gateway
 
 # --- Kubernetes provider ---
 provider "kubernetes" {
