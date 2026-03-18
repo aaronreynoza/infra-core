@@ -55,34 +55,6 @@ app-template:
             capabilities:
               drop: ["ALL"]
 
-        init-skills:
-          image:
-            repository: ghcr.io/openclaw/openclaw
-            tag: "{{ .Values.openclawVersion }}"
-          command:
-            - sh
-            - -c
-            - |
-              set -e
-              cd /home/node/.openclaw
-              if [ ! -d "node_modules" ]; then
-                echo "Installing skill dependencies..."
-                npx --yes @anthropic-ai/claw-hub install weather gog 2>/dev/null || true
-              else
-                echo "Skills already installed, skipping"
-              fi
-          env:
-            HOME: /tmp
-            NPM_CONFIG_CACHE: /tmp/.npm
-          securityContext:
-            runAsUser: 1000
-            runAsGroup: 1000
-            runAsNonRoot: true
-            readOnlyRootFilesystem: true
-            allowPrivilegeEscalation: false
-            capabilities:
-              drop: ["ALL"]
-
       containers:
         main:
           image:
@@ -118,30 +90,39 @@ app-template:
           probes:
             liveness:
               enabled: true
-              type: TCP
+              custom: true
               spec:
-                tcpSocket:
-                  port: 18789
+                exec:
+                  command:
+                    - curl
+                    - -sf
+                    - http://127.0.0.1:18789/healthz
                 initialDelaySeconds: 30
                 periodSeconds: 30
                 timeoutSeconds: 5
                 failureThreshold: 3
             readiness:
               enabled: true
-              type: TCP
+              custom: true
               spec:
-                tcpSocket:
-                  port: 18789
+                exec:
+                  command:
+                    - curl
+                    - -sf
+                    - http://127.0.0.1:18789/healthz
                 initialDelaySeconds: 10
                 periodSeconds: 10
                 timeoutSeconds: 5
                 failureThreshold: 3
             startup:
               enabled: true
-              type: TCP
+              custom: true
               spec:
-                tcpSocket:
-                  port: 18789
+                exec:
+                  command:
+                    - curl
+                    - -sf
+                    - http://127.0.0.1:18789/healthz
                 initialDelaySeconds: 5
                 periodSeconds: 5
                 timeoutSeconds: 5
@@ -213,6 +194,7 @@ app-template:
           {
             "gateway": {
               "port": 18789,
+              "bind": "lan",
               "mode": "local",
               "trustedProxies": ["10.0.0.1"]
             },
@@ -315,8 +297,6 @@ app-template:
         main:
           init-config:
             - path: /home/node/.openclaw
-          init-skills:
-            - path: /home/node/.openclaw
           main:
             - path: /home/node/.openclaw
 
@@ -326,8 +306,6 @@ app-template:
       advancedMounts:
         main:
           init-config:
-            - path: /tmp
-          init-skills:
             - path: /tmp
           main:
             - path: /tmp
