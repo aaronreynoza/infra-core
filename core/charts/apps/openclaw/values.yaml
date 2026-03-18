@@ -152,34 +152,11 @@ app-template:
               memory: 1Gi
           probes:
             liveness:
-              enabled: true
-              custom: true
-              spec:
-                httpGet:
-                  path: /json/version
-                  port: 9222
-                initialDelaySeconds: 10
-                periodSeconds: 30
-                timeoutSeconds: 5
-                failureThreshold: 6
+              enabled: false
             readiness:
-              enabled: true
-              custom: true
-              spec:
-                httpGet:
-                  path: /json/version
-                  port: 9222
-                initialDelaySeconds: 5
-                periodSeconds: 10
+              enabled: false
             startup:
-              enabled: true
-              custom: true
-              spec:
-                httpGet:
-                  path: /json/version
-                  port: 9222
-                initialDelaySeconds: 5
-                periodSeconds: 5
+              enabled: false
                 timeoutSeconds: 5
                 failureThreshold: 12
 
