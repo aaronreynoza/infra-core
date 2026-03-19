@@ -12,6 +12,7 @@ locals {
   harbor_url    = "https://harbor.${var.base_domain}"
   grafana_url   = "https://grafana.${var.base_domain}"
   openwebui_url = "https://chat.${var.base_domain}"
+  coder_url     = "https://coder.${var.base_domain}"
   plane_url     = "https://plane.${var.base_domain}"
   jellyfin_url  = "https://jellyfin.${var.base_domain}"
   navidrome_url = "https://navidrome.${var.base_domain}"
@@ -193,6 +194,33 @@ resource "kubernetes_secret_v1" "openwebui_oidc" {
   data = {
     client-id     = zitadel_application_oidc.openwebui.client_id
     client-secret = zitadel_application_oidc.openwebui.client_secret
+  }
+}
+
+# --- Coder ---
+resource "zitadel_application_oidc" "coder" {
+  org_id     = var.zitadel_org_id
+  project_id = zitadel_project.homelab.id
+  name       = "Coder"
+
+  redirect_uris             = ["${local.coder_url}/api/v2/users/oidc/callback"]
+  response_types            = ["OIDC_RESPONSE_TYPE_CODE"]
+  grant_types               = ["OIDC_GRANT_TYPE_AUTHORIZATION_CODE"]
+  app_type                  = "OIDC_APP_TYPE_WEB"
+  auth_method_type          = "OIDC_AUTH_METHOD_TYPE_POST"
+  post_logout_redirect_uris = [local.coder_url]
+  dev_mode                  = false
+}
+
+resource "kubernetes_secret_v1" "coder_oidc" {
+  metadata {
+    name      = "coder-oidc-secrets"
+    namespace = "coder"
+  }
+
+  data = {
+    client-id     = zitadel_application_oidc.coder.client_id
+    client-secret = zitadel_application_oidc.coder.client_secret
   }
 }
 
