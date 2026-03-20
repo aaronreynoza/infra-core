@@ -10,6 +10,7 @@ locals {
   argocd_url    = "https://argocd.${var.base_domain}"
   forgejo_url   = "https://forgejo.${var.base_domain}"
   harbor_url    = "https://harbor.${var.base_domain}"
+  outline_url   = "https://docs.${var.base_domain}"
   grafana_url   = "https://grafana.${var.base_domain}"
   openwebui_url = "https://chat.${var.base_domain}"
   coder_url     = "https://coder.${var.base_domain}"
@@ -221,6 +222,33 @@ resource "kubernetes_secret_v1" "coder_oidc" {
   data = {
     client-id     = zitadel_application_oidc.coder.client_id
     client-secret = zitadel_application_oidc.coder.client_secret
+  }
+}
+
+# --- Outline ---
+resource "zitadel_application_oidc" "outline" {
+  org_id     = var.zitadel_org_id
+  project_id = zitadel_project.homelab.id
+  name       = "Outline"
+
+  redirect_uris             = ["${local.outline_url}/auth/oidc.callback"]
+  response_types            = ["OIDC_RESPONSE_TYPE_CODE"]
+  grant_types               = ["OIDC_GRANT_TYPE_AUTHORIZATION_CODE"]
+  app_type                  = "OIDC_APP_TYPE_WEB"
+  auth_method_type          = "OIDC_AUTH_METHOD_TYPE_POST"
+  post_logout_redirect_uris = [local.outline_url]
+  dev_mode                  = false
+}
+
+resource "kubernetes_secret_v1" "outline_oidc" {
+  metadata {
+    name      = "outline-oidc-secrets"
+    namespace = "outline"
+  }
+
+  data = {
+    client-id     = zitadel_application_oidc.outline.client_id
+    client-secret = zitadel_application_oidc.outline.client_secret
   }
 }
 

@@ -26,3 +26,15 @@ output "grafana_client_id" {
   value       = zitadel_application_oidc.grafana.client_id
   sensitive   = true
 }
+
+output "outline_client_id" {
+  description = "Outline OIDC client ID"
+  value       = zitadel_application_oidc.outline.client_id
+  sensitive   = true
+}
+
+output "outline_client_secret" {
+  description = "Outline OIDC client secret"
+  value       = zitadel_application_oidc.outline.client_secret
+  sensitive   = true
+}
