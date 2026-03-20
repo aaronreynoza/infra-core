@@ -65,6 +65,8 @@ minio:
   # rootPassword — set in prod overlay
   rootPassword: ""
   bucket: outline-data
+  # Public URL for browser-accessible presigned URLs (set in prod overlay)
+  publicUrl: ""
   persistence:
     size: 5Gi
     storageClass: longhorn
