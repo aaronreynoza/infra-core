@@ -90,7 +90,7 @@ Environments are **fully isolated** - no inter-VLAN communication.
 
 ## Work Status
 
-**Current Phase**: Agent Pipeline Complete (SP1-SP3), Docs Platform Next
+**Current Phase**: Observability Implemented, Proxmox Monitoring Pending
 **Branch**: `main`
 
 **Completed:**
@@ -109,9 +109,11 @@ Environments are **fully isolated** - no inter-VLAN communication.
 - ~~Agent Pipeline (SP1-SP3)~~ — Agent config, skill framework, orchestration pipeline (2026-03-19)
 - ~~Agent Workspace~~ — code-server + Claude Code Remote Control on VM 110 (2026-03-19)
 - ~~Harbor pull-through cache~~ — GHCR/Docker/K8s proxy caches (2026-03-19)
+- ~~Observability~~ — Dashboards (6), alert rules (10), ServiceMonitors (9 apps), Grafana folders + Home page (2026-03-20)
 
 **Next Tasks** (in order):
-1. Deploy Ntfy push notifications
+1. Proxmox monitoring (HOMELAB-108/109/110) — blocked on OPNSense firewall rule
+2. Deploy Ntfy push notifications
 4. Configure ControlD split-horizon
 5. Media platform (*arr stack + Jellyfin + Navidrome)
 6. Immich (Google Photos replacement)

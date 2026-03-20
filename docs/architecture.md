@@ -7,6 +7,7 @@
 - [DDoS / WAF Protection](#ddos--waf-protection-cloudflare-in-front)
 - [Application Architecture](#application-architecture)
 - [Backup & DR](#data-flow-backup--disaster-recovery)
+- [Observability](#observability-architecture)
 - [GitOps Flow](#repository-structure--gitops-flow)
 
 ---
@@ -268,8 +269,10 @@ Additive layer -- no architecture changes needed.
   │    + LiteLLM (LLM stack)   │
   │  code-server (VM 110)      │
   │                            │
+  │  APPS                       │
+  │  Outline (docs wiki)       │
+  │                            │
   │  PLANNED                   │
-  │  Outline (docs)            │
   │  Jellyfin + *arr (media)   │
   │  Immich (photos)           │
   └────────────────────────────┘
@@ -331,6 +334,77 @@ gateway — the same path used for internal access.
   Full cluster restore from B2
   in case of complete failure.
 ```
+
+---
+
+## Observability Architecture
+
+### Data Flow
+
+```
+  METRICS PIPELINE
+  ┌──────────────┐    scrape     ┌──────────────┐   remote-write  ┌──────────┐
+  │ Exporters    │──────────────>│  Prometheus   │───────────────>│  Mimir   │
+  │              │               │  (15d local)  │                │(long-term│
+  │ node-exporter│               └──────┬───────┘                │ storage) │
+  │ kube-state   │                      │                         └──────────┘
+  │ kubelet      │                      │ query
+  │ app metrics  │               ┌──────┴───────┐
+  │ (ServiceMon) │               │   Grafana    │
+  │              │               │ (dashboards  │
+  │ PVE exporter │               │  + alerts)   │
+  │ (planned)    │               └──────┬───────┘
+  └──────────────┘                      │ query
+                                 ┌──────┴───────┐
+  LOGS PIPELINE                  │    Loki      │
+  ┌──────────────┐   push       │  (log store) │
+  │ OTel Collect │─────────────>└──────────────┘
+  │              │
+  └──────────────┘               ┌──────────────┐
+                                 │    Tempo     │
+  TRACES PIPELINE                │(trace store) │
+  App -> OTel -> Tempo           └──────────────┘
+```
+
+### Dashboards (Grafana)
+
+| Folder | Dashboard | Purpose |
+|--------|-----------|---------|
+| **Home** | Home Overview | Landing page with status summary, navigation, cluster graphs |
+| **Cluster** | Cluster Overview | Node status, CPU/mem/disk gauges, pod counts, top consumers |
+| **Cluster** | Node Detail | Per-node CPU, memory, disk, network, etcd, load avg |
+| **Cluster** | Namespace & Workload | Resource usage vs requests/limits, pod restarts, container states |
+| **Applications** | App Metrics | ArgoCD, cert-manager, Longhorn, Harbor, Forgejo, Cilium |
+| **Infrastructure** | Target Health | Up/down status for all Prometheus scrape targets |
+
+Dashboards are deployed as ConfigMaps with `grafana_dashboard: "1"` label and
+`grafana-folder` annotation. The Grafana sidecar auto-discovers and loads them.
+
+### Alert Rules (PrometheusRules)
+
+| Rule Group | Alerts | Severity |
+|------------|--------|----------|
+| node.rules | NodeDown, NodeDiskFull, NodeMemoryPressure | critical |
+| pod.rules | PodCrashLooping, PodOOMKilled | critical/warning |
+| cert.rules | CertExpiringSoon (<14 days) | warning |
+| pve.rules | PVENodeUnreachable, PVEDiskFull | critical |
+| infra.rules | PersistentVolumeFillingUp, TargetDown | warning |
+
+Alerts are visible in Grafana and AlertManager UI. Notification routing
+(Ntfy/Slack) is planned (HOMELAB-107).
+
+### ServiceMonitors Enabled
+
+ArgoCD (controller, server, repo-server), cert-manager, Cilium (agent,
+operator, Hubble), Forgejo, Harbor, Longhorn, Loki, Mimir, Tempo.
+
+### Adding Monitoring for New Apps
+
+1. Check if the Helm chart has `metrics.enabled` or `serviceMonitor.enabled`
+2. Enable in `core/charts/{platform,apps}/<chart>/values.yaml`
+3. If the app exposes a dashboard, create a ConfigMap in
+   `core/manifests/monitoring/dashboards/` with the `grafana_dashboard: "1"` label
+4. Add critical alerts as PrometheusRules in `core/manifests/monitoring/rules/`
 
 ---
 
