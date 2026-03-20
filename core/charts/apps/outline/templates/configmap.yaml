@@ -1,0 +1,36 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "outline.fullname" . }}
+  labels:
+    {{- include "outline.labels" . | nindent 4 }}
+data:
+  URL: {{ .Values.outline.url | quote }}
+  FILE_STORAGE: {{ .Values.outline.fileStorage | quote }}
+  FORCE_HTTPS: {{ .Values.outline.forceHttps | quote }}
+  DEFAULT_LANGUAGE: {{ .Values.outline.defaultLanguage | quote }}
+  WEB_CONCURRENCY: {{ .Values.outline.webConcurrency | quote }}
+  LOG_LEVEL: {{ .Values.outline.logLevel | quote }}
+  RATE_LIMITER_ENABLED: {{ .Values.outline.rateLimiterEnabled | quote }}
+  PGSSLMODE: "disable"
+  NODE_ENV: "production"
+  {{- if .Values.redis.enabled }}
+  REDIS_URL: "redis://{{ include "outline.fullname" . }}-redis:6379"
+  {{- end }}
+  {{- if .Values.minio.enabled }}
+  AWS_S3_UPLOAD_BUCKET_NAME: {{ .Values.minio.bucket | quote }}
+  AWS_S3_UPLOAD_BUCKET_URL: "http://{{ include "outline.fullname" . }}-minio:9000"
+  AWS_S3_FORCE_PATH_STYLE: "true"
+  AWS_S3_ACL: "private"
+  AWS_REGION: "us-east-1"
+  {{- end }}
+  {{- if .Values.oidc.enabled }}
+  OIDC_DISPLAY_NAME: {{ .Values.oidc.displayName | quote }}
+  OIDC_SCOPES: {{ .Values.oidc.scopes | quote }}
+  OIDC_AUTH_URI: {{ .Values.oidc.authUri | quote }}
+  OIDC_TOKEN_URI: {{ .Values.oidc.tokenUri | quote }}
+  OIDC_USERINFO_URI: {{ .Values.oidc.userinfoUri | quote }}
+  {{- if .Values.oidc.logoutUri }}
+  OIDC_LOGOUT_URI: {{ .Values.oidc.logoutUri | quote }}
+  {{- end }}
+  {{- end }}

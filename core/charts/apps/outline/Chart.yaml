@@ -1,0 +1,6 @@
+apiVersion: v2
+name: outline
+description: Self-hosted Outline wiki — rich documents, Figma embeds, OIDC SSO
+version: 0.1.0
+appVersion: "1.6.1"
+type: application

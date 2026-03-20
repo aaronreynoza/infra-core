@@ -1,0 +1,18 @@
+{{- if .Values.outline.url }}
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: {{ include "outline.fullname" . }}
+  labels:
+    {{- include "outline.labels" . | nindent 4 }}
+spec:
+  parentRefs:
+    - name: homelab-gateway
+      namespace: cilium-system
+  hostnames:
+    - {{ .Values.outline.url | trimPrefix "https://" | trimPrefix "http://" | quote }}
+  rules:
+    - backendRefs:
+        - name: {{ include "outline.fullname" . }}
+          port: {{ .Values.service.port }}
+{{- end }}
