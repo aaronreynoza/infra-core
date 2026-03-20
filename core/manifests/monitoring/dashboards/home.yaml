@@ -1,0 +1,260 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-dashboard-home-overview
+  namespace: monitoring
+  labels:
+    grafana_dashboard: "1"
+  annotations:
+    grafana-folder: "Home"
+data:
+  home-overview.json: |
+    {
+      "annotations": { "list": [] },
+      "editable": true,
+      "fiscalYearStartMonth": 0,
+      "graphTooltip": 1,
+      "links": [],
+      "panels": [
+        {
+          "gridPos": { "h": 2, "w": 24, "x": 0, "y": 0 },
+          "id": 1,
+          "options": {
+            "code": { "language": "plaintext", "showLineNumbers": false },
+            "content": "# Homelab Observability\nLanding page for all monitoring dashboards. Use the sections below to navigate to detailed views.",
+            "mode": "markdown"
+          },
+          "type": "text",
+          "title": ""
+        },
+        {
+          "gridPos": { "h": 4, "w": 6, "x": 0, "y": 2 },
+          "id": 2,
+          "title": "Nodes Ready",
+          "type": "stat",
+          "targets": [
+            {
+              "expr": "sum(kube_node_status_condition{condition=\"Ready\",status=\"true\"})",
+              "legendFormat": "Ready"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  { "color": "red", "value": null },
+                  { "color": "yellow", "value": 2 },
+                  { "color": "green", "value": 3 }
+                ]
+              },
+              "unit": "none"
+            }
+          },
+          "options": { "graphMode": "none", "textMode": "value", "reduceOptions": { "calcs": ["lastNotNull"] } }
+        },
+        {
+          "gridPos": { "h": 4, "w": 6, "x": 6, "y": 2 },
+          "id": 3,
+          "title": "Targets Up",
+          "type": "stat",
+          "targets": [
+            {
+              "expr": "count(up == 1)",
+              "legendFormat": "Up"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  { "color": "red", "value": null },
+                  { "color": "yellow", "value": 20 },
+                  { "color": "green", "value": 35 }
+                ]
+              },
+              "unit": "none"
+            }
+          },
+          "options": { "graphMode": "none", "textMode": "value", "reduceOptions": { "calcs": ["lastNotNull"] } }
+        },
+        {
+          "gridPos": { "h": 4, "w": 6, "x": 12, "y": 2 },
+          "id": 4,
+          "title": "Targets Down",
+          "type": "stat",
+          "targets": [
+            {
+              "expr": "count(up == 0)",
+              "legendFormat": "Down"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  { "color": "green", "value": null },
+                  { "color": "yellow", "value": 1 },
+                  { "color": "red", "value": 3 }
+                ]
+              },
+              "unit": "none"
+            }
+          },
+          "options": { "graphMode": "none", "textMode": "value", "reduceOptions": { "calcs": ["lastNotNull"] } }
+        },
+        {
+          "gridPos": { "h": 4, "w": 6, "x": 18, "y": 2 },
+          "id": 5,
+          "title": "Firing Alerts",
+          "type": "stat",
+          "targets": [
+            {
+              "expr": "count(ALERTS{alertstate=\"firing\"}) or vector(0)",
+              "legendFormat": "Firing"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  { "color": "green", "value": null },
+                  { "color": "yellow", "value": 1 },
+                  { "color": "red", "value": 3 }
+                ]
+              },
+              "unit": "none"
+            }
+          },
+          "options": { "graphMode": "none", "textMode": "value", "reduceOptions": { "calcs": ["lastNotNull"] } }
+        },
+        {
+          "gridPos": { "h": 2, "w": 8, "x": 0, "y": 6 },
+          "id": 10,
+          "options": {
+            "code": { "language": "plaintext", "showLineNumbers": false },
+            "content": "### Cluster Dashboards\n- [Cluster Overview](d/cluster-overview)\n- [Node Detail](d/node-detail)\n- [Namespace & Workload](d/namespace-workload)",
+            "mode": "markdown"
+          },
+          "type": "text",
+          "title": ""
+        },
+        {
+          "gridPos": { "h": 2, "w": 8, "x": 8, "y": 6 },
+          "id": 11,
+          "options": {
+            "code": { "language": "plaintext", "showLineNumbers": false },
+            "content": "### Application Dashboards\n- [App Metrics](d/app-specific)\n- [Target Health](d/target-health)",
+            "mode": "markdown"
+          },
+          "type": "text",
+          "title": ""
+        },
+        {
+          "gridPos": { "h": 2, "w": 8, "x": 16, "y": 6 },
+          "id": 12,
+          "options": {
+            "code": { "language": "plaintext", "showLineNumbers": false },
+            "content": "### Infrastructure\n- Proxmox Overview *(coming soon)*\n- [AlertManager](d/alertmanager-overview)",
+            "mode": "markdown"
+          },
+          "type": "text",
+          "title": ""
+        },
+        {
+          "gridPos": { "h": 6, "w": 12, "x": 0, "y": 8 },
+          "id": 20,
+          "title": "Cluster CPU Usage",
+          "type": "timeseries",
+          "targets": [
+            {
+              "expr": "1 - avg(rate(node_cpu_seconds_total{mode=\"idle\"}[5m]))",
+              "legendFormat": "CPU Usage %"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "percentunit",
+              "max": 1,
+              "min": 0,
+              "custom": { "fillOpacity": 20, "lineWidth": 2 }
+            }
+          }
+        },
+        {
+          "gridPos": { "h": 6, "w": 12, "x": 12, "y": 8 },
+          "id": 21,
+          "title": "Cluster Memory Usage",
+          "type": "timeseries",
+          "targets": [
+            {
+              "expr": "1 - (sum(node_memory_MemAvailable_bytes) / sum(node_memory_MemTotal_bytes))",
+              "legendFormat": "Memory Usage %"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "percentunit",
+              "max": 1,
+              "min": 0,
+              "custom": { "fillOpacity": 20, "lineWidth": 2 }
+            }
+          }
+        },
+        {
+          "gridPos": { "h": 6, "w": 12, "x": 0, "y": 14 },
+          "id": 22,
+          "title": "Pod Status by Namespace",
+          "type": "bargauge",
+          "targets": [
+            {
+              "expr": "sum by (namespace) (kube_pod_status_phase{phase=\"Running\"})",
+              "legendFormat": "{{namespace}}"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  { "color": "green", "value": null }
+                ]
+              }
+            }
+          },
+          "options": { "orientation": "horizontal", "displayMode": "gradient", "reduceOptions": { "calcs": ["lastNotNull"] } }
+        },
+        {
+          "gridPos": { "h": 6, "w": 12, "x": 12, "y": 14 },
+          "id": 23,
+          "title": "Active Alerts",
+          "type": "table",
+          "targets": [
+            {
+              "expr": "ALERTS{alertstate=\"firing\"}",
+              "format": "table",
+              "instant": true
+            }
+          ],
+          "transformations": [
+            {
+              "id": "organize",
+              "options": {
+                "excludeByName": { "Time": true, "Value": true, "__name__": true },
+                "indexByName": {},
+                "renameByName": { "alertname": "Alert", "severity": "Severity", "alertstate": "State" }
+              }
+            }
+          ]
+        }
+      ],
+      "schemaVersion": 39,
+      "tags": ["home", "overview"],
+      "templating": { "list": [] },
+      "time": { "from": "now-1h", "to": "now" },
+      "title": "Home",
+      "uid": "home-overview"
+    }
