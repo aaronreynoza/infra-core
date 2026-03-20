@@ -1,0 +1,89 @@
+# Outline Wiki — Base Values (reusable)
+# Environment-specific overrides (secrets, domain, OIDC) go in prod/values/outline/
+
+replicaCount: 1
+
+image:
+  repository: outlinewiki/outline
+  tag: "1.6.1"
+  pullPolicy: IfNotPresent
+
+service:
+  type: ClusterIP
+  port: 3000
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 256Mi
+  limits:
+    cpu: 500m
+    memory: 1Gi
+
+# -- Outline application config
+outline:
+  # Public URL — set in prod overlay
+  url: ""
+  fileStorage: s3
+  forceHttps: "true"
+  defaultLanguage: en_US
+  webConcurrency: "1"
+  logLevel: info
+  rateLimiterEnabled: "true"
+  # SECRET_KEY and UTILS_SECRET — set in prod overlay (or existingSecret)
+  secretKey: ""
+  utilsSecret: ""
+
+# -- Database (CNPG)
+# The CNPG cluster creates a secret with the connection URI
+database:
+  # Name of the CNPG-generated secret containing 'uri' key
+  secretName: cnpg-cluster-outline-app
+  secretKey: uri
+
+# -- Bundled Redis
+redis:
+  enabled: true
+  image:
+    repository: redis
+    tag: "7-alpine"
+  resources:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      cpu: 200m
+      memory: 128Mi
+
+# -- Bundled MinIO (S3-compatible storage for file uploads)
+minio:
+  enabled: true
+  image:
+    repository: minio/minio
+    tag: "latest"
+  rootUser: outline
+  # rootPassword — set in prod overlay
+  rootPassword: ""
+  bucket: outline-data
+  persistence:
+    size: 5Gi
+    storageClass: longhorn
+  resources:
+    requests:
+      cpu: 50m
+      memory: 128Mi
+    limits:
+      cpu: 200m
+      memory: 256Mi
+
+# -- OIDC authentication (Zitadel)
+oidc:
+  enabled: false
+  clientId: ""
+  clientSecret: ""
+  authUri: ""
+  tokenUri: ""
+  userinfoUri: ""
+  logoutUri: ""
+  displayName: "Zitadel"
+  scopes: "openid profile email"
