@@ -637,3 +637,55 @@ resource "zitadel_default_oidc_settings" "default" {
   refresh_token_idle_expiration  = "720h"
   refresh_token_expiration       = "720h"
 }
+
+# =============================================================================
+# Actions — Flatten project roles into a "groups" claim for ArgoCD / apps
+# =============================================================================
+# Zitadel's default urn:zitadel:iam:org:project:roles claim is a nested object:
+#   { "admins": { "<orgId>": "<orgDomain>" } }
+# ArgoCD (and most apps) expect a flat array: ["admins", "cloud-engineers", ...]
+# This Action extracts role key names and sets them as a "groups" claim.
+
+resource "zitadel_action" "flatten_roles" {
+  org_id          = var.zitadel_org_id
+  name            = "flattenRolesToGroups"
+  timeout         = "10s"
+  allowed_to_fail = false
+
+  script = <<-JS
+    function flattenRolesToGroups(ctx, api) {
+      if (ctx.v1.user.grants == undefined || ctx.v1.user.grants.count == 0) {
+        return;
+      }
+
+      let roles = [];
+      ctx.v1.user.grants.grants.forEach(function(grant) {
+        grant.roles.forEach(function(role) {
+          if (roles.indexOf(role) === -1) {
+            roles.push(role);
+          }
+        });
+      });
+
+      api.v1.claims.setClaim('groups', roles);
+    }
+  JS
+}
+
+# Attach the action to Pre Userinfo Creation (covers id_token, userinfo endpoint,
+# and introspection endpoint — this is what ArgoCD reads via OIDC)
+resource "zitadel_trigger_actions" "flatten_roles_userinfo" {
+  org_id       = var.zitadel_org_id
+  flow_type    = "FLOW_TYPE_CUSTOMISE_TOKEN"
+  trigger_type = "TRIGGER_TYPE_PRE_USERINFO_CREATION"
+  action_ids   = [zitadel_action.flatten_roles.id]
+}
+
+# Attach the action to Pre Access Token Creation (covers JWT access tokens,
+# useful for services that inspect the access token directly)
+resource "zitadel_trigger_actions" "flatten_roles_access_token" {
+  org_id       = var.zitadel_org_id
+  flow_type    = "FLOW_TYPE_CUSTOMISE_TOKEN"
+  trigger_type = "TRIGGER_TYPE_PRE_ACCESS_TOKEN_CREATION"
+  action_ids   = [zitadel_action.flatten_roles.id]
+}
