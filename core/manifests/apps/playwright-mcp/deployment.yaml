@@ -1,0 +1,51 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: playwright-mcp
+  namespace: agent-tools
+  labels:
+    app: playwright-mcp
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: playwright-mcp
+  template:
+    metadata:
+      labels:
+        app: playwright-mcp
+    spec:
+      containers:
+        - name: playwright-mcp
+          image: mcp/playwright:latest
+          args:
+            - "--headless"
+            - "--no-sandbox"
+            - "--port"
+            - "8931"
+            - "--host"
+            - "0.0.0.0"
+            - "--allowed-hosts"
+            - "*"
+            - "--caps"
+            - "vision"
+            - "--user-data-dir"
+            - "/data/browser-profile"
+          ports:
+            - containerPort: 8931
+              name: mcp-sse
+          resources:
+            requests:
+              cpu: 250m
+              memory: 512Mi
+            limits:
+              cpu: "2"
+              memory: 2Gi
+          volumeMounts:
+            - name: browser-data
+              mountPath: /data
+          securityContext:
+            runAsNonRoot: false
+      volumes:
+        - name: browser-data
+          emptyDir: {}
