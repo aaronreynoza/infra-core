@@ -18,6 +18,7 @@ plane_url     = "https://plane.${var.base_domain}"
   navidrome_url = "https://navidrome.${var.base_domain}"
   immich_url    = "https://immich.${var.base_domain}"
   paperless_url = "https://paperless.${var.base_domain}"
+  langfuse_url  = "https://langfuse.${var.base_domain}"
 }
 
 # --- Zitadel provider ---
@@ -360,6 +361,33 @@ resource "kubernetes_secret_v1" "paperless_oidc" {
   data = {
     client-id     = zitadel_application_oidc.paperless.client_id
     client-secret = zitadel_application_oidc.paperless.client_secret
+  }
+}
+
+# --- Langfuse (LLM Observability) ---
+resource "zitadel_application_oidc" "langfuse" {
+  org_id     = var.zitadel_org_id
+  project_id = zitadel_project.homelab.id
+  name       = "Langfuse"
+
+  redirect_uris             = ["${local.langfuse_url}/api/auth/callback/custom"]
+  response_types            = ["OIDC_RESPONSE_TYPE_CODE"]
+  grant_types               = ["OIDC_GRANT_TYPE_AUTHORIZATION_CODE"]
+  app_type                  = "OIDC_APP_TYPE_WEB"
+  auth_method_type          = "OIDC_AUTH_METHOD_TYPE_POST"
+  post_logout_redirect_uris = [local.langfuse_url]
+  dev_mode                  = false
+}
+
+resource "kubernetes_secret_v1" "langfuse_oidc" {
+  metadata {
+    name      = "langfuse-oidc-secrets"
+    namespace = "langfuse"
+  }
+
+  data = {
+    client-id     = zitadel_application_oidc.langfuse.client_id
+    client-secret = zitadel_application_oidc.langfuse.client_secret
   }
 }
 
