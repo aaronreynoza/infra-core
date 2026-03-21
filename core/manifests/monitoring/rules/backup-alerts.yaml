@@ -1,0 +1,72 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: backup-alerts
+  namespace: monitoring
+  labels:
+    release: kube-prometheus-stack
+    role: alert-rules
+spec:
+  groups:
+    - name: velero.rules
+      rules:
+        - alert: VeleroBackupFailure
+          expr: increase(velero_backup_failure_total[24h]) > 0
+          for: 5m
+          labels:
+            severity: critical
+          annotations:
+            summary: "Velero backup failed"
+            description: "Velero has recorded {{ $value }} backup failure(s) in the last 24 hours."
+        - alert: VeleroBackupMissing
+          expr: time() - velero_backup_last_successful_timestamp{schedule="daily-backup"} > 90000
+          for: 10m
+          labels:
+            severity: critical
+          annotations:
+            summary: "Velero daily backup overdue"
+            description: "No successful Velero daily backup in over 25 hours."
+        - alert: VeleroBackupPartialFailure
+          expr: increase(velero_backup_partial_failure_total[24h]) > 0
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: "Velero backup partial failure"
+            description: "Velero has recorded {{ $value }} partial backup failure(s) in the last 24 hours."
+    - name: cnpg-backup.rules
+      rules:
+        - alert: CNPGBackupFailing
+          expr: cnpg_pg_wal_archiving_is_archiving == 0
+          for: 15m
+          labels:
+            severity: critical
+          annotations:
+            summary: "CNPG WAL archiving stopped on {{ $labels.cluster }}"
+            description: "PostgreSQL cluster {{ $labels.cluster }} in {{ $labels.namespace }} has stopped archiving WALs."
+        - alert: CNPGLastBackupOld
+          expr: time() - cnpg_pg_stat_archiver_last_archived_time > 3600
+          for: 10m
+          labels:
+            severity: warning
+          annotations:
+            summary: "CNPG WAL archive delayed on {{ $labels.cluster }}"
+            description: "Last WAL archive for {{ $labels.cluster }} was {{ humanizeDuration $value }} ago."
+    - name: longhorn-backup.rules
+      rules:
+        - alert: LonghornSnapshotFailed
+          expr: longhorn_snapshot_recurring_job_failure_count > 0
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: "Longhorn recurring snapshot failed"
+            description: "Longhorn recurring snapshot job has {{ $value }} failure(s)."
+        - alert: LonghornVolumesDegraded
+          expr: longhorn_volume_robustness == 2
+          for: 30m
+          labels:
+            severity: warning
+          annotations:
+            summary: "Longhorn volume {{ $labels.volume }} degraded"
+            description: "Volume {{ $labels.volume }} in {{ $labels.namespace }} has been degraded for 30+ minutes."

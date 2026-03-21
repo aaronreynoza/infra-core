@@ -54,21 +54,11 @@ resources:
     cpu: 500m
     memory: 512Mi
 
-# Enable node-agent (formerly restic) for file-system-level PV backups.
-# This is required for backing up Longhorn volumes since we don't have
-# native AWS EBS snapshots on-prem.
-deployNodeAgent: true
+# Node-agent disabled — PV backups handled by CNPG (databases) and
+# Longhorn (local snapshots). Velero only backs up K8s resources.
+deployNodeAgent: false
 
-nodeAgent:
-  resources:
-    requests:
-      cpu: 100m
-      memory: 128Mi
-    limits:
-      cpu: 500m
-      memory: 512Mi
-
-# Scheduled backups
+# Scheduled backups — K8s resources only (manifests, secrets, CRDs)
 schedules:
   daily-backup:
     disabled: false
@@ -81,8 +71,7 @@ schedules:
       excludedNamespaces:
         - kube-system
         - velero
-      # Use file-system backup for all PVs (Longhorn volumes)
-      defaultVolumesToFsBackup: true
+      defaultVolumesToFsBackup: false
 
 # Disable snapshot CRD since we use file-system backups, not EBS snapshots
 snapshotsEnabled: false

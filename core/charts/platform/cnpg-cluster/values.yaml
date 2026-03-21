@@ -34,4 +34,22 @@ cluster:
     podMonitor:
       enabled: true
 backups:
-  enabled: false
+  enabled: true
+  provider: s3
+  retentionPolicy: "30d"
+  # B2 doesn't support server-side encryption — leave encryption empty
+  wal:
+    compression: gzip
+    encryption: ""
+    maxParallel: 1
+  data:
+    compression: gzip
+    encryption: ""
+    jobs: 2
+  scheduledBackups:
+    - name: daily-backup
+      schedule: "0 0 2 * * *"
+      backupOwnerReference: self
+      method: barmanObjectStore
+  secret:
+    create: false
