@@ -45,7 +45,7 @@ langfuse:
     format: json
 
   features:
-    signUpDisabled: true
+    signUpDisabled: false
 
   ingress:
     enabled: false
