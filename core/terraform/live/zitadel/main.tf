@@ -367,21 +367,7 @@ resource "kubernetes_secret_v1" "paperless_oidc" {
 # Project Roles
 # =============================================================================
 
-resource "zitadel_project_role" "admin" {
-  org_id       = var.zitadel_org_id
-  project_id   = zitadel_project.homelab.id
-  role_key     = "admin"
-  display_name = "Admin"
-}
-
-resource "zitadel_project_role" "user" {
-  org_id       = var.zitadel_org_id
-  project_id   = zitadel_project.homelab.id
-  role_key     = "user"
-  display_name = "User"
-}
-
-# --- New RBAC roles (Phase 1) ---
+# --- RBAC roles ---
 resource "zitadel_project_role" "admins" {
   org_id       = var.zitadel_org_id
   project_id   = zitadel_project.homelab.id

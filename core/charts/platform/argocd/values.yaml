@@ -86,7 +86,6 @@ configs:
       return hs
   rbac:
     policy.csv: |
-      g, admin, role:admin
       g, admins, role:admin
       g, cloud-engineers, role:admin
     policy.default: role:readonly
