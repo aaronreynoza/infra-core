@@ -1,0 +1,94 @@
+name: CI Review
+
+on:
+  pull_request:
+    branches: [live]
+
+env:
+  OLLAMA_URL: http://ollama.ai.svc.cluster.local:11434
+
+jobs:
+  helm-validate:
+    runs-on: k8s
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Helm
+        run: |
+          curl -fsSL https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
+
+      - name: Template Helm charts
+        run: |
+          for values_file in $(find core/charts -name 'values.yaml' -type f); do
+            chart_dir=$(dirname "$values_file")
+            chart_name=$(basename "$(dirname "$chart_dir")")
+            echo "==> Templating $chart_name ($values_file)"
+            python3 -c "import yaml; yaml.safe_load(open('$values_file'))" 2>&1 || {
+              echo "ERROR: Invalid YAML in $values_file"
+              exit 1
+            }
+          done
+          echo "All Helm values validated successfully"
+
+  ai-review:
+    runs-on: k8s
+    if: ${{ github.event.pull_request }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Get PR diff
+        id: diff
+        run: |
+          git diff origin/${{ github.base_ref }}...HEAD > /tmp/pr-diff.txt
+          echo "diff_size=$(wc -c < /tmp/pr-diff.txt)" >> $GITHUB_OUTPUT
+
+      - name: AI Review - CI Specialist
+        if: steps.diff.outputs.diff_size != '0'
+        run: |
+          DIFF=$(cat /tmp/pr-diff.txt | head -c 8000)
+          RESPONSE=$(curl -sf "${OLLAMA_URL}/api/generate" \
+            -d "$(jq -n --arg diff "$DIFF" '{
+              "model": "qwen2.5-coder:7b",
+              "prompt": ("You are a CI/CD specialist reviewing infrastructure changes for a Kubernetes homelab.\n\nReview this diff for:\n1. YAML syntax issues\n2. Helm value consistency (mismatched keys, missing required fields)\n3. Workflow/CI file correctness\n4. Missing or conflicting configuration\n\nBe concise. Only flag real issues, not style preferences.\n\nDiff:\n" + $diff),
+              "stream": false
+            }')" | jq -r '.response // "No response from model"')
+
+          echo "### 🔍 CI Specialist Review" > /tmp/review-ci.md
+          echo "" >> /tmp/review-ci.md
+          echo "$RESPONSE" >> /tmp/review-ci.md
+
+      - name: AI Review - Infra Engineer
+        if: steps.diff.outputs.diff_size != '0'
+        run: |
+          DIFF=$(cat /tmp/pr-diff.txt | head -c 8000)
+          RESPONSE=$(curl -sf "${OLLAMA_URL}/api/generate" \
+            -d "$(jq -n --arg diff "$DIFF" '{
+              "model": "qwen2.5-coder:7b",
+              "prompt": ("You are a cloud infrastructure engineer reviewing Kubernetes homelab changes.\n\nReview this diff for:\n1. Resource requests/limits issues\n2. Security context concerns\n3. Network policy impact\n4. Changes affecting protected namespaces (kube-system, cilium-system, argocd, cert-manager, longhorn-system, monitoring, velero, zitadel, forgejo, harbor)\n\nBe concise. Only flag real issues.\n\nDiff:\n" + $diff),
+              "stream": false
+            }')" | jq -r '.response // "No response from model"')
+
+          echo "### 🏗️ Infra Engineer Review" > /tmp/review-infra.md
+          echo "" >> /tmp/review-infra.md
+          echo "$RESPONSE" >> /tmp/review-infra.md
+
+      - name: Post review comments
+        if: steps.diff.outputs.diff_size != '0'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          BODY="## AI Review (advisory)\n\n"
+          [ -f /tmp/review-ci.md ] && BODY+="$(cat /tmp/review-ci.md)\n\n---\n\n"
+          [ -f /tmp/review-infra.md ] && BODY+="$(cat /tmp/review-infra.md)\n\n"
+          BODY+="_Powered by qwen2.5-coder:7b via Ollama. Advisory only — does not block merge._"
+
+          PR_NUM=${{ github.event.pull_request.number }}
+          FORGEJO_URL="${{ github.server_url }}"
+          REPO="${{ github.repository }}"
+          curl -sf -X POST \
+            "${FORGEJO_URL}/api/v1/repos/${REPO}/issues/${PR_NUM}/comments" \
+            -H "Authorization: token ${GITHUB_TOKEN}" \
+            -H "Content-Type: application/json" \
+            -d "$(jq -n --arg body "$BODY" '{"body": $body}')"
