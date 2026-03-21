@@ -1,8 +1,8 @@
 name: Lint & Validate
 
 on:
-  push:
-    branches: [main]
+  pull_request:
+    branches: [live]
 
 jobs:
   terraform-validate:
