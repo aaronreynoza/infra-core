@@ -381,6 +381,42 @@ resource "zitadel_project_role" "user" {
   display_name = "User"
 }
 
+# --- New RBAC roles (Phase 1) ---
+resource "zitadel_project_role" "admins" {
+  org_id       = var.zitadel_org_id
+  project_id   = zitadel_project.homelab.id
+  role_key     = "admins"
+  display_name = "Admins"
+}
+
+resource "zitadel_project_role" "cloud_engineers" {
+  org_id       = var.zitadel_org_id
+  project_id   = zitadel_project.homelab.id
+  role_key     = "cloud-engineers"
+  display_name = "Cloud Engineers"
+}
+
+resource "zitadel_project_role" "developers" {
+  org_id       = var.zitadel_org_id
+  project_id   = zitadel_project.homelab.id
+  role_key     = "developers"
+  display_name = "Developers"
+}
+
+resource "zitadel_project_role" "managers" {
+  org_id       = var.zitadel_org_id
+  project_id   = zitadel_project.homelab.id
+  role_key     = "managers"
+  display_name = "Managers"
+}
+
+resource "zitadel_project_role" "guests" {
+  org_id       = var.zitadel_org_id
+  project_id   = zitadel_project.homelab.id
+  role_key     = "guests"
+  display_name = "Guests"
+}
+
 # =============================================================================
 # User Management
 # =============================================================================
@@ -436,7 +472,7 @@ resource "zitadel_user_grant" "additional_project" {
 
   project_id = zitadel_project.homelab.id
   user_id    = zitadel_human_user.additional[each.key].id
-  role_keys  = ["user"]
+  role_keys  = [each.value.role]
 }
 
 # =============================================================================

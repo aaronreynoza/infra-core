@@ -40,11 +40,12 @@ variable "admin_last_name" {
 }
 
 variable "additional_users" {
-  description = "Additional users with app-level access"
+  description = "Additional users with app-level access. Role must match a zitadel_project_role role_key."
   type = list(object({
     email      = string
     first_name = string
     last_name  = string
+    role       = optional(string, "guests")
   }))
   default = []
 }
