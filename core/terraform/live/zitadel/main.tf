@@ -370,13 +370,14 @@ resource "zitadel_application_oidc" "langfuse" {
   project_id = zitadel_project.homelab.id
   name       = "Langfuse"
 
-  redirect_uris             = ["${local.langfuse_url}/api/auth/callback/custom"]
-  response_types            = ["OIDC_RESPONSE_TYPE_CODE"]
-  grant_types               = ["OIDC_GRANT_TYPE_AUTHORIZATION_CODE"]
-  app_type                  = "OIDC_APP_TYPE_WEB"
-  auth_method_type          = "OIDC_AUTH_METHOD_TYPE_POST"
-  post_logout_redirect_uris = [local.langfuse_url]
-  dev_mode                  = false
+  redirect_uris              = ["${local.langfuse_url}/api/auth/callback/custom"]
+  response_types             = ["OIDC_RESPONSE_TYPE_CODE"]
+  grant_types                = ["OIDC_GRANT_TYPE_AUTHORIZATION_CODE"]
+  app_type                   = "OIDC_APP_TYPE_WEB"
+  auth_method_type           = "OIDC_AUTH_METHOD_TYPE_POST"
+  post_logout_redirect_uris  = [local.langfuse_url]
+  id_token_userinfo_assertion = true
+  dev_mode                   = false
 }
 
 resource "kubernetes_secret_v1" "langfuse_oidc" {
