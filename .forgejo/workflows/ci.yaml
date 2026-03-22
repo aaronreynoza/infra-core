@@ -8,6 +8,21 @@ env:
   OLLAMA_URL: http://ollama.ai.svc.cluster.local:11434
 
 jobs:
+  pr-title:
+    runs-on: k8s
+    steps:
+      - name: Validate PR title format
+        run: |
+          TITLE="${{ github.event.pull_request.title }}"
+          if ! echo "$TITLE" | grep -qE '^HOMELAB-[0-9]+: (feat|fix|chore|refactor|docs|test|ci|perf|style|build)(\(.+\))?!?: .+'; then
+            echo "ERROR: PR title does not match required format"
+            echo "  Got: $TITLE"
+            echo "  Expected: HOMELAB-XX: type(scope): description"
+            echo "  Example: HOMELAB-42: feat(harbor): add pull-through cache"
+            exit 1
+          fi
+          echo "PR title format OK: $TITLE"
+
   helm-validate:
     runs-on: k8s
     steps:
