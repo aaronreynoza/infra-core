@@ -39,24 +39,21 @@ repoConfig: |
     allowed_overrides: [workflow, apply_requirements]
     allow_custom_workflows: true
     apply_requirements: [approved]
-
-# Custom workflow for SOPS-encrypted terraform vars
-# Decrypts secrets.tfvars before plan/apply
-workflows:
-  sops:
-    plan:
-      steps:
-      - env:
-          name: SOPS_AGE_KEY_FILE
-          value: /home/atlantis/.config/sops/age/keys.txt
-      - init
-      - plan
-    apply:
-      steps:
-      - env:
-          name: SOPS_AGE_KEY_FILE
-          value: /home/atlantis/.config/sops/age/keys.txt
-      - apply
+  workflows:
+    sops:
+      plan:
+        steps:
+        - env:
+            name: SOPS_AGE_KEY_FILE
+            value: /home/atlantis/.config/sops/age/keys.txt
+        - init
+        - plan
+      apply:
+        steps:
+        - env:
+            name: SOPS_AGE_KEY_FILE
+            value: /home/atlantis/.config/sops/age/keys.txt
+        - apply
 
 # Logging
 logLevel: info
