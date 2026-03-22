@@ -84,7 +84,9 @@ config:
         Authorization: "Basic ${env:LANGFUSE_BASIC_AUTH}"
       retry_on_failure:
         enabled: true
-        max_elapsed_time: 300
+        initial_interval: 5s
+        max_interval: 30s
+        max_elapsed_time: 300s
       sending_queue:
         enabled: true
         num_consumers: 2
