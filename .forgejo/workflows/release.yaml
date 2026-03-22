@@ -14,32 +14,18 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Determine next version
+      - name: Parse version from PR title
         id: version
         run: |
-          LATEST=$(git tag --sort=-v:refname | head -1)
-          if [ -z "$LATEST" ]; then
-            NEXT="v1.0.0"
-          else
-            MAJOR=$(echo "$LATEST" | cut -d. -f1)
-            MINOR=$(echo "$LATEST" | cut -d. -f2)
-            NEXT="${MAJOR}.$((MINOR + 1)).0"
+          TITLE="${{ github.event.pull_request.title }}"
+          VERSION=$(echo "$TITLE" | grep -oE 'v[0-9]+\.[0-9]+\.[0-9]+' || true)
+          if [ -z "$VERSION" ]; then
+            echo "ERROR: Could not parse version from PR title: $TITLE"
+            echo "Expected format: release: <repo> vX.Y.Z"
+            exit 1
           fi
-          echo "version=$NEXT" >> $GITHUB_OUTPUT
-          echo "previous=${LATEST:-none}" >> $GITHUB_OUTPUT
-
-      - name: Generate changelog
-        id: changelog
-        run: |
-          PREV="${{ steps.version.outputs.previous }}"
-          if [ "$PREV" = "none" ]; then
-            RANGE="HEAD"
-          else
-            RANGE="${PREV}..HEAD"
-          fi
-          echo "## Changes" > /tmp/changelog.md
-          echo "" >> /tmp/changelog.md
-          git log "$RANGE" --pretty=format:"- %s" --no-merges >> /tmp/changelog.md
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Parsed version: $VERSION"
 
       - name: Create tag
         run: |
@@ -49,8 +35,8 @@ jobs:
       - name: Create Forgejo release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_BODY: ${{ github.event.pull_request.body }}
         run: |
-          BODY=$(cat /tmp/changelog.md)
           curl -sf -X POST \
             "${{ github.server_url }}/api/v1/repos/${{ github.repository }}/releases" \
             -H "Authorization: token ${GITHUB_TOKEN}" \
@@ -58,5 +44,5 @@ jobs:
             -d "$(jq -n \
               --arg tag "${{ steps.version.outputs.version }}" \
               --arg name "${{ steps.version.outputs.version }}" \
-              --arg body "$BODY" \
+              --arg body "$PR_BODY" \
               '{"tag_name": $tag, "name": $name, "body": $body}')"
