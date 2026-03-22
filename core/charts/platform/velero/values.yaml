@@ -22,6 +22,12 @@ initContainers:
 
 # Velero server configuration
 configuration:
+  # Reduce B2 Class C API transactions — defaults are 1m which burns through
+  # Backblaze free tier (~3000-5000 Class C calls/day). 30m is plenty for a
+  # homelab with 1 daily backup.
+  backupSyncPeriod: 30m
+  storeValidationFrequency: 30m
+
   # BackupStorageLocation — where backup tarballs are stored
   backupStorageLocation:
     - name: default
