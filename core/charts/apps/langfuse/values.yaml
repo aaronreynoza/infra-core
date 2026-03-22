@@ -1,0 +1,64 @@
+# Langfuse v3 — Base Values (reusable, non-secret)
+# Environment-specific overrides (secrets, OIDC, URLs) go in prod/values/langfuse/
+# Chart: langfuse/langfuse v1.5.22 from https://langfuse.github.io/langfuse-k8s
+
+# -- Disable bundled PostgreSQL (using external CNPG)
+postgresql:
+  deploy: false
+
+# -- Bundled ClickHouse (OLAP store for traces)
+# Bitnami ClickHouse subchart — Langfuse v3 requires >= 24.3
+clickhouse:
+  deploy: true
+  clusterEnabled: false
+  shards: 1
+  replicaCount: 1
+  resourcesPreset: "small"
+  persistence:
+    size: 10Gi
+    storageClass: longhorn
+
+# -- Bundled Valkey/Redis (cache + queue)
+# Bitnami Valkey subchart (aliased as redis)
+redis:
+  deploy: true
+  architecture: standalone
+  primary:
+    extraFlags:
+      - "--maxmemory-policy noeviction"
+    persistence:
+      enabled: false
+
+# -- Bundled MinIO (S3 blob storage for events/media)
+# Bitnami MinIO subchart (aliased as s3)
+s3:
+  deploy: true
+  defaultBuckets: "langfuse"
+  persistence:
+    size: 5Gi
+    storageClass: longhorn
+
+# -- Langfuse core config
+langfuse:
+  logging:
+    level: info
+    format: json
+
+  features:
+    signUpDisabled: false
+
+  ingress:
+    enabled: false
+
+  resources:
+    requests:
+      cpu: 100m
+      memory: 512Mi
+    limits:
+      cpu: "1"
+      memory: 1Gi
+
+  web:
+    service:
+      type: ClusterIP
+      port: 3000
