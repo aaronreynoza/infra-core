@@ -42,3 +42,5 @@ talosconfig
 # Environment files
 .env
 .env.*
+# Git worktrees (parallel session directories)
+.worktrees/
