@@ -1,0 +1,40 @@
+backend:
+  image:
+    repository: harbor.aaron.reynoza.org/lab-director/backend
+    tag: latest
+  replicas: 1
+  port: 8080
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+  env:
+    OPERATOR_URL: ""  # Set in prod overrides
+
+frontend:
+  image:
+    repository: harbor.aaron.reynoza.org/lab-director/frontend
+    tag: latest
+  replicas: 1
+  port: 3000
+  resources:
+    requests:
+      cpu: 50m
+      memory: 128Mi
+    limits:
+      cpu: 200m
+      memory: 256Mi
+
+database:
+  secretName: cnpg-cluster-lab-director-app
+  secretKey: uri
+
+httproute:
+  enabled: true
+  hostname: ""  # Set in prod overrides
+  gateway:
+    name: homelab-gateway
+    namespace: cilium-system
