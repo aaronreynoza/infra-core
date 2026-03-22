@@ -1,0 +1,36 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: longhorn-alerts
+  namespace: monitoring
+  labels:
+    release: kube-prometheus-stack
+    role: alert-rules
+spec:
+  groups:
+    - name: longhorn-storage.rules
+      rules:
+        - alert: LonghornDiskFilling
+          expr: (longhorn_disk_usage_bytes / longhorn_disk_capacity_bytes) * 100 > 80
+          for: 15m
+          labels:
+            severity: warning
+          annotations:
+            summary: "Longhorn disk {{ $labels.disk }} on {{ $labels.node }} > 80% full"
+            description: "Disk {{ $labels.disk }} on node {{ $labels.node }} is {{ printf \"%.1f\" $value }}% used."
+        - alert: LonghornDiskCritical
+          expr: (longhorn_disk_usage_bytes / longhorn_disk_capacity_bytes) * 100 > 90
+          for: 10m
+          labels:
+            severity: critical
+          annotations:
+            summary: "Longhorn disk {{ $labels.disk }} on {{ $labels.node }} > 90% full"
+            description: "Disk {{ $labels.disk }} on node {{ $labels.node }} is {{ printf \"%.1f\" $value }}% used. Volumes may fail to schedule."
+        - alert: LonghornNodeStoragePressure
+          expr: (longhorn_node_storage_usage_bytes / longhorn_node_storage_capacity_bytes) * 100 > 80
+          for: 15m
+          labels:
+            severity: warning
+          annotations:
+            summary: "Longhorn node {{ $labels.node }} storage > 80%"
+            description: "Node {{ $labels.node }} storage is {{ printf \"%.1f\" $value }}% used."

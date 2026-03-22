@@ -1,0 +1,77 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: observability-alerts
+  namespace: monitoring
+  labels:
+    release: kube-prometheus-stack
+    role: alert-rules
+spec:
+  groups:
+    - name: prometheus-storage.rules
+      rules:
+        - alert: PrometheusStorageFilling
+          expr: |
+            (prometheus_tsdb_storage_blocks_bytes / (prometheus_tsdb_retention_limit_bytes > 0))
+            * 100 > 85
+          for: 15m
+          labels:
+            severity: warning
+          annotations:
+            summary: "Prometheus TSDB approaching retentionSize limit"
+            description: "Prometheus TSDB is at {{ printf \"%.1f\" $value }}% of its retention size limit."
+        - alert: PrometheusWALCorruption
+          expr: increase(prometheus_tsdb_wal_corruptions_total[1h]) > 0
+          for: 0m
+          labels:
+            severity: critical
+          annotations:
+            summary: "Prometheus WAL corruption detected"
+            description: "Prometheus has detected {{ $value }} WAL corruption(s) in the last hour."
+        - alert: PrometheusHeadTruncationsFailing
+          expr: increase(prometheus_tsdb_head_truncations_failed_total[1h]) > 0
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: "Prometheus TSDB head truncation failing"
+            description: "Prometheus failed to truncate head blocks — storage may grow unbounded."
+    - name: loki-storage.rules
+      rules:
+        - alert: LokiRequestErrors
+          expr: |
+            rate(loki_request_duration_seconds_count{status_code=~"5.."}[5m])
+            / rate(loki_request_duration_seconds_count[5m])
+            > 0.1
+          for: 15m
+          labels:
+            severity: warning
+          annotations:
+            summary: "Loki {{ $labels.route }} error rate > 10%"
+            description: "Loki route {{ $labels.route }} has {{ printf \"%.0f\" $value }}% error rate."
+        - alert: LokiIngesterFailing
+          expr: loki_ingester_streams_created_total == 0 and up{job=~".*loki.*"} == 1
+          for: 15m
+          labels:
+            severity: critical
+          annotations:
+            summary: "Loki ingester not creating streams"
+            description: "Loki is up but ingester has stopped creating streams — logs may be lost."
+    - name: tempo-storage.rules
+      rules:
+        - alert: TempoCompactionFailing
+          expr: increase(tempo_compactor_compactions_errors_total[1h]) > 0
+          for: 15m
+          labels:
+            severity: warning
+          annotations:
+            summary: "Tempo compaction errors detected"
+            description: "Tempo compactor has {{ $value }} error(s) in the last hour — storage may grow unbounded."
+        - alert: TempoIngesterFailing
+          expr: increase(tempo_ingester_failed_flushes_total[1h]) > 0
+          for: 15m
+          labels:
+            severity: warning
+          annotations:
+            summary: "Tempo ingester flush failures"
+            description: "Tempo ingester failed {{ $value }} flush(es) in the last hour — traces may be lost."
