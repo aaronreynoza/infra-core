@@ -1,0 +1,28 @@
+# Atlantis repo-level config for infra-core repo
+# Docs: https://www.runatlantis.io/docs/repo-level-atlantis-yaml.html
+version: 3
+projects:
+  - name: network
+    dir: core/terraform/live/network
+    workflow: default
+    autoplan:
+      when_modified:
+        - "*.tf"
+        - "../../../modules/opnsense/**/*.tf"
+      enabled: true
+
+  - name: zitadel
+    dir: core/terraform/live/zitadel
+    workflow: default
+    autoplan:
+      when_modified:
+        - "*.tf"
+      enabled: true
+
+  - name: bootstrap
+    dir: core/terraform/bootstrap
+    workflow: default
+    autoplan:
+      when_modified:
+        - "*.tf"
+      enabled: true
