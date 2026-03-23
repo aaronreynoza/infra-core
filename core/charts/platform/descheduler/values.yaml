@@ -1,0 +1,54 @@
+# Descheduler Configuration (HOMELAB-284)
+# Actively rebalances pods across nodes by evicting from overloaded nodes.
+# The default scheduler then places evicted pods on the least-loaded node.
+#
+# Strategies:
+# - LowNodeUtilization: evicts pods from nodes above target thresholds
+# - RemoveDuplicates: ensures replicated deployments spread across nodes
+#
+# Safety: respects PDBs, never evicts DaemonSet pods, rate-limited.
+
+kind: Deployment
+schedule: "*/5 * * * *"
+
+resources:
+  requests:
+    cpu: 50m
+    memory: 64Mi
+  limits:
+    cpu: 200m
+    memory: 256Mi
+
+deschedulerPolicyAPIVersion: "descheduler/v1alpha2"
+
+deschedulerPolicy:
+  profiles:
+    - name: default
+      pluginConfig:
+        - name: LowNodeUtilization
+          args:
+            thresholds:
+              cpu: 20
+              memory: 20
+              pods: 20
+            targetThresholds:
+              cpu: 50
+              memory: 50
+              pods: 50
+            evictableNamespaces:
+              exclude:
+                - kube-system
+                - longhorn-system
+                - cilium-system
+        - name: RemoveDuplicates
+          args:
+            evictableNamespaces:
+              exclude:
+                - kube-system
+                - longhorn-system
+                - cilium-system
+      plugins:
+        balance:
+          enabled:
+            - LowNodeUtilization
+            - RemoveDuplicates
