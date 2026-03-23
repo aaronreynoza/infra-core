@@ -1,0 +1,26 @@
+apiVersion: external-secrets.io/v1
+kind: ExternalSecret
+metadata:
+  name: atlantis-vcs
+  namespace: atlantis
+spec:
+  refreshInterval: 1h
+  secretStoreRef:
+    kind: ClusterSecretStore
+    name: kubernetes-secrets
+  target:
+    name: atlantis-vcs
+    creationPolicy: Owner
+  data:
+    - secretKey: gitea_user
+      remoteRef:
+        key: atlantis-credentials
+        property: atlantis_gitea_user
+    - secretKey: gitea_token
+      remoteRef:
+        key: atlantis-credentials
+        property: atlantis_gitea_token
+    - secretKey: gitea_secret
+      remoteRef:
+        key: atlantis-credentials
+        property: atlantis_webhook_secret
