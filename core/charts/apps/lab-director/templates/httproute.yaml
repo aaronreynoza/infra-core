@@ -19,6 +19,9 @@ spec:
         - path:
             type: PathPrefix
             value: /ws
+        - path:
+            type: PathPrefix
+            value: /auth
       backendRefs:
         - name: {{ include "lab-director.fullname" . }}-backend
           port: {{ .Values.backend.port }}
