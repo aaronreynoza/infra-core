@@ -1,0 +1,6 @@
+apiVersion: v2
+name: dev-environment
+description: Per-ticket development environment for AI agent workloads
+type: application
+version: 0.1.0
+appVersion: "1.0.0"
