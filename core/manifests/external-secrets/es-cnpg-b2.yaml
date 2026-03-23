@@ -1,6 +1,6 @@
 # CNPG B2 credentials — replicated to all namespaces with CNPG clusters
 ---
-apiVersion: external-secrets.io/v1beta1
+apiVersion: external-secrets.io/v1
 kind: ExternalSecret
 metadata:
   name: cnpg-b2-credentials
@@ -23,7 +23,7 @@ spec:
         key: cnpg-b2-credentials
         property: ACCESS_SECRET_KEY
 ---
-apiVersion: external-secrets.io/v1beta1
+apiVersion: external-secrets.io/v1
 kind: ExternalSecret
 metadata:
   name: cnpg-b2-credentials
@@ -46,7 +46,7 @@ spec:
         key: cnpg-b2-credentials
         property: ACCESS_SECRET_KEY
 ---
-apiVersion: external-secrets.io/v1beta1
+apiVersion: external-secrets.io/v1
 kind: ExternalSecret
 metadata:
   name: cnpg-b2-credentials
@@ -69,7 +69,7 @@ spec:
         key: cnpg-b2-credentials
         property: ACCESS_SECRET_KEY
 ---
-apiVersion: external-secrets.io/v1beta1
+apiVersion: external-secrets.io/v1
 kind: ExternalSecret
 metadata:
   name: cnpg-b2-credentials
@@ -92,7 +92,7 @@ spec:
         key: cnpg-b2-credentials
         property: ACCESS_SECRET_KEY
 ---
-apiVersion: external-secrets.io/v1beta1
+apiVersion: external-secrets.io/v1
 kind: ExternalSecret
 metadata:
   name: cnpg-b2-credentials
