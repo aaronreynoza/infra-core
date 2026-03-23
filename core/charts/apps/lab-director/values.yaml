@@ -38,3 +38,15 @@ httproute:
   gateway:
     name: homelab-gateway
     namespace: cilium-system
+
+# Token refresh CronJob for Claude OAuth rotation
+tokenRefresh:
+  enabled: false
+  schedule: "0 */3 * * *"  # Every 3 hours
+  image:
+    repository: harbor.aaron.reynoza.org/lab-director/token-refresh
+    tag: latest
+  secretName: dev-agent-claude-oauth
+  namespace: dev-agents
+  serviceAccount: token-refresh-sa
+  oauthEndpoint: "https://console.anthropic.com/v1/oauth/token"
