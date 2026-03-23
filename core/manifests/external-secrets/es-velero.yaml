@@ -1,0 +1,18 @@
+apiVersion: external-secrets.io/v1
+kind: ExternalSecret
+metadata:
+  name: velero-aws-credentials
+  namespace: velero
+spec:
+  refreshInterval: 1h
+  secretStoreRef:
+    kind: ClusterSecretStore
+    name: kubernetes-secrets
+  target:
+    name: velero-aws-credentials
+    creationPolicy: Owner
+  data:
+    - secretKey: cloud
+      remoteRef:
+        key: velero-aws-credentials
+        property: cloud

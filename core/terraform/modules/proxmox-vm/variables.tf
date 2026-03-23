@@ -15,6 +15,7 @@ variable "vms" {
     data_disk_gb  = optional(number)
     vlan_id       = optional(number)
     boot_image_id = optional(string)
+    gpu_pci_id    = optional(string)
   }))
 
   validation {

@@ -89,12 +89,13 @@ module "workers" {
       name          = worker.name
       vm_id         = worker.vm_id
       ip_address    = worker.ip_address
-      cpu_cores     = var.worker_cpu_cores
-      memory_mb     = var.worker_memory_mb
-      boot_disk_gb  = var.worker_boot_disk_gb
-      data_disk_gb  = var.worker_data_disk_gb
+      cpu_cores     = coalesce(worker.cpu_cores, var.worker_cpu_cores)
+      memory_mb     = coalesce(worker.memory_mb, var.worker_memory_mb)
+      boot_disk_gb  = coalesce(worker.boot_disk_gb, var.worker_boot_disk_gb)
+      data_disk_gb  = coalesce(worker.data_disk_gb, var.worker_data_disk_gb)
       vlan_id       = var.vlan_id
       boot_image_id = local.worker_image_ids[worker.name]
+      gpu_pci_id    = worker.gpu_pci_id
     }
   ]
 }
