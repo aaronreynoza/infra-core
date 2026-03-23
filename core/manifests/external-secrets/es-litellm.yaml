@@ -1,0 +1,18 @@
+apiVersion: external-secrets.io/v1beta1
+kind: ExternalSecret
+metadata:
+  name: litellm-master-key
+  namespace: ai
+spec:
+  refreshInterval: 1h
+  secretStoreRef:
+    kind: ClusterSecretStore
+    name: kubernetes-secrets
+  target:
+    name: litellm-master-key
+    creationPolicy: Owner
+  data:
+    - secretKey: master-key
+      remoteRef:
+        key: ai-credentials
+        property: litellm_master_key

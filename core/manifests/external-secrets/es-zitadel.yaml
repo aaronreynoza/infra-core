@@ -1,0 +1,26 @@
+apiVersion: external-secrets.io/v1beta1
+kind: ExternalSecret
+metadata:
+  name: zitadel-credentials
+  namespace: zitadel
+spec:
+  refreshInterval: 1h
+  secretStoreRef:
+    kind: ClusterSecretStore
+    name: kubernetes-secrets
+  target:
+    name: zitadel-credentials
+    creationPolicy: Owner
+  data:
+    - secretKey: masterkey
+      remoteRef:
+        key: app-credentials
+        property: zitadel_masterkey
+    - secretKey: postgresql-password
+      remoteRef:
+        key: app-credentials
+        property: zitadel_postgresql_password
+    - secretKey: postgres-password
+      remoteRef:
+        key: app-credentials
+        property: zitadel_postgres_password
