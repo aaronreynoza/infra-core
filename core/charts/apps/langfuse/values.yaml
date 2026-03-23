@@ -13,7 +13,14 @@ clickhouse:
   clusterEnabled: false
   shards: 1
   replicaCount: 1
-  resourcesPreset: "small"
+  resourcesPreset: "none"
+  resources:
+    requests:
+      cpu: 500m
+      memory: 512Mi
+    limits:
+      cpu: "1"
+      memory: 1536Mi
   persistence:
     size: 10Gi
     storageClass: longhorn
