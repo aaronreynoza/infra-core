@@ -130,3 +130,12 @@ prometheusOperator:
     limits:
       cpu: 300m
       memory: 512Mi
+  # Config reloader sidecar resources (HOMELAB-284)
+  prometheusConfigReloader:
+    resources:
+      requests:
+        cpu: 25m
+        memory: 32Mi
+      limits:
+        cpu: 100m
+        memory: 64Mi

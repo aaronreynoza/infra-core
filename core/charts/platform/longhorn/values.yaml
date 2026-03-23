@@ -2,6 +2,10 @@ defaultSettings:
   defaultReplicaCount: 1
   storageMinimalAvailablePercentage: 1
   defaultDataPath: "/var/mnt/u-longhorn"
+  # Workload rebalancing (HOMELAB-284)
+  replicaAutoBalance: best-effort
+  defaultDataLocality: best-effort
+  concurrentReplicaRebuildPerNodeLimit: 1
 
 metrics:
   serviceMonitor:

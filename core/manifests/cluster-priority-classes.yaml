@@ -1,0 +1,30 @@
+# Cluster PriorityClasses (HOMELAB-284)
+# Tiered scheduling priorities for workload management.
+# longhorn-critical (1B) is deployed by the Longhorn chart — do not duplicate.
+---
+apiVersion: scheduling.k8s.io/v1
+kind: PriorityClass
+metadata:
+  name: cluster-critical
+globalDefault: false
+value: 1000000
+preemptionPolicy: PreemptLowerPriority
+description: "Databases, ingress, monitoring, CNI — infrastructure that other workloads depend on."
+---
+apiVersion: scheduling.k8s.io/v1
+kind: PriorityClass
+metadata:
+  name: standard
+globalDefault: true
+value: 500000
+preemptionPolicy: PreemptLowerPriority
+description: "Default for application workloads. Applied automatically when no priorityClassName is set."
+---
+apiVersion: scheduling.k8s.io/v1
+kind: PriorityClass
+metadata:
+  name: low-priority
+globalDefault: false
+value: 100000
+preemptionPolicy: PreemptLowerPriority
+description: "Batch jobs, CI runners, dev tools — evictable under pressure."
