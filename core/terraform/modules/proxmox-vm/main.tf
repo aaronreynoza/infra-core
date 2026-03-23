@@ -17,6 +17,7 @@ resource "proxmox_virtual_environment_vm" "vm" {
   name      = each.value.name
   vm_id     = each.value.vm_id
   on_boot   = var.start_on_boot
+  machine   = each.value.gpu_pci_id != null ? "q35" : null
 
   cpu {
     sockets = var.cpu_sockets
@@ -57,6 +58,17 @@ resource "proxmox_virtual_environment_vm" "vm" {
       interface    = "virtio1"
       size         = each.value.data_disk_gb
       iothread     = true
+    }
+  }
+
+  # GPU passthrough (optional)
+  dynamic "hostpci" {
+    for_each = each.value.gpu_pci_id != null ? [1] : []
+    content {
+      device = "hostpci0"
+      id     = each.value.gpu_pci_id
+      pcie   = true
+      rombar = true
     }
   }
 
