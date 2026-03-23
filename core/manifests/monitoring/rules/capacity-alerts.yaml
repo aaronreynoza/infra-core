@@ -1,0 +1,108 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: capacity-alerts
+  namespace: monitoring
+  labels:
+    release: kube-prometheus-stack
+    role: alert-rules
+spec:
+  groups:
+    - name: capacity.rules
+      rules:
+        - alert: NodeMemoryHigh
+          expr: (1 - node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes) * 100 > 70
+          for: 15m
+          labels:
+            severity: warning
+          annotations:
+            summary: "Node {{ $labels.instance }} memory > 70%"
+            description: "Memory on {{ $labels.instance }} is {{ printf \"%.1f\" $value }}% used. Early warning before critical threshold."
+
+        - alert: NodeCPUHigh
+          expr: 100 - avg by(instance)(rate(node_cpu_seconds_total{mode="idle"}[5m])) * 100 > 80
+          for: 15m
+          labels:
+            severity: warning
+          annotations:
+            summary: "Node {{ $labels.instance }} CPU > 80%"
+            description: "CPU on {{ $labels.instance }} is {{ printf \"%.1f\" $value }}% used (5m avg)."
+
+        - alert: PodCountImbalance
+          expr: |
+            max(count by(node)(kube_pod_info{node=~".*wk.*"}))
+            /
+            min(count by(node)(kube_pod_info{node=~".*wk.*"}))
+            > 3
+          for: 30m
+          labels:
+            severity: warning
+          annotations:
+            summary: "Worker node pod count imbalance > 3x"
+            description: "Pod distribution across worker nodes is uneven (ratio: {{ printf \"%.1f\" $value }}x). Check scheduling constraints."
+
+        - alert: NodeMemoryRequestSaturation
+          expr: |
+            sum by(node)(kube_pod_container_resource_requests{resource="memory"})
+            /
+            sum by(node)(kube_node_status_allocatable{resource="memory"})
+            * 100 > 80
+          for: 15m
+          labels:
+            severity: warning
+          annotations:
+            summary: "Node {{ $labels.node }} memory requests > 80% of allocatable"
+            description: "Memory requests on {{ $labels.node }} are at {{ printf \"%.1f\" $value }}% of allocatable capacity."
+
+        - alert: NodeCPURequestSaturation
+          expr: |
+            sum by(node)(kube_pod_container_resource_requests{resource="cpu"})
+            /
+            sum by(node)(kube_node_status_allocatable{resource="cpu"})
+            * 100 > 80
+          for: 15m
+          labels:
+            severity: warning
+          annotations:
+            summary: "Node {{ $labels.node }} CPU requests > 80% of allocatable"
+            description: "CPU requests on {{ $labels.node }} are at {{ printf \"%.1f\" $value }}% of allocatable capacity."
+
+        - alert: NodeMemoryOvercommit
+          expr: |
+            sum by(node)(kube_pod_container_resource_requests{resource="memory"})
+            /
+            sum by(node)(kube_node_status_allocatable{resource="memory"})
+            * 100 > 200
+          for: 10m
+          labels:
+            severity: critical
+          annotations:
+            summary: "Node {{ $labels.node }} memory severely overcommitted (> 200%)"
+            description: "Memory requests on {{ $labels.node }} are {{ printf \"%.1f\" $value }}% of allocatable. Risk of OOM kills and evictions."
+
+        - alert: OOMKillRateHigh
+          expr: sum by(namespace)(increase(kube_pod_container_status_last_terminated_reason{reason="OOMKilled"}[1h])) > 3
+          for: 0m
+          labels:
+            severity: warning
+          annotations:
+            summary: "Namespace {{ $labels.namespace }} has > 3 OOM kills in 1h"
+            description: "{{ printf \"%.0f\" $value }} OOM kills detected in namespace {{ $labels.namespace }} over the last hour."
+
+        - alert: ClusterMemoryHeadroomLow
+          expr: sum(node_memory_MemAvailable_bytes) / 1024 / 1024 / 1024 < 4
+          for: 10m
+          labels:
+            severity: warning
+          annotations:
+            summary: "Cluster memory headroom < 4 GiB"
+            description: "Total available memory across all nodes is {{ printf \"%.1f\" $value }} GiB. Consider scaling or reducing workloads."
+
+        - alert: ClusterMemoryHeadroomCritical
+          expr: sum(node_memory_MemAvailable_bytes) / 1024 / 1024 / 1024 < 2
+          for: 10m
+          labels:
+            severity: critical
+          annotations:
+            summary: "Cluster memory headroom < 2 GiB — CRITICAL"
+            description: "Total available memory across all nodes is only {{ printf \"%.1f\" $value }} GiB. Immediate action required."
