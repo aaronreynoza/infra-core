@@ -1,6 +1,14 @@
 # External Secrets Operator — syncs secrets from source stores into K8s
 # Chart: external-secrets/external-secrets
 
+# Use Harbor GHCR pull-through cache
+global:
+  repository: harbor.aaron.reynoza.org/ghcr-cache
+
+image:
+  repository: harbor.aaron.reynoza.org/ghcr-cache/external-secrets/external-secrets
+  pullPolicy: IfNotPresent
+
 # Controller
 resources:
   requests:
