@@ -2,8 +2,12 @@
 # Actively rebalances pods across nodes by evicting from overloaded nodes.
 # The default scheduler then places evicted pods on the least-loaded node.
 #
-# Safety: respects PDBs, never evicts DaemonSet pods, rate-limited.
-# Excluded namespaces: kube-system, longhorn-system, cilium-system
+# Safety:
+# - Respects PDBs (never evicts if it would violate PDB)
+# - Never evicts DaemonSet pods
+# - Never evicts pods with system-cluster-critical or system-node-critical priority
+# - ignorePvcPods: true — won't evict pods with PVCs (stateful workloads safe)
+# - evictLocalStoragePods: false — won't evict pods using emptyDir
 
 kind: Deployment
 schedule: "*/5 * * * *"
@@ -26,11 +30,6 @@ deschedulerPolicy:
           args:
             ignorePvcPods: true
             evictLocalStoragePods: false
-            namespaces:
-              exclude:
-                - kube-system
-                - longhorn-system
-                - cilium-system
         - name: LowNodeUtilization
           args:
             thresholds:
