@@ -1,0 +1,26 @@
+apiVersion: external-secrets.io/v1beta1
+kind: ExternalSecret
+metadata:
+  name: newt-credentials
+  namespace: newt
+spec:
+  refreshInterval: 1h
+  secretStoreRef:
+    kind: ClusterSecretStore
+    name: kubernetes-secrets
+  target:
+    name: newt-credentials
+    creationPolicy: Owner
+  data:
+    - secretKey: PANGOLIN_ENDPOINT
+      remoteRef:
+        key: newt-credentials
+        property: PANGOLIN_ENDPOINT
+    - secretKey: NEWT_ID
+      remoteRef:
+        key: newt-credentials
+        property: NEWT_ID
+    - secretKey: NEWT_SECRET
+      remoteRef:
+        key: newt-credentials
+        property: NEWT_SECRET

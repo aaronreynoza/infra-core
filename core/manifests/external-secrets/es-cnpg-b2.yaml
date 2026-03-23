@@ -1,0 +1,116 @@
+# CNPG B2 credentials — replicated to all namespaces with CNPG clusters
+---
+apiVersion: external-secrets.io/v1beta1
+kind: ExternalSecret
+metadata:
+  name: cnpg-b2-credentials
+  namespace: forgejo
+spec:
+  refreshInterval: 1h
+  secretStoreRef:
+    kind: ClusterSecretStore
+    name: kubernetes-secrets
+  target:
+    name: cnpg-b2-credentials
+    creationPolicy: Owner
+  data:
+    - secretKey: ACCESS_KEY_ID
+      remoteRef:
+        key: cnpg-b2-credentials
+        property: ACCESS_KEY_ID
+    - secretKey: ACCESS_SECRET_KEY
+      remoteRef:
+        key: cnpg-b2-credentials
+        property: ACCESS_SECRET_KEY
+---
+apiVersion: external-secrets.io/v1beta1
+kind: ExternalSecret
+metadata:
+  name: cnpg-b2-credentials
+  namespace: zitadel
+spec:
+  refreshInterval: 1h
+  secretStoreRef:
+    kind: ClusterSecretStore
+    name: kubernetes-secrets
+  target:
+    name: cnpg-b2-credentials
+    creationPolicy: Owner
+  data:
+    - secretKey: ACCESS_KEY_ID
+      remoteRef:
+        key: cnpg-b2-credentials
+        property: ACCESS_KEY_ID
+    - secretKey: ACCESS_SECRET_KEY
+      remoteRef:
+        key: cnpg-b2-credentials
+        property: ACCESS_SECRET_KEY
+---
+apiVersion: external-secrets.io/v1beta1
+kind: ExternalSecret
+metadata:
+  name: cnpg-b2-credentials
+  namespace: outline
+spec:
+  refreshInterval: 1h
+  secretStoreRef:
+    kind: ClusterSecretStore
+    name: kubernetes-secrets
+  target:
+    name: cnpg-b2-credentials
+    creationPolicy: Owner
+  data:
+    - secretKey: ACCESS_KEY_ID
+      remoteRef:
+        key: cnpg-b2-credentials
+        property: ACCESS_KEY_ID
+    - secretKey: ACCESS_SECRET_KEY
+      remoteRef:
+        key: cnpg-b2-credentials
+        property: ACCESS_SECRET_KEY
+---
+apiVersion: external-secrets.io/v1beta1
+kind: ExternalSecret
+metadata:
+  name: cnpg-b2-credentials
+  namespace: langfuse
+spec:
+  refreshInterval: 1h
+  secretStoreRef:
+    kind: ClusterSecretStore
+    name: kubernetes-secrets
+  target:
+    name: cnpg-b2-credentials
+    creationPolicy: Owner
+  data:
+    - secretKey: ACCESS_KEY_ID
+      remoteRef:
+        key: cnpg-b2-credentials
+        property: ACCESS_KEY_ID
+    - secretKey: ACCESS_SECRET_KEY
+      remoteRef:
+        key: cnpg-b2-credentials
+        property: ACCESS_SECRET_KEY
+---
+apiVersion: external-secrets.io/v1beta1
+kind: ExternalSecret
+metadata:
+  name: cnpg-b2-credentials
+  namespace: lab-director
+spec:
+  refreshInterval: 1h
+  secretStoreRef:
+    kind: ClusterSecretStore
+    name: kubernetes-secrets
+  target:
+    name: cnpg-b2-credentials
+    creationPolicy: Owner
+  data:
+    - secretKey: ACCESS_KEY_ID
+      remoteRef:
+        key: cnpg-b2-credentials
+        property: ACCESS_KEY_ID
+    - secretKey: ACCESS_SECRET_KEY
+      remoteRef:
+        key: cnpg-b2-credentials
+        property: ACCESS_SECRET_KEY

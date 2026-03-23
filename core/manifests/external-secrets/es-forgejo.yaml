@@ -1,0 +1,26 @@
+apiVersion: external-secrets.io/v1beta1
+kind: ExternalSecret
+metadata:
+  name: forgejo-credentials
+  namespace: forgejo
+spec:
+  refreshInterval: 1h
+  secretStoreRef:
+    kind: ClusterSecretStore
+    name: kubernetes-secrets
+  target:
+    name: forgejo-credentials
+    creationPolicy: Owner
+  data:
+    - secretKey: username
+      remoteRef:
+        key: app-credentials
+        property: forgejo_admin_username
+    - secretKey: password
+      remoteRef:
+        key: app-credentials
+        property: forgejo_admin_password
+    - secretKey: postgresql-password
+      remoteRef:
+        key: app-credentials
+        property: forgejo_postgresql_password
