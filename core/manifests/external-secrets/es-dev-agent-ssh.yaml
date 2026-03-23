@@ -1,0 +1,22 @@
+apiVersion: external-secrets.io/v1beta1
+kind: ExternalSecret
+metadata:
+  name: dev-agent-ssh
+  namespace: dev-agents
+spec:
+  refreshInterval: 1h
+  secretStoreRef:
+    kind: ClusterSecretStore
+    name: kubernetes-secrets
+  target:
+    name: dev-agent-ssh
+    creationPolicy: Owner
+  data:
+    - secretKey: id_ed25519
+      remoteRef:
+        key: dev-agent-ssh
+        property: id_ed25519
+    - secretKey: id_ed25519.pub
+      remoteRef:
+        key: dev-agent-ssh
+        property: id_ed25519_pub
