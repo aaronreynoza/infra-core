@@ -2,11 +2,8 @@
 # Actively rebalances pods across nodes by evicting from overloaded nodes.
 # The default scheduler then places evicted pods on the least-loaded node.
 #
-# Strategies:
-# - LowNodeUtilization: evicts pods from nodes above target thresholds
-# - RemoveDuplicates: ensures replicated deployments spread across nodes
-#
 # Safety: respects PDBs, never evicts DaemonSet pods, rate-limited.
+# Excluded namespaces: kube-system, longhorn-system, cilium-system
 
 kind: Deployment
 schedule: "*/5 * * * *"
@@ -25,6 +22,15 @@ deschedulerPolicy:
   profiles:
     - name: default
       pluginConfig:
+        - name: DefaultEvictor
+          args:
+            ignorePvcPods: true
+            evictLocalStoragePods: false
+            namespaces:
+              exclude:
+                - kube-system
+                - longhorn-system
+                - cilium-system
         - name: LowNodeUtilization
           args:
             thresholds:
@@ -35,18 +41,7 @@ deschedulerPolicy:
               cpu: 50
               memory: 50
               pods: 50
-            evictableNamespaces:
-              exclude:
-                - kube-system
-                - longhorn-system
-                - cilium-system
         - name: RemoveDuplicates
-          args:
-            evictableNamespaces:
-              exclude:
-                - kube-system
-                - longhorn-system
-                - cilium-system
       plugins:
         balance:
           enabled:
