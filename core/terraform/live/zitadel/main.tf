@@ -18,7 +18,8 @@ plane_url     = "https://plane.${var.base_domain}"
   navidrome_url = "https://navidrome.${var.base_domain}"
   immich_url    = "https://immich.${var.base_domain}"
   paperless_url = "https://paperless.${var.base_domain}"
-  langfuse_url  = "https://langfuse.${var.base_domain}"
+  langfuse_url      = "https://langfuse.${var.base_domain}"
+  lab_director_url  = "https://lab-director.${var.base_domain}"
 }
 
 # --- Zitadel provider ---
@@ -389,6 +390,34 @@ resource "kubernetes_secret_v1" "langfuse_oidc" {
   data = {
     client-id     = zitadel_application_oidc.langfuse.client_id
     client-secret = zitadel_application_oidc.langfuse.client_secret
+  }
+}
+
+# --- Lab Director (Pipeline Orchestrator) ---
+resource "zitadel_application_oidc" "lab_director" {
+  org_id     = var.zitadel_org_id
+  project_id = zitadel_project.homelab.id
+  name       = "Lab Director"
+
+  redirect_uris              = ["${local.lab_director_url}/auth/callback"]
+  response_types             = ["OIDC_RESPONSE_TYPE_CODE"]
+  grant_types                = ["OIDC_GRANT_TYPE_AUTHORIZATION_CODE"]
+  app_type                   = "OIDC_APP_TYPE_WEB"
+  auth_method_type           = "OIDC_AUTH_METHOD_TYPE_POST"
+  post_logout_redirect_uris  = [local.lab_director_url]
+  id_token_userinfo_assertion = true
+  dev_mode                   = false
+}
+
+resource "kubernetes_secret_v1" "lab_director_oidc" {
+  metadata {
+    name      = "lab-director-oidc-secrets"
+    namespace = "lab-director"
+  }
+
+  data = {
+    client-id     = zitadel_application_oidc.lab_director.client_id
+    client-secret = zitadel_application_oidc.lab_director.client_secret
   }
 }
 
