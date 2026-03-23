@@ -1,0 +1,36 @@
+{{- if .Values.tokenRefresh.enabled }}
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: {{ include "lab-director.fullname" . }}-token-refresh
+  labels:
+    {{- include "lab-director.labels" . | nindent 4 }}
+spec:
+  schedule: {{ .Values.tokenRefresh.schedule | quote }}
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          serviceAccountName: {{ .Values.tokenRefresh.serviceAccount }}
+          restartPolicy: OnFailure
+          containers:
+            - name: token-refresh
+              image: "{{ .Values.tokenRefresh.image.repository }}:{{ .Values.tokenRefresh.image.tag }}"
+              env:
+                - name: SECRET_NAME
+                  value: {{ .Values.tokenRefresh.secretName | quote }}
+                - name: NAMESPACE
+                  value: {{ .Values.tokenRefresh.namespace | quote }}
+                - name: OAUTH_ENDPOINT
+                  value: {{ .Values.tokenRefresh.oauthEndpoint | quote }}
+              resources:
+                requests:
+                  cpu: 50m
+                  memory: 64Mi
+                limits:
+                  cpu: 200m
+                  memory: 128Mi
+{{- end }}
