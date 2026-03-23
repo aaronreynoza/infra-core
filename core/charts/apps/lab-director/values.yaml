@@ -13,6 +13,15 @@ backend:
       memory: 512Mi
   env:
     OPERATOR_URL: ""  # Set in prod overrides
+    OIDC_ISSUER: ""
+    OIDC_CLIENT_ID: ""
+    OIDC_CLIENT_SECRET: ""
+    OIDC_REDIRECT_URL: ""
+    OIDC_SCOPES: "openid profile email urn:zitadel:iam:org:project:roles"
+    OIDC_COOKIE_SECURE: "true"
+  oidc:
+    secretName: ""  # K8s secret name for OIDC credentials
+  hostAliases: []   # For DNS resolution inside pods
 
 frontend:
   image:
