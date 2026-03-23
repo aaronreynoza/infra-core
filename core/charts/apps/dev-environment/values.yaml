@@ -1,0 +1,47 @@
+# values.yaml — base configuration for dev environment pods
+# Image is selected per project — Lab Director sets this when creating ArgoCD Application
+image:
+  # Project-specific images (operator selects based on ticket.project)
+  # homelab → devenv-homelab, apexdirector → devenv-apexdirector
+  repository: harbor.aaron.reynoza.org/lab-director/devenv-homelab
+  tag: latest
+  pullPolicy: Always
+
+# Per-instance overrides (set by Lab Director when creating ArgoCD Application)
+ticket:
+  id: ""           # e.g., HOMELAB-254
+  project: ""      # homelab or apexdirector
+  repoUrl: ""      # git clone URL
+  branch: ""       # branch to checkout or create
+
+mode: interactive  # interactive or headless
+prompt: ""         # prompt for headless mode
+
+resources:
+  requests:
+    cpu: "2"
+    memory: 8Gi
+  limits:
+    cpu: "6"
+    memory: 12Gi
+    ephemeral-storage: 20Gi
+
+workspace:
+  storageSize: 15Gi
+  storageClass: longhorn
+
+# Secret references (names of pre-existing K8s secrets in dev-agents namespace)
+secrets:
+  credentials: dev-agent-credentials       # Forgejo, Plane, Outline, etc.
+  sshKey: dev-agent-ssh                     # SSH keypair
+  kubeconfig: dev-agent-kubeconfig          # Cluster access
+  argocdConfig: dev-agent-argocd            # ArgoCD CLI config
+  sopsKey: dev-agent-sops                   # SOPS age key
+  claudeOauth: dev-agent-claude-oauth       # Claude OAuth tokens (rotated by CronJob)
+
+# ConfigMap references
+configmaps:
+  gitConfig: dev-agent-gitconfig
+  mcpConfig: dev-agent-mcp-config
+  claudeSettings: dev-agent-claude-settings
+  env: dev-agent-env
