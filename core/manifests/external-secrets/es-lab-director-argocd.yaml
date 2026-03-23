@@ -1,0 +1,16 @@
+apiVersion: external-secrets.io/v1
+kind: ExternalSecret
+metadata:
+  name: lab-director-argocd
+  namespace: lab-director
+spec:
+  refreshInterval: 1h
+  secretStoreRef:
+    kind: ClusterSecretStore
+    name: kubernetes-secrets
+  target:
+    name: lab-director-argocd
+    creationPolicy: Owner
+  dataFrom:
+    - extract:
+        key: lab-director-argocd
