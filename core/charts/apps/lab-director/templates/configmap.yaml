@@ -6,3 +6,7 @@ metadata:
     {{- include "lab-director.labels" . | nindent 4 }}
 data:
   OPERATOR_URL: {{ .Values.backend.env.OPERATOR_URL | quote }}
+  OIDC_ISSUER: {{ .Values.backend.env.OIDC_ISSUER | quote }}
+  OIDC_REDIRECT_URL: {{ .Values.backend.env.OIDC_REDIRECT_URL | quote }}
+  OIDC_SCOPES: {{ .Values.backend.env.OIDC_SCOPES | quote }}
+  OIDC_COOKIE_SECURE: {{ .Values.backend.env.OIDC_COOKIE_SECURE | quote }}
