@@ -54,6 +54,10 @@ gitea:
     metrics:
       ENABLED: true
 
+    # Webhook - allow delivery to private/internal IPs (for Atlantis, etc.)
+    webhook:
+      ALLOWED_HOST_LIST: private,loopback,external
+
     # Cache/session/queue - use built-in memory/leveldb (no external redis)
     cache:
       ADAPTER: memory

@@ -1,0 +1,32 @@
+# Default deny all ingress for workload namespaces.
+# System namespaces (kube-system, cilium-system, etc.) are excluded via
+# namespace selector to avoid breaking core cluster services.
+#
+# Deploy AFTER allow-dns.yaml and allow-monitoring.yaml to prevent breakage.
+#
+# See: docs/decisions/008-cilium-network-policies.md
+apiVersion: cilium.io/v2
+kind: CiliumClusterwideNetworkPolicy
+metadata:
+  name: baseline-deny-all-ingress
+spec:
+  description: "Default deny all ingress to workload namespaces"
+  endpointSelector:
+    matchExpressions:
+      # Match all pods NOT in system namespaces
+      - key: io.kubernetes.pod.namespace
+        operator: NotIn
+        values:
+          - kube-system
+          - kube-public
+          - kube-node-lease
+          - cilium-system
+          - cilium-secrets
+          - argocd
+          - cert-manager
+          - longhorn-system
+          - monitoring
+          - velero
+  ingress: []
+  # Empty ingress list = deny all ingress
+  # Egress is not restricted by this policy

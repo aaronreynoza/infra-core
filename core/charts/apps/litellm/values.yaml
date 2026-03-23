@@ -1,9 +1,9 @@
 # LiteLLM Proxy — Generic Configuration
-# Central API gateway for LLM routing (Ollama + Claude)
+# Central API gateway for LLM routing (Ollama local models)
 # Chart: oci://docker.litellm.ai/berriai/litellm-helm
 # Docs: https://docs.litellm.ai/docs/proxy/configs
 #
-# Environment-specific overrides (API keys, master key) live in prod/values/litellm/
+# Environment-specific overrides (master key) live in prod/values/litellm/
 
 replicaCount: 1
 
@@ -43,16 +43,13 @@ proxy_config:
   model_list:
     - model_name: fast
       litellm_params:
-        model: ollama/llama3.1:8b
+        model: ollama/llama3.2:1b-instruct-q4_0
         api_base: http://ollama.ai.svc.cluster.local:11434
     - model_name: code
       litellm_params:
-        model: ollama/qwen2.5-coder:14b
+        model: ollama/qwen2.5-coder:7b
         api_base: http://ollama.ai.svc.cluster.local:11434
-    - model_name: smart
-      litellm_params:
-        model: anthropic/claude-sonnet-4-20250514
-        # api_key resolved from ANTHROPIC_API_KEY env var
-        api_key: os.environ/ANTHROPIC_API_KEY
+  litellm_settings:
+    callbacks: ["langfuse"]
   general_settings:
     master_key: os.environ/LITELLM_MASTER_KEY

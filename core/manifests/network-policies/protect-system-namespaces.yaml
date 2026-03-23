@@ -1,0 +1,52 @@
+# Restrict ingress to protected system namespaces.
+# Only allows traffic from other protected system namespaces and from
+# monitoring (for Prometheus scraping). All other ingress is denied.
+#
+# Note: CiliumClusterwideNetworkPolicy cannot express "same namespace" natively.
+# Instead, we allow traffic from the set of protected namespaces to each other.
+# For stricter per-namespace isolation, deploy individual CiliumNetworkPolicy
+# resources in each namespace.
+#
+# Protected namespaces per spec/safety.md:
+#   kube-system, cilium-system, argocd, cert-manager, longhorn-system,
+#   monitoring, velero, zitadel, forgejo, harbor
+#
+# See: docs/decisions/008-cilium-network-policies.md
+apiVersion: cilium.io/v2
+kind: CiliumClusterwideNetworkPolicy
+metadata:
+  name: protect-system-namespaces
+spec:
+  description: "Restrict ingress to protected system namespaces"
+  endpointSelector:
+    matchExpressions:
+      - key: io.kubernetes.pod.namespace
+        operator: In
+        values:
+          - kube-system
+          - cilium-system
+          - argocd
+          - cert-manager
+          - longhorn-system
+          - monitoring
+          - velero
+          - zitadel
+          - forgejo
+          - harbor
+  ingress:
+    # Allow traffic from other protected system namespaces
+    - fromEndpoints:
+        - matchExpressions:
+            - key: k8s:io.kubernetes.pod.namespace
+              operator: In
+              values:
+                - kube-system
+                - cilium-system
+                - argocd
+                - cert-manager
+                - longhorn-system
+                - monitoring
+                - velero
+                - zitadel
+                - forgejo
+                - harbor

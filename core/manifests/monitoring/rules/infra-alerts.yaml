@@ -11,13 +11,32 @@ spec:
     - name: infra.rules
       rules:
         - alert: PersistentVolumeFillingUp
-          expr: (kubelet_volume_stats_used_bytes / kubelet_volume_stats_capacity_bytes) * 100 > 85
+          expr: (kubelet_volume_stats_used_bytes / kubelet_volume_stats_capacity_bytes) * 100 > 75
           for: 15m
           labels:
             severity: warning
           annotations:
-            summary: "PVC {{ $labels.namespace }}/{{ $labels.persistentvolumeclaim }} > 85% full"
+            summary: "PVC {{ $labels.namespace }}/{{ $labels.persistentvolumeclaim }} > 75% full"
             description: "PVC {{ $labels.persistentvolumeclaim }} in {{ $labels.namespace }} is {{ printf \"%.1f\" $value }}% used."
+        - alert: PersistentVolumeCritical
+          expr: (kubelet_volume_stats_used_bytes / kubelet_volume_stats_capacity_bytes) * 100 > 90
+          for: 10m
+          labels:
+            severity: critical
+          annotations:
+            summary: "PVC {{ $labels.namespace }}/{{ $labels.persistentvolumeclaim }} > 90% full"
+            description: "PVC {{ $labels.persistentvolumeclaim }} in {{ $labels.namespace }} is {{ printf \"%.1f\" $value }}% used. Immediate action required."
+        - alert: PersistentVolumeFillingFast
+          expr: |
+            predict_linear(kubelet_volume_stats_used_bytes[6h], 4 * 3600)
+            / kubelet_volume_stats_capacity_bytes > 1
+            and kubelet_volume_stats_used_bytes / kubelet_volume_stats_capacity_bytes > 0.5
+          for: 30m
+          labels:
+            severity: warning
+          annotations:
+            summary: "PVC {{ $labels.namespace }}/{{ $labels.persistentvolumeclaim }} predicted full in < 4h"
+            description: "At current growth rate, PVC {{ $labels.persistentvolumeclaim }} in {{ $labels.namespace }} will be full within 4 hours."
         - alert: TargetDown
           expr: up == 0
           for: 5m

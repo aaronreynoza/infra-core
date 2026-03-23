@@ -30,9 +30,9 @@ ports:
     servicePort: 4318
     protocol: TCP
 
-# Service (ClusterIP - internal only)
+# Service — NodePort to allow VM 110 agent to send spans
 service:
-  type: ClusterIP
+  type: NodePort
 
 # Collector configuration
 config:
@@ -52,6 +52,13 @@ config:
       check_interval: 5s
       limit_mib: 400
       spike_limit_mib: 100
+    # Filter: drop non-agent spans before sending to Langfuse
+    # OTTL syntax (OTel Collector Contrib 0.111.0+)
+    filter/langfuse:
+      error_mode: ignore
+      traces:
+        span:
+          - 'resource.attributes["service.name"] != "agent-harness"'
 
   exporters:
     # Metrics -> Mimir (via Prometheus remote-write)
@@ -69,6 +76,21 @@ config:
       endpoint: http://loki.monitoring.svc.cluster.local:3100/otlp
       tls:
         insecure: true
+    # Traces -> Langfuse (agent-harness spans only, via OTLP HTTP)
+    otlphttp/langfuse:
+      endpoint: "${env:LANGFUSE_OTLP_ENDPOINT}"
+      headers:
+        x-langfuse-ingestion-version: "4"
+        Authorization: "Basic ${env:LANGFUSE_BASIC_AUTH}"
+      retry_on_failure:
+        enabled: true
+        initial_interval: 5s
+        max_interval: 30s
+        max_elapsed_time: 300s
+      sending_queue:
+        enabled: true
+        num_consumers: 2
+        queue_size: 100
 
   service:
     pipelines:
@@ -76,6 +98,11 @@ config:
         receivers: [otlp]
         processors: [memory_limiter, batch]
         exporters: [otlp/tempo]
+      # Agent traces -> Langfuse (filtered)
+      traces/langfuse:
+        receivers: [otlp]
+        processors: [memory_limiter, filter/langfuse, batch]
+        exporters: [otlphttp/langfuse]
       metrics:
         receivers: [otlp]
         processors: [memory_limiter, batch]

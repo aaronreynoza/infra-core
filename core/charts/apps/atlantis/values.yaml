@@ -1,0 +1,59 @@
+# Atlantis Helm Values — Generic Configuration
+# Terraform Pull Request Automation
+# Chart: runatlantis/atlantis
+# Docs: https://www.runatlantis.io/docs
+#
+# Environment-specific overrides (Forgejo URL, org allowlist, credentials)
+# live in prod/values/atlantis/
+
+# Ingress disabled — direct LB access via Cilium LB-IPAM
+ingress:
+  enabled: false
+
+# Service — LoadBalancer via Cilium LB-IPAM
+service:
+  type: LoadBalancer
+  port: 80
+  targetPort: 4141
+
+# Persistence using Longhorn for plan file storage
+volumeClaim:
+  enabled: true
+  dataStorage: 2Gi
+  storageClassName: longhorn
+
+# Resource limits — appropriate for homelab
+resources:
+  requests:
+    cpu: 100m
+    memory: 256Mi
+  limits:
+    cpu: 500m
+    memory: 512Mi
+
+# Server-side repo config — defines allowed repos and workflows
+repoConfig: |
+  ---
+  repos:
+  - id: /.*/
+    allowed_overrides: [workflow, apply_requirements]
+    allow_custom_workflows: true
+    apply_requirements: [approved]
+  workflows:
+    sops:
+      plan:
+        steps:
+        - env:
+            name: SOPS_AGE_KEY_FILE
+            value: /home/atlantis/.config/sops/age/keys.txt
+        - init
+        - plan
+      apply:
+        steps:
+        - env:
+            name: SOPS_AGE_KEY_FILE
+            value: /home/atlantis/.config/sops/age/keys.txt
+        - apply
+
+# Logging
+logLevel: info

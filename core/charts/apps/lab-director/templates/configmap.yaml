@@ -1,0 +1,8 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "lab-director.fullname" . }}
+  labels:
+    {{- include "lab-director.labels" . | nindent 4 }}
+data:
+  OPERATOR_URL: {{ .Values.backend.env.OPERATOR_URL | quote }}
