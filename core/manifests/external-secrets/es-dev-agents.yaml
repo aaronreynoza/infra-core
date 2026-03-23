@@ -1,0 +1,104 @@
+# Dev-agent secrets — synced from secrets namespace to dev-agents
+# These support per-ticket dev environments managed by Lab Director
+---
+apiVersion: external-secrets.io/v1
+kind: ExternalSecret
+metadata:
+  name: dev-agent-credentials
+  namespace: dev-agents
+spec:
+  refreshInterval: 1h
+  secretStoreRef:
+    kind: ClusterSecretStore
+    name: kubernetes-secrets
+  target:
+    name: dev-agent-credentials
+    creationPolicy: Owner
+  dataFrom:
+    - extract:
+        key: dev-agent-credentials
+---
+apiVersion: external-secrets.io/v1
+kind: ExternalSecret
+metadata:
+  name: dev-agent-ssh
+  namespace: dev-agents
+spec:
+  refreshInterval: 1h
+  secretStoreRef:
+    kind: ClusterSecretStore
+    name: kubernetes-secrets
+  target:
+    name: dev-agent-ssh
+    creationPolicy: Owner
+  dataFrom:
+    - extract:
+        key: dev-agent-ssh
+---
+apiVersion: external-secrets.io/v1
+kind: ExternalSecret
+metadata:
+  name: dev-agent-kubeconfig
+  namespace: dev-agents
+spec:
+  refreshInterval: 1h
+  secretStoreRef:
+    kind: ClusterSecretStore
+    name: kubernetes-secrets
+  target:
+    name: dev-agent-kubeconfig
+    creationPolicy: Owner
+  dataFrom:
+    - extract:
+        key: dev-agent-kubeconfig
+---
+apiVersion: external-secrets.io/v1
+kind: ExternalSecret
+metadata:
+  name: dev-agent-argocd
+  namespace: dev-agents
+spec:
+  refreshInterval: 1h
+  secretStoreRef:
+    kind: ClusterSecretStore
+    name: kubernetes-secrets
+  target:
+    name: dev-agent-argocd
+    creationPolicy: Owner
+  dataFrom:
+    - extract:
+        key: dev-agent-argocd
+---
+apiVersion: external-secrets.io/v1
+kind: ExternalSecret
+metadata:
+  name: dev-agent-sops
+  namespace: dev-agents
+spec:
+  refreshInterval: 1h
+  secretStoreRef:
+    kind: ClusterSecretStore
+    name: kubernetes-secrets
+  target:
+    name: dev-agent-sops
+    creationPolicy: Owner
+  dataFrom:
+    - extract:
+        key: dev-agent-sops
+---
+apiVersion: external-secrets.io/v1
+kind: ExternalSecret
+metadata:
+  name: dev-agent-claude-oauth
+  namespace: dev-agents
+spec:
+  refreshInterval: 1h
+  secretStoreRef:
+    kind: ClusterSecretStore
+    name: kubernetes-secrets
+  target:
+    name: dev-agent-claude-oauth
+    creationPolicy: Owner
+  dataFrom:
+    - extract:
+        key: dev-agent-claude-oauth
