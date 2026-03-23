@@ -26,6 +26,13 @@ spec:
         runAsUser: 1000
         runAsGroup: 1000
         fsGroup: 1000
+      initContainers:
+        - name: workspace-init
+          image: busybox:1.36
+          command: ["sh", "-c", "rm -rf /workspace/lost+found"]
+          volumeMounts:
+            - name: workspace
+              mountPath: /workspace
       containers:
         - name: agent
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
@@ -85,10 +92,9 @@ spec:
               mountPath: /home/claude-agent/.git-credentials
               subPath: git-credentials
               readOnly: true
-            # Git config
+            # Git config (mounted to init path; entrypoint copies to ~/.gitconfig)
             - name: gitconfig
-              mountPath: /home/claude-agent/.gitconfig
-              subPath: .gitconfig
+              mountPath: /etc/gitconfig-init
               readOnly: true
             # Claude OAuth tokens
             - name: claude-oauth
