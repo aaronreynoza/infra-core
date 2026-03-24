@@ -57,7 +57,7 @@ spec:
             - name: runner-data
               mountPath: /data
             - name: docker-certs
-              mountPath: /certs/client
+              mountPath: /certs
               readOnly: true
             - name: workspace
               mountPath: /workspace
