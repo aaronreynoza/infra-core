@@ -1,0 +1,63 @@
+# HOMELAB-324: Scoped RBAC for dev-agent pods
+# Replaces cluster-admin kubeconfig with least-privilege access:
+# - Full access within dev-agents namespace (manage own workloads)
+# - Read-only cluster-wide (view pods, nodes, namespaces for debugging)
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: dev-agent-scoped
+  labels:
+    app.kubernetes.io/part-of: dev-environment
+rules:
+  # Read-only cluster-wide resources for observability/debugging
+  - apiGroups: [""]
+    resources: ["namespaces", "nodes", "persistentvolumes"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: [""]
+    resources: ["pods", "services", "configmaps", "events"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["apps"]
+    resources: ["deployments", "statefulsets", "daemonsets", "replicasets"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["batch"]
+    resources: ["jobs", "cronjobs"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["networking.k8s.io"]
+    resources: ["ingresses", "networkpolicies"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["argoproj.io"]
+    resources: ["applications", "appprojects"]
+    verbs: ["get", "list", "watch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: dev-agent-scoped-cluster-reader
+  labels:
+    app.kubernetes.io/part-of: dev-environment
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: dev-agent-scoped
+subjects:
+  - kind: ServiceAccount
+    name: dev-agent
+    namespace: dev-agents
+---
+# Full access within dev-agents namespace for managing own workloads
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: dev-agent-namespace-admin
+  namespace: dev-agents
+  labels:
+    app.kubernetes.io/part-of: dev-environment
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: admin
+subjects:
+  - kind: ServiceAccount
+    name: dev-agent
+    namespace: dev-agents

@@ -36,7 +36,6 @@ secrets:
   sshKey: dev-agent-ssh                     # SSH keypair
   kubeconfig: dev-agent-kubeconfig          # Cluster access
   argocdConfig: dev-agent-argocd            # ArgoCD CLI config
-  sopsKey: dev-agent-sops                   # SOPS age key
   claudeOauth: dev-agent-claude-oauth       # Claude OAuth tokens (rotated by CronJob)
 
 # ConfigMap references
