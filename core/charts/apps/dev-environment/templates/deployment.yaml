@@ -75,11 +75,6 @@ spec:
               mountPath: /home/claude-agent/.config/argocd/config
               subPath: config
               readOnly: true
-            # SOPS age key
-            - name: sops-key
-              mountPath: /home/claude-agent/.config/sops/age/keys.txt
-              subPath: keys.txt
-              readOnly: true
             # Git credentials
             - name: credentials
               mountPath: /home/claude-agent/.git-credentials
@@ -118,9 +113,6 @@ spec:
         - name: argocd-config
           secret:
             secretName: {{ .Values.secrets.argocdConfig }}
-        - name: sops-key
-          secret:
-            secretName: {{ .Values.secrets.sopsKey }}
         - name: credentials
           secret:
             secretName: {{ .Values.secrets.credentials }}
