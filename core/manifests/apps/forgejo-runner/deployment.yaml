@@ -17,7 +17,7 @@ spec:
     spec:
       initContainers:
         - name: register
-          image: code.forgejo.org/forgejo/runner:6.3.1
+          image: harbor.aaron.reynoza.org/platform/forgejo-runner:latest
           command: ["/bin/sh", "-c"]
           args:
             - |
@@ -25,8 +25,8 @@ spec:
                 forgejo-runner register \
                   --instance http://forgejo-http.forgejo.svc.cluster.local:3000 \
                   --token "$(cat /secrets/token)" \
-                  --labels "k8s:host" \
-                  --name k8s-runner \
+                  --labels "infra:host" \
+                  --name k8s-infra-runner \
                   --no-interactive
               fi
           volumeMounts:
@@ -37,21 +37,61 @@ spec:
               readOnly: true
       containers:
         - name: runner
-          image: code.forgejo.org/forgejo/runner:6.3.1
+          image: harbor.aaron.reynoza.org/platform/forgejo-runner:latest
           command: ["forgejo-runner", "daemon"]
+          env:
+            - name: DOCKER_HOST
+              value: tcp://localhost:2376
+            - name: DOCKER_TLS_VERIFY
+              value: "1"
+            - name: DOCKER_CERT_PATH
+              value: /certs/client
           resources:
             requests:
-              cpu: 100m
-              memory: 256Mi
+              cpu: 500m
+              memory: 1Gi
             limits:
-              cpu: "1"
-              memory: 512Mi
+              cpu: "2"
+              memory: 2Gi
           volumeMounts:
             - name: runner-data
               mountPath: /data
+            - name: docker-certs
+              mountPath: /certs/client
+              readOnly: true
+            - name: workspace
+              mountPath: /workspace
+        - name: dind
+          image: docker:27-dind
+          securityContext:
+            privileged: true
+          env:
+            - name: DOCKER_TLS_CERTDIR
+              value: /certs
+          resources:
+            requests:
+              cpu: 500m
+              memory: 512Mi
+            limits:
+              cpu: "2"
+              memory: 2Gi
+          volumeMounts:
+            - name: docker-certs
+              mountPath: /certs
+            - name: docker-data
+              mountPath: /var/lib/docker
+            - name: workspace
+              mountPath: /workspace
       volumes:
         - name: runner-data
           emptyDir: {}
         - name: runner-secret
           secret:
             secretName: forgejo-runner-secret
+        - name: docker-certs
+          emptyDir: {}
+        - name: docker-data
+          emptyDir: {}
+        - name: workspace
+          emptyDir:
+            sizeLimit: 10Gi
