@@ -41,8 +41,8 @@ rabbitmq:
 
 # MinIO — bundled object storage, Longhorn storage
 minio:
-  image: minio/minio:latest
-  image_mc: minio/mc:latest
+  image: minio/minio:RELEASE.2025-09-07T16-13-09Z
+  image_mc: minio/mc:RELEASE.2025-08-13T08-35-41Z
   local_setup: true
   storageClass: longhorn
   volumeSize: 10Gi

@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
         - name: playwright-mcp
-          image: mcp/playwright:latest
+          image: mcp/playwright@sha256:082a1c37208cdcb216aee6943f8d8bbe23f1c59d827b2101e1f06e6f778cc105
           args:
             - "--headless"
             - "--no-sandbox"

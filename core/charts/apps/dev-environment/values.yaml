@@ -4,8 +4,8 @@ image:
   # Project-specific images (operator selects based on ticket.project)
   # homelab → devenv-homelab, apexdirector → devenv-apexdirector
   repository: harbor.aaron.reynoza.org/lab-director/devenv-homelab
-  tag: latest
-  pullPolicy: Always
+  tag: "pinned-20260324"
+  pullPolicy: IfNotPresent
 
 # Per-instance overrides (set by Lab Director when creating ArgoCD Application)
 ticket:
