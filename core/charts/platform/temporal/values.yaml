@@ -13,34 +13,35 @@ server:
 
     persistence:
       defaultStore: default
-      visibilityStore: visibility
-      datastores:
-        default:
-          sql:
-            pluginName: postgres12
-            driverName: postgres12
-            host: ""          # Set in prod overrides
-            port: 5432
-            databaseName: temporal
-            user: ""          # Set in prod overrides
-            existingSecret: "" # Set in prod overrides
-            secretKey: password
-            maxConns: 20
-            maxIdleConns: 20
-            maxConnLifetime: "1h"
-        visibility:
-          sql:
-            pluginName: postgres12
-            driverName: postgres12
-            host: ""          # Set in prod overrides
-            port: 5432
-            databaseName: temporal_visibility
-            user: ""          # Set in prod overrides
-            existingSecret: "" # Set in prod overrides
-            secretKey: password
-            maxConns: 10
-            maxIdleConns: 10
-            maxConnLifetime: "1h"
+      additionalStores: {}
+      default:
+        driver: "sql"
+        sql:
+          driver: "postgres12"
+          host: ""          # Set in prod overrides
+          port: 5432
+          database: "temporal"
+          user: ""          # Set in prod overrides
+          password: ""      # Set via existingSecret in prod overrides
+          existingSecret: "" # Set in prod overrides
+          secretName: ""
+          maxConns: 20
+          maxIdleConns: 20
+          maxConnLifetime: "1h"
+      visibility:
+        driver: "sql"
+        sql:
+          driver: "postgres12"
+          host: ""          # Set in prod overrides
+          port: 5432
+          database: "temporal_visibility"
+          user: ""          # Set in prod overrides
+          password: ""      # Set via existingSecret in prod overrides
+          existingSecret: "" # Set in prod overrides
+          secretName: ""
+          maxConns: 10
+          maxIdleConns: 10
+          maxConnLifetime: "1h"
 
   frontend:
     replicaCount: 1
