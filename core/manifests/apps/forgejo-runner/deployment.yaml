@@ -41,11 +41,7 @@ spec:
           command: ["forgejo-runner", "daemon"]
           env:
             - name: DOCKER_HOST
-              value: tcp://localhost:2376
-            - name: DOCKER_TLS_VERIFY
-              value: "1"
-            - name: DOCKER_CERT_PATH
-              value: /certs/client
+              value: tcp://localhost:2375
           resources:
             requests:
               cpu: 500m
@@ -56,9 +52,6 @@ spec:
           volumeMounts:
             - name: runner-data
               mountPath: /data
-            - name: docker-certs
-              mountPath: /certs
-              readOnly: true
             - name: workspace
               mountPath: /workspace
         - name: dind
@@ -67,7 +60,10 @@ spec:
             privileged: true
           env:
             - name: DOCKER_TLS_CERTDIR
-              value: /certs
+              value: ""
+          args:
+            - --host=tcp://0.0.0.0:2375
+            - --tls=false
           resources:
             requests:
               cpu: 500m
@@ -76,8 +72,6 @@ spec:
               cpu: "2"
               memory: 2Gi
           volumeMounts:
-            - name: docker-certs
-              mountPath: /certs
             - name: docker-data
               mountPath: /var/lib/docker
             - name: workspace
@@ -88,8 +82,6 @@ spec:
         - name: runner-secret
           secret:
             secretName: forgejo-runner-secret
-        - name: docker-certs
-          emptyDir: {}
         - name: docker-data
           emptyDir: {}
         - name: workspace
