@@ -25,8 +25,8 @@ spec:
                 forgejo-runner register \
                   --instance http://forgejo-http.forgejo.svc.cluster.local:3000 \
                   --token "$(cat /secrets/token)" \
-                  --labels "infra:host" \
-                  --name k8s-infra-runner \
+                  --labels "k8s-runner:host" \
+                  --name k8s-runner \
                   --no-interactive
               fi
           volumeMounts:
