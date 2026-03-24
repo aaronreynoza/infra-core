@@ -17,7 +17,7 @@ spec:
     spec:
       initContainers:
         - name: register
-          image: harbor.aaron.reynoza.org/platform/forgejo-runner:latest
+          image: harbor.aaron.reynoza.org/platform/forgejo-runner@sha256:c7239a389b7ad9286bc4d8253b44fb900b538e13c36dc95e45f6d66d980ef9b3
           command: ["/bin/sh", "-c"]
           args:
             - |
@@ -37,7 +37,7 @@ spec:
               readOnly: true
       containers:
         - name: runner
-          image: harbor.aaron.reynoza.org/platform/forgejo-runner:latest
+          image: harbor.aaron.reynoza.org/platform/forgejo-runner@sha256:c7239a389b7ad9286bc4d8253b44fb900b538e13c36dc95e45f6d66d980ef9b3
           command: ["forgejo-runner", "daemon"]
           env:
             - name: DOCKER_HOST
@@ -55,7 +55,7 @@ spec:
             - name: workspace
               mountPath: /workspace
         - name: dind
-          image: docker:27-dind
+          image: docker:27.5.1-dind
           securityContext:
             privileged: true
           env:
