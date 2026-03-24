@@ -1,0 +1,120 @@
+# Temporal Server — Base Values (infra-core)
+# Chart: temporalio/temporal
+# Docs: https://github.com/temporalio/helm-charts
+#
+# These are reusable defaults. Environment-specific overrides
+# (DB credentials, hostnames) go in prod/values/temporal/values.yaml.
+
+server:
+  replicaCount: 1
+
+  config:
+    numHistoryShards: 4  # PERMANENT — cannot change after initial deployment. 4 is homelab-appropriate.
+
+    persistence:
+      defaultStore: default
+      visibilityStore: visibility
+      datastores:
+        default:
+          sql:
+            pluginName: postgres12
+            driverName: postgres12
+            host: ""          # Set in prod overrides
+            port: 5432
+            databaseName: temporal
+            user: ""          # Set in prod overrides
+            existingSecret: "" # Set in prod overrides
+            secretKey: password
+            maxConns: 20
+            maxIdleConns: 20
+            maxConnLifetime: "1h"
+        visibility:
+          sql:
+            pluginName: postgres12
+            driverName: postgres12
+            host: ""          # Set in prod overrides
+            port: 5432
+            databaseName: temporal_visibility
+            user: ""          # Set in prod overrides
+            existingSecret: "" # Set in prod overrides
+            secretKey: password
+            maxConns: 10
+            maxIdleConns: 10
+            maxConnLifetime: "1h"
+
+  frontend:
+    replicaCount: 1
+    service:
+      type: ClusterIP
+      port: 7233
+    resources:
+      requests:
+        cpu: 100m
+        memory: 128Mi
+      limits:
+        cpu: 500m
+        memory: 512Mi
+
+  history:
+    replicaCount: 1
+    resources:
+      requests:
+        cpu: 100m
+        memory: 128Mi
+      limits:
+        cpu: 500m
+        memory: 512Mi
+
+  matching:
+    replicaCount: 1
+    resources:
+      requests:
+        cpu: 100m
+        memory: 64Mi
+      limits:
+        cpu: 250m
+        memory: 256Mi
+
+  worker:
+    replicaCount: 1
+    resources:
+      requests:
+        cpu: 100m
+        memory: 64Mi
+      limits:
+        cpu: 250m
+        memory: 256Mi
+
+web:
+  enabled: true
+  replicaCount: 1
+  service:
+    type: ClusterIP
+    port: 8080
+  resources:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      cpu: 200m
+      memory: 128Mi
+
+# Disable unused backends
+cassandra:
+  enabled: false
+
+mysql:
+  enabled: false
+
+postgresql:
+  enabled: false  # We use external CNPG, not the bundled PostgreSQL
+
+elasticsearch:
+  enabled: false  # Standard visibility via PostgreSQL is sufficient for homelab
+
+# Schema setup jobs — auto-initialize DB schema on first deploy
+schema:
+  setup:
+    enabled: true
+  update:
+    enabled: true
