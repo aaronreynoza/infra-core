@@ -6,15 +6,16 @@ variable "proxmox_node" {
 variable "vms" {
   description = "List of VMs to create"
   type = list(object({
-    name          = string
-    vm_id         = number
-    ip_address    = string
-    cpu_cores     = number
-    memory_mb     = number
-    boot_disk_gb  = number
-    data_disk_gb  = optional(number)
-    vlan_id       = optional(number)
-    boot_image_id = optional(string)
+    name               = string
+    vm_id              = number
+    ip_address         = string
+    cpu_cores          = number
+    memory_mb          = number
+    boot_disk_gb       = number
+    data_disk_gb       = optional(number)
+    vlan_id            = optional(number)
+    boot_image_id      = optional(string)
+    boot_datastore_id  = optional(string)
   }))
 
   validation {

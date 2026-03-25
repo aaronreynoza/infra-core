@@ -62,12 +62,14 @@ variable "control_planes" {
 }
 
 variable "workers" {
-  description = "List of worker nodes (set image_url to override talos_image_url per node)"
+  description = "List of worker nodes (set image_url/boot_datastore_id/data_disk_gb to override defaults per node)"
   type = list(object({
-    name       = string
-    vm_id      = number
-    ip_address = string
-    image_url  = optional(string)
+    name              = string
+    vm_id             = number
+    ip_address        = string
+    image_url         = optional(string)
+    boot_datastore_id = optional(string)
+    data_disk_gb      = optional(number)
   }))
 
   validation {
