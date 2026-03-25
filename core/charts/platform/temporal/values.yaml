@@ -11,6 +11,12 @@ server:
   config:
     numHistoryShards: 4  # PERMANENT — cannot change after initial deployment. 4 is homelab-appropriate.
 
+    namespaces:
+      create: true
+      namespace:
+        - name: default
+          retention: 3d
+
     persistence:
       defaultStore: default
       additionalStores: {}
