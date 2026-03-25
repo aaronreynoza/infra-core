@@ -1,7 +1,7 @@
 variable "talos_version" {
   description = "Talos Linux version (ensures provider generates compatible machine configs)"
   type        = string
-  default     = "v1.11.3"
+  default     = "v1.12.5"
 }
 
 variable "kubernetes_version" {

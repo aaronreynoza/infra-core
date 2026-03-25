@@ -22,11 +22,11 @@ prometheus:
               storage: 20Gi
     resources:
       requests:
-        cpu: 200m
-        memory: 512Mi
+        cpu: 500m
+        memory: 1Gi
       limits:
-        cpu: "1"
-        memory: 2Gi
+        cpu: "2"
+        memory: 4Gi
     # Remote write to Mimir for long-term storage
     remoteWrite:
       - url: http://mimir.monitoring.svc.cluster.local:9009/api/v1/push
