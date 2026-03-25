@@ -1,0 +1,113 @@
+{{- if .Values.worker.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "lab-director.fullname" . }}-worker
+  labels:
+    {{- include "lab-director.labels" . | nindent 4 }}
+    app.kubernetes.io/component: worker
+spec:
+  replicas: {{ .Values.worker.replicas }}
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      {{- include "lab-director.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: worker
+  template:
+    metadata:
+      labels:
+        {{- include "lab-director.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: worker
+    spec:
+      serviceAccountName: {{ .Values.worker.serviceAccountName }}
+      terminationGracePeriodSeconds: 30
+      securityContext:
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+        runAsNonRoot: true
+      containers:
+        - name: worker
+          image: "{{ .Values.worker.image.repository }}:{{ .Values.worker.image.tag }}"
+          imagePullPolicy: Always
+          env:
+            - name: TEMPORAL_HOST_PORT
+              value: {{ .Values.worker.temporal.hostPort | quote }}
+            - name: TEMPORAL_NAMESPACE
+              value: {{ .Values.worker.temporal.namespace | quote }}
+          envFrom:
+            - configMapRef:
+                name: {{ .Values.worker.configmaps.env }}
+            - secretRef:
+                name: {{ .Values.worker.secrets.credentials }}
+          resources:
+            {{- toYaml .Values.worker.resources | nindent 12 }}
+          volumeMounts:
+            - name: workspace
+              mountPath: /home/claude-agent/workspace
+            - name: ssh-key
+              mountPath: /home/claude-agent/.ssh/id_ed25519
+              subPath: id_ed25519
+              readOnly: true
+            - name: ssh-key
+              mountPath: /home/claude-agent/.ssh/id_ed25519.pub
+              subPath: id_ed25519.pub
+              readOnly: true
+            - name: kubeconfig
+              mountPath: /home/claude-agent/.kube/config
+              subPath: config
+              readOnly: true
+            - name: argocd-config
+              mountPath: /home/claude-agent/.config/argocd/config
+              subPath: config
+              readOnly: true
+            - name: credentials
+              mountPath: /home/claude-agent/.git-credentials
+              subPath: git-credentials
+              readOnly: true
+            - name: gitconfig
+              mountPath: /home/claude-agent/.gitconfig
+              subPath: .gitconfig
+              readOnly: true
+            - name: claude-oauth
+              mountPath: /home/claude-agent/.claude/.credentials.json
+              subPath: credentials.json
+              readOnly: true
+            - name: claude-settings
+              mountPath: /home/claude-agent/.claude/settings-mount
+              readOnly: true
+            - name: mcp-config
+              mountPath: /home/claude-agent/.claude/mcp-config.json
+              subPath: mcp-config.json
+              readOnly: true
+      volumes:
+        - name: workspace
+          persistentVolumeClaim:
+            claimName: {{ include "lab-director.fullname" . }}-worker-workspace
+        - name: ssh-key
+          secret:
+            secretName: {{ .Values.worker.secrets.sshKey }}
+            defaultMode: 0600
+        - name: kubeconfig
+          secret:
+            secretName: {{ .Values.worker.secrets.kubeconfig }}
+        - name: argocd-config
+          secret:
+            secretName: {{ .Values.worker.secrets.argocdConfig }}
+        - name: credentials
+          secret:
+            secretName: {{ .Values.worker.secrets.credentials }}
+        - name: gitconfig
+          configMap:
+            name: {{ .Values.worker.configmaps.gitConfig }}
+        - name: claude-oauth
+          secret:
+            secretName: {{ .Values.worker.secrets.claudeOauth }}
+        - name: claude-settings
+          configMap:
+            name: {{ .Values.worker.configmaps.claudeSettings }}
+        - name: mcp-config
+          configMap:
+            name: {{ .Values.worker.configmaps.mcpConfig }}
+{{- end }}

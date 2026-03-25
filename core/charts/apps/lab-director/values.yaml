@@ -32,6 +32,38 @@ database:
   secretName: cnpg-cluster-lab-director-app
   secretKey: uri
 
+worker:
+  enabled: false  # Enable in prod overrides
+  image:
+    repository: harbor.aaron.reynoza.org/lab-director/worker
+    tag: ""  # Set in prod overrides
+  replicas: 1
+  serviceAccountName: dev-agent
+  temporal:
+    hostPort: ""  # Set in prod overrides
+    namespace: default
+  resources:
+    requests:
+      cpu: 200m
+      memory: 512Mi
+    limits:
+      cpu: "1"
+      memory: 1Gi
+  workspace:
+    storageSize: 15Gi
+    storageClass: longhorn
+  secrets:
+    credentials: ""    # Set in prod overrides
+    sshKey: ""
+    kubeconfig: ""
+    argocdConfig: ""
+    claudeOauth: ""
+  configmaps:
+    gitConfig: ""      # Set in prod overrides
+    mcpConfig: ""
+    claudeSettings: ""
+    env: ""
+
 httproute:
   enabled: true
   hostname: ""  # Set in prod overrides
