@@ -17,6 +17,11 @@ ticket:
 mode: interactive  # interactive or headless
 prompt: ""         # prompt for headless mode
 
+temporal:
+  hostPort: ""
+  namespace: default
+  callbackURL: ""
+
 resources:
   requests:
     cpu: "2"

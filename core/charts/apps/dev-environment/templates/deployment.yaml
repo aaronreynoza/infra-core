@@ -45,6 +45,14 @@ spec:
             - name: PROMPT
               value: {{ .Values.prompt | quote }}
             {{- end }}
+            {{- if eq .Values.mode "temporal" }}
+            - name: TEMPORAL_HOST_PORT
+              value: {{ .Values.temporal.hostPort | quote }}
+            - name: TEMPORAL_NAMESPACE
+              value: {{ .Values.temporal.namespace | quote }}
+            - name: CALLBACK_URL
+              value: {{ .Values.temporal.callbackURL | quote }}
+            {{- end }}
           envFrom:
             - configMapRef:
                 name: {{ .Values.configmaps.env }}
