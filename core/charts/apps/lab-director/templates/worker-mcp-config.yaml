@@ -1,0 +1,42 @@
+{{- if .Values.worker.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Values.worker.configmaps.mcpConfig }}
+  labels:
+    {{- include "lab-director.labels" . | nindent 4 }}
+    app.kubernetes.io/component: worker
+data:
+  mcp-config.json: |
+    {
+      "mcpServers": {
+        "plane": {
+          "command": "/usr/local/bin/uvx",
+          "args": ["plane-mcp-server", "stdio"],
+          "env": {
+            "PLANE_API_KEY": "plane_api_684407c417b941ec913ac62a74195a08",
+            "PLANE_BASE_URL": "https://plane.aaron.reynoza.org",
+            "PLANE_WORKSPACE_SLUG": "homelab",
+            "SSL_CERT_FILE": "/etc/ssl/certs/ca-certificates.crt"
+          }
+        },
+        "outline": {
+          "command": "/usr/local/bin/uvx",
+          "args": ["--from", "mcp-outline", "mcp-outline"],
+          "env": {
+            "OUTLINE_API_KEY": "ol_api_HtYs2IF0G12vJkjW66Z4nsYCsHeCOySTDEk3X4",
+            "OUTLINE_API_URL": "https://docs.aaron.reynoza.org/api"
+          }
+        },
+        "playwright": {
+          "url": "http://10.10.10.20:30931/sse"
+        },
+        "langfuse": {
+          "url": "https://langfuse.aaron.reynoza.org/api/public/mcp",
+          "headers": {
+            "Authorization": "Basic cGstbGYtMjk1NGM5ZTAtNWYxMi00MmY1LTkzMDgtZjE4NWFkOTYzMmYyOnNrLWxmLTMwOTc1ZTQzLWFkZWYtNDg3Yi1iNDE0LWYwMWJiNjNlNzQ1OA=="
+          }
+        }
+      }
+    }
+{{- end }}
