@@ -35,13 +35,14 @@ database:
 worker:
   enabled: false  # Enable in prod overrides
   image:
-    repository: harbor.aaron.reynoza.org/lab-director/worker
+    repository: harbor.aaron.reynoza.org/lab-director/devenv-homelab
     tag: ""  # Set in prod overrides
   replicas: 1
   serviceAccountName: dev-agent
   temporal:
     hostPort: ""  # Set in prod overrides
     namespace: default
+    callbackURL: ""
   resources:
     requests:
       cpu: 200m
