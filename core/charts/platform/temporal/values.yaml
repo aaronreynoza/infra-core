@@ -115,6 +115,8 @@ elasticsearch:
 
 # Schema setup jobs — auto-initialize DB schema on first deploy
 schema:
+  createDatabase:
+    enabled: false  # CNPG already creates temporal + temporal_visibility databases
   setup:
     enabled: true
   update:
