@@ -14,7 +14,7 @@ ticket:
   repoUrl: ""      # git clone URL
   branch: ""       # branch to checkout or create
 
-mode: interactive  # interactive or headless
+mode: ""           # empty = worker (default), "interactive", or "headless"
 prompt: ""         # prompt for headless mode
 
 temporal:
