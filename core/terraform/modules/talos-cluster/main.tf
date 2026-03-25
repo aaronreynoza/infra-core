@@ -86,15 +86,16 @@ module "workers" {
 
   vms = [
     for i, worker in var.workers : {
-      name          = worker.name
-      vm_id         = worker.vm_id
-      ip_address    = worker.ip_address
-      cpu_cores     = var.worker_cpu_cores
-      memory_mb     = var.worker_memory_mb
-      boot_disk_gb  = var.worker_boot_disk_gb
-      data_disk_gb  = var.worker_data_disk_gb
-      vlan_id       = var.vlan_id
-      boot_image_id = local.worker_image_ids[worker.name]
+      name              = worker.name
+      vm_id             = worker.vm_id
+      ip_address        = worker.ip_address
+      cpu_cores         = var.worker_cpu_cores
+      memory_mb         = var.worker_memory_mb
+      boot_disk_gb      = var.worker_boot_disk_gb
+      data_disk_gb      = coalesce(worker.data_disk_gb, var.worker_data_disk_gb)
+      vlan_id           = var.vlan_id
+      boot_image_id     = local.worker_image_ids[worker.name]
+      boot_datastore_id = worker.boot_datastore_id
     }
   ]
 }

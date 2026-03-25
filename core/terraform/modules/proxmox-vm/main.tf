@@ -40,9 +40,9 @@ resource "proxmox_virtual_environment_vm" "vm" {
     vlan_id = each.value.vlan_id
   }
 
-  # Boot disk (per-VM boot_image_id overrides module-level default)
+  # Boot disk (per-VM boot_image_id and boot_datastore_id override module-level defaults)
   disk {
-    datastore_id = var.boot_datastore_id
+    datastore_id = coalesce(each.value.boot_datastore_id, var.boot_datastore_id)
     file_id      = coalesce(each.value.boot_image_id, var.boot_image_id)
     file_format  = "raw"
     interface    = "virtio0"
