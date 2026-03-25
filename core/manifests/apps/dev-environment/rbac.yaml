@@ -1,7 +1,6 @@
-# HOMELAB-324: Scoped RBAC for dev-agent pods
-# Replaces cluster-admin kubeconfig with least-privilege access:
-# - Full access within dev-agents namespace (manage own workloads)
-# - Read-only cluster-wide (view pods, nodes, namespaces for debugging)
+# RBAC for dev-agent pods
+# - claude-agent: cluster-admin (full access for autonomous operations)
+# - dev-agent: scoped read-only cluster-wide + namespace-admin in dev-agents
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
@@ -30,6 +29,23 @@ rules:
     resources: ["applications", "appprojects"]
     verbs: ["get", "list", "watch"]
 ---
+# claude-agent: full cluster-admin for autonomous infrastructure operations
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: claude-agent-cluster-admin
+  labels:
+    app.kubernetes.io/part-of: dev-environment
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: cluster-admin
+subjects:
+  - kind: ServiceAccount
+    name: claude-agent
+    namespace: dev-agents
+---
+# dev-agent: scoped read-only cluster-wide access
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
@@ -43,9 +59,6 @@ roleRef:
 subjects:
   - kind: ServiceAccount
     name: dev-agent
-    namespace: dev-agents
-  - kind: ServiceAccount
-    name: claude-agent
     namespace: dev-agents
 ---
 # Full access within dev-agents namespace for managing own workloads
