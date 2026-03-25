@@ -6,3 +6,9 @@ metadata:
     {{- include "lab-director.labels" . | nindent 4 }}
 data:
   OPERATOR_URL: {{ .Values.backend.env.OPERATOR_URL | quote }}
+  {{- if .Values.backend.env.TEMPORAL_HOST_PORT }}
+  TEMPORAL_HOST_PORT: {{ .Values.backend.env.TEMPORAL_HOST_PORT | quote }}
+  {{- end }}
+  {{- if .Values.backend.env.TEMPORAL_NAMESPACE }}
+  TEMPORAL_NAMESPACE: {{ .Values.backend.env.TEMPORAL_NAMESPACE | quote }}
+  {{- end }}

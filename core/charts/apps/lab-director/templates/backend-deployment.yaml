@@ -36,6 +36,20 @@ spec:
                 configMapKeyRef:
                   name: {{ include "lab-director.fullname" . }}
                   key: OPERATOR_URL
+            {{- if .Values.backend.env.TEMPORAL_HOST_PORT }}
+            - name: TEMPORAL_HOST_PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "lab-director.fullname" . }}
+                  key: TEMPORAL_HOST_PORT
+            {{- end }}
+            {{- if .Values.backend.env.TEMPORAL_NAMESPACE }}
+            - name: TEMPORAL_NAMESPACE
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "lab-director.fullname" . }}
+                  key: TEMPORAL_NAMESPACE
+            {{- end }}
           livenessProbe:
             httpGet:
               path: /api/health
