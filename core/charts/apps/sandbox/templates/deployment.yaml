@@ -4,7 +4,8 @@ metadata:
   name: {{ include "sandbox.fullname" . }}
   labels:
     {{- include "sandbox.labels" . | nindent 4 }}
-    reynoza.co/profile-id: {{ .Values.profileId | quote }}
+    reynoza.co/profile-id: {{ .Values.sandbox.profileId | quote }}
+    reynoza.co/sandbox: {{ .Values.sandbox.name | quote }}
 spec:
   replicas: 1
   strategy:
@@ -16,7 +17,7 @@ spec:
     metadata:
       labels:
         {{- include "sandbox.selectorLabels" . | nindent 8 }}
-        reynoza.co/profile-id: {{ .Values.profileId | quote }}
+        reynoza.co/profile-id: {{ .Values.sandbox.profileId | quote }}
     spec:
       serviceAccountName: {{ include "sandbox.fullname" . }}
       terminationGracePeriodSeconds: 60
@@ -27,7 +28,7 @@ spec:
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           env:
             - name: PROFILE_ID
-              value: {{ .Values.env.PROFILE_ID | default .Values.profileId | quote }}
+              value: {{ .Values.env.PROFILE_ID | default .Values.sandbox.profileId | quote }}
             - name: LAB_DIRECTOR_API_URL
               value: {{ .Values.env.LAB_DIRECTOR_API_URL | quote }}
             - name: TEMPORAL_HOST_PORT
@@ -112,7 +113,7 @@ spec:
       volumes:
         - name: workspace
           persistentVolumeClaim:
-            claimName: {{ include "sandbox.fullname" . }}-workspace
+            claimName: {{ .Values.persistence.existingClaim | default (printf "%s-workspace" (include "sandbox.fullname" .)) }}
         - name: dind-certs
           emptyDir: {}
         - name: dind-storage
