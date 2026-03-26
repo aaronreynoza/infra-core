@@ -21,6 +21,8 @@ spec:
     spec:
       serviceAccountName: {{ include "sandbox.fullname" . }}
       terminationGracePeriodSeconds: 60
+      securityContext:
+        fsGroup: 1000
       containers:
         # --- Main sandbox container ---
         - name: sandbox
@@ -41,6 +43,8 @@ spec:
               value: {{ .Values.env.DOCKER_TLS_VERIFY | quote }}
             - name: DOCKER_CERT_PATH
               value: {{ .Values.env.DOCKER_CERT_PATH | quote }}
+            - name: SANDBOX_MODE
+              value: {{ .Values.env.SANDBOX_MODE | quote }}
             {{- range $key, $value := .Values.extraEnv }}
             - name: {{ $key }}
               value: {{ $value | quote }}
@@ -59,14 +63,9 @@ spec:
               mountPath: /certs/client
               subPath: client
               readOnly: true
-            # SSH keys
+            # SSH keys (mounted as directory — fsGroup makes them readable by uid 1000)
             - name: ssh-key
-              mountPath: /home/claude-agent/.ssh/id_ed25519
-              subPath: id_ed25519
-              readOnly: true
-            - name: ssh-key
-              mountPath: /home/claude-agent/.ssh/id_ed25519.pub
-              subPath: id_ed25519.pub
+              mountPath: /home/claude-agent/.ssh-secret
               readOnly: true
             # Git credentials
             - name: credentials
