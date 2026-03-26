@@ -120,7 +120,11 @@ elasticsearch:
   enabled: false  # Standard visibility via PostgreSQL is sufficient for homelab
 
 # Prometheus sub-chart — bundled with the Temporal Helm chart
+# Explicit storageClass prevents immutable PVC conflicts with ArgoCD
 prometheus:
+  alertmanager:
+    persistentVolume:
+      storageClass: "longhorn"
   server:
     persistentVolume:
       storageClass: "longhorn"
