@@ -45,6 +45,8 @@ spec:
               value: {{ .Values.env.DOCKER_CERT_PATH | quote }}
             - name: SANDBOX_MODE
               value: {{ .Values.env.SANDBOX_MODE | quote }}
+            - name: SANDBOX_NAME
+              value: {{ .Values.sandbox.name | quote }}
             {{- range $key, $value := .Values.extraEnv }}
             - name: {{ $key }}
               value: {{ $value | quote }}
