@@ -13,7 +13,7 @@ variable "kubernetes_version" {
 variable "nameservers" {
   description = "DNS nameservers for Talos nodes"
   type        = list(string)
-  default     = ["8.8.8.8", "1.1.1.1"]
+  default     = ["10.10.10.1"]
 }
 
 variable "cluster_name" {
