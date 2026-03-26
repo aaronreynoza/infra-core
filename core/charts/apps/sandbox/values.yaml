@@ -1,0 +1,73 @@
+# values.yaml — sandbox dev environment with DinD sidecar for k3s
+# All values are overridable per-instance by Lab Director via ArgoCD Application
+
+# Profile identification (set by Lab Director when creating ArgoCD Application)
+profileId: ""          # UUID of the project_profile in Lab Director DB
+
+# Main sandbox container image (project-specific, built by Plan 3)
+image:
+  repository: harbor.aaron.reynoza.org/lab-director/sandbox-lab-director
+  tag: "latest"
+  pullPolicy: IfNotPresent
+
+# DinD sidecar image (provides dockerd for k3s)
+dind:
+  image:
+    repository: docker
+    tag: "27-dind"
+    pullPolicy: IfNotPresent
+  resources:
+    requests:
+      cpu: "500m"
+      memory: 512Mi
+    limits:
+      cpu: "2"
+      memory: 2Gi
+
+# Main container resources (from project profile)
+resources:
+  requests:
+    cpu: "2"
+    memory: 6Gi
+  limits:
+    cpu: "4"
+    memory: 8Gi
+
+# Workspace PVC
+workspace:
+  storageSize: 25Gi
+  storageClass: longhorn
+
+# Environment variables injected into main container
+env:
+  LAB_DIRECTOR_API_URL: "http://lab-director-backend.lab-director.svc.cluster.local:8080"
+  PROFILE_ID: ""
+  TEMPORAL_HOST_PORT: "temporal-frontend.temporal.svc.cluster.local:7233"
+  TEMPORAL_NAMESPACE: "default"
+  DOCKER_HOST: "tcp://localhost:2376"
+  DOCKER_TLS_VERIFY: "1"
+  DOCKER_CERT_PATH: "/certs/client"
+
+# Additional env vars from project profile (merged at deploy time)
+extraEnv: {}
+
+# Secret references (names of pre-existing K8s secrets in dev-agents namespace)
+secrets:
+  credentials: dev-agent-credentials       # Forgejo, Plane, Outline, etc.
+  sshKey: dev-agent-ssh                     # SSH keypair
+  claudeOauth: dev-agent-claude-oauth       # Claude OAuth tokens
+
+# ConfigMap references
+configmaps:
+  gitConfig: dev-agent-gitconfig
+  claudeSettings: dev-agent-claude-settings
+  mcpConfig: dev-agent-mcp-config
+
+# LimitRange caps
+limitRange:
+  maxCpu: "6"
+  maxMemory: 12Gi
+  defaultCpu: "4"
+  defaultMemory: 8Gi
+  defaultRequestCpu: "2"
+  defaultRequestMemory: 6Gi
