@@ -1,8 +1,11 @@
 # values.yaml — sandbox dev environment with DinD sidecar for k3s
 # All values are overridable per-instance by Lab Director via ArgoCD Application
 
-# Profile identification (set by Lab Director when creating ArgoCD Application)
-profileId: ""          # UUID of the project_profile in Lab Director DB
+# Sandbox identification (set by Lab Director when creating ArgoCD Application)
+sandbox:
+  name: ""              # Sandbox instance name (e.g., "lab-director")
+  profileId: ""         # UUID of the project_profile in Lab Director DB
+  profileName: ""       # Human-readable profile name
 
 # Main sandbox container image (project-specific, built by Plan 3)
 image:
@@ -33,10 +36,11 @@ resources:
     cpu: "4"
     memory: 8Gi
 
-# Workspace PVC
-workspace:
-  storageSize: 25Gi
+# Workspace persistence
+persistence:
+  size: 25Gi
   storageClass: longhorn
+  existingClaim: ""     # If set, use this PVC instead of creating one
 
 # Environment variables injected into main container
 env:
