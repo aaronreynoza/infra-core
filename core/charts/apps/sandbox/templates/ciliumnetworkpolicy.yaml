@@ -1,0 +1,104 @@
+# Implements D16: Sandbox egress allowlist
+# Default deny all egress, with explicit allows for required services.
+# No access to: K8s API server, ArgoCD, CNPG clusters, other namespaces' pods.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: {{ include "sandbox.fullname" . }}-egress
+  labels:
+    {{- include "sandbox.labels" . | nindent 4 }}
+spec:
+  endpointSelector:
+    matchLabels:
+      {{- include "sandbox.selectorLabels" . | nindent 6 }}
+  egress:
+    # --- DNS resolution (required for all other rules to work) ---
+    - toEndpoints:
+        - matchLabels:
+            io.kubernetes.pod.namespace: kube-system
+            k8s-app: kube-dns
+      toPorts:
+        - ports:
+            - port: "53"
+              protocol: UDP
+            - port: "53"
+              protocol: TCP
+
+    # --- Temporal gRPC (pipeline work) ---
+    - toEndpoints:
+        - matchLabels:
+            io.kubernetes.pod.namespace: temporal
+            app.kubernetes.io/name: temporal
+            app.kubernetes.io/component: frontend
+      toPorts:
+        - ports:
+            - port: "7233"
+              protocol: TCP
+
+    # --- Lab Director Manager API (profile fetch, callbacks) ---
+    - toEndpoints:
+        - matchLabels:
+            io.kubernetes.pod.namespace: lab-director
+            app.kubernetes.io/name: lab-director-backend
+      toPorts:
+        - ports:
+            - port: "8080"
+              protocol: TCP
+
+    # --- Forgejo (Git SSH + HTTP) ---
+    - toCIDR:
+        - 10.10.10.222/32
+      toPorts:
+        - ports:
+            - port: "22"
+              protocol: TCP
+            - port: "3000"
+              protocol: TCP
+
+    # --- Harbor (push final candidate images) ---
+    - toFQDNs:
+        - matchName: harbor.aaron.reynoza.org
+      toPorts:
+        - ports:
+            - port: "443"
+              protocol: TCP
+
+    # --- Langfuse (pipeline observability, trace API) ---
+    - toFQDNs:
+        - matchName: langfuse.aaron.reynoza.org
+      toPorts:
+        - ports:
+            - port: "443"
+              protocol: TCP
+
+    # --- OTel Collector (OTLP HTTP traces) ---
+    - toCIDR:
+        - 10.10.10.20/32
+      toPorts:
+        - ports:
+            - port: "31827"
+              protocol: TCP
+
+    # --- Grafana (dashboard access, metrics queries) ---
+    - toFQDNs:
+        - matchName: grafana.aaron.reynoza.org
+      toPorts:
+        - ports:
+            - port: "443"
+              protocol: TCP
+
+    # --- External internet (Claude Code API, npm/go module downloads) ---
+    - toEntities:
+        - world
+      toPorts:
+        - ports:
+            - port: "443"
+              protocol: TCP
+
+    # --- Intra-pod traffic (main container <-> DinD sidecar) ---
+    - toEntities:
+        - host
+      toPorts:
+        - ports:
+            - port: "2376"
+              protocol: TCP

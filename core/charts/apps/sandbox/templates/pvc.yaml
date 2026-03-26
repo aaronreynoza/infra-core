@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "sandbox.fullname" . }}-workspace
+  labels:
+    {{- include "sandbox.labels" . | nindent 4 }}
+  annotations:
+    helm.sh/resource-policy: keep
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: {{ .Values.workspace.storageClass }}
+  resources:
+    requests:
+      storage: {{ .Values.workspace.storageSize }}
