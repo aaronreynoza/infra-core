@@ -119,6 +119,12 @@ postgresql:
 elasticsearch:
   enabled: false  # Standard visibility via PostgreSQL is sufficient for homelab
 
+# Prometheus sub-chart — bundled with the Temporal Helm chart
+prometheus:
+  server:
+    persistentVolume:
+      storageClass: "longhorn"
+
 # Schema setup jobs — auto-initialize DB schema on first deploy
 schema:
   createDatabase:
