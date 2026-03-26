@@ -128,6 +128,9 @@ prometheus:
   server:
     persistentVolume:
       storageClass: "longhorn"
+  prometheus-node-exporter:
+    enabled: false  # Disabled — temporal namespace has PodSecurity baseline:latest which blocks hostNetwork/hostPID/hostPath
+                    # kube-prometheus-stack already deploys node-exporter cluster-wide
 
 # Schema setup jobs — auto-initialize DB schema on first deploy
 schema:
