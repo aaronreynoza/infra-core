@@ -51,6 +51,7 @@ env:
   DOCKER_HOST: "tcp://localhost:2376"
   DOCKER_TLS_VERIFY: "1"
   DOCKER_CERT_PATH: "/certs/client"
+  SANDBOX_MODE: "true"
 
 # Additional env vars from project profile (merged at deploy time)
 extraEnv: {}
