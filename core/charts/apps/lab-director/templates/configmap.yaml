@@ -12,3 +12,6 @@ data:
   {{- if .Values.backend.env.TEMPORAL_NAMESPACE }}
   TEMPORAL_NAMESPACE: {{ .Values.backend.env.TEMPORAL_NAMESPACE | quote }}
   {{- end }}
+  {{- if .Values.backend.env.LITELLM_URL }}
+  LITELLM_URL: {{ .Values.backend.env.LITELLM_URL | quote }}
+  {{- end }}

@@ -50,6 +50,20 @@ spec:
                   name: {{ include "lab-director.fullname" . }}
                   key: TEMPORAL_NAMESPACE
             {{- end }}
+            {{- if .Values.backend.env.LITELLM_URL }}
+            - name: LITELLM_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "lab-director.fullname" . }}
+                  key: LITELLM_URL
+            {{- end }}
+            {{- if .Values.backend.litellmSecret.enabled }}
+            - name: LITELLM_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.backend.litellmSecret.secretName }}
+                  key: {{ .Values.backend.litellmSecret.secretKey }}
+            {{- end }}
           livenessProbe:
             httpGet:
               path: /api/health
