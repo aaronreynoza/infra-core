@@ -5,7 +5,7 @@ defaultSettings:
   # Workload rebalancing (HOMELAB-284)
   replicaAutoBalance: best-effort
   defaultDataLocality: best-effort
-  concurrentReplicaRebuildPerNodeLimit: 1
+  concurrentReplicaRebuildPerNodeLimit: 2
 
 metrics:
   serviceMonitor:
