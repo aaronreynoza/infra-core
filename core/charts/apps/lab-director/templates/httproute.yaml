@@ -15,21 +15,8 @@ spec:
     - matches:
         - path:
             type: PathPrefix
-            value: /api
-        - path:
-            type: PathPrefix
-            value: /ws
-        - path:
-            type: PathPrefix
-            value: /auth
-      backendRefs:
-        - name: {{ include "lab-director.fullname" . }}-backend
-          port: {{ .Values.backend.port }}
-    - matches:
-        - path:
-            type: PathPrefix
             value: /
       backendRefs:
-        - name: {{ include "lab-director.fullname" . }}-frontend
-          port: {{ .Values.frontend.port }}
+        - name: {{ include "lab-director.fullname" . }}
+          port: {{ .Values.port }}
 {{- end }}

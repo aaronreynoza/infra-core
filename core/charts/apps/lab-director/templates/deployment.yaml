@@ -1,29 +1,26 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ include "lab-director.fullname" . }}-backend
+  name: {{ include "lab-director.fullname" . }}
   labels:
     {{- include "lab-director.labels" . | nindent 4 }}
-    app.kubernetes.io/component: backend
 spec:
-  replicas: {{ .Values.backend.replicas }}
+  replicas: {{ .Values.replicas }}
   selector:
     matchLabels:
       {{- include "lab-director.selectorLabels" . | nindent 6 }}
-      app.kubernetes.io/component: backend
   template:
     metadata:
       labels:
         {{- include "lab-director.selectorLabels" . | nindent 8 }}
-        app.kubernetes.io/component: backend
     spec:
       containers:
-        - name: backend
-          image: "{{ .Values.backend.image.repository }}:{{ .Values.backend.image.tag }}"
+        - name: lab-director
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
           imagePullPolicy: Always
           ports:
             - name: http
-              containerPort: {{ .Values.backend.port }}
+              containerPort: {{ .Values.port }}
               protocol: TCP
           env:
             - name: DATABASE_URL
@@ -36,33 +33,33 @@ spec:
                 configMapKeyRef:
                   name: {{ include "lab-director.fullname" . }}
                   key: OPERATOR_URL
-            {{- if .Values.backend.env.TEMPORAL_HOST_PORT }}
+            {{- if .Values.env.TEMPORAL_HOST_PORT }}
             - name: TEMPORAL_HOST_PORT
               valueFrom:
                 configMapKeyRef:
                   name: {{ include "lab-director.fullname" . }}
                   key: TEMPORAL_HOST_PORT
             {{- end }}
-            {{- if .Values.backend.env.TEMPORAL_NAMESPACE }}
+            {{- if .Values.env.TEMPORAL_NAMESPACE }}
             - name: TEMPORAL_NAMESPACE
               valueFrom:
                 configMapKeyRef:
                   name: {{ include "lab-director.fullname" . }}
                   key: TEMPORAL_NAMESPACE
             {{- end }}
-            {{- if .Values.backend.env.LITELLM_URL }}
+            {{- if .Values.env.LITELLM_URL }}
             - name: LITELLM_URL
               valueFrom:
                 configMapKeyRef:
                   name: {{ include "lab-director.fullname" . }}
                   key: LITELLM_URL
             {{- end }}
-            {{- if .Values.backend.litellmSecret.enabled }}
+            {{- if .Values.litellmSecret.enabled }}
             - name: LITELLM_API_KEY
               valueFrom:
                 secretKeyRef:
-                  name: {{ .Values.backend.litellmSecret.secretName }}
-                  key: {{ .Values.backend.litellmSecret.secretKey }}
+                  name: {{ .Values.litellmSecret.secretName }}
+                  key: {{ .Values.litellmSecret.secretKey }}
             {{- end }}
           livenessProbe:
             httpGet:
@@ -77,4 +74,4 @@ spec:
             initialDelaySeconds: 5
             periodSeconds: 5
           resources:
-            {{- toYaml .Values.backend.resources | nindent 12 }}
+            {{- toYaml .Values.resources | nindent 12 }}

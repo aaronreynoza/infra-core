@@ -1,17 +1,15 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: {{ include "lab-director.fullname" . }}-frontend
+  name: {{ include "lab-director.fullname" . }}
   labels:
     {{- include "lab-director.labels" . | nindent 4 }}
-    app.kubernetes.io/component: frontend
 spec:
   type: ClusterIP
   ports:
-    - port: {{ .Values.frontend.port }}
+    - port: {{ .Values.port }}
       targetPort: http
       protocol: TCP
       name: http
   selector:
     {{- include "lab-director.selectorLabels" . | nindent 4 }}
-    app.kubernetes.io/component: frontend
