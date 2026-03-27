@@ -19,6 +19,7 @@ plane_url     = "https://plane.${var.base_domain}"
   immich_url    = "https://immich.${var.base_domain}"
   paperless_url = "https://paperless.${var.base_domain}"
   langfuse_url  = "https://langfuse.${var.base_domain}"
+  temporal_url  = "https://temporal.${var.base_domain}"
 }
 
 # --- Zitadel provider ---
@@ -389,6 +390,33 @@ resource "kubernetes_secret_v1" "langfuse_oidc" {
   data = {
     client-id     = zitadel_application_oidc.langfuse.client_id
     client-secret = zitadel_application_oidc.langfuse.client_secret
+  }
+}
+
+# --- Temporal (UI native OIDC) ---
+resource "zitadel_application_oidc" "temporal" {
+  org_id     = var.zitadel_org_id
+  project_id = zitadel_project.homelab.id
+  name       = "Temporal"
+
+  redirect_uris             = ["${local.temporal_url}/auth/sso/callback"]
+  response_types            = ["OIDC_RESPONSE_TYPE_CODE"]
+  grant_types               = ["OIDC_GRANT_TYPE_AUTHORIZATION_CODE"]
+  app_type                  = "OIDC_APP_TYPE_WEB"
+  auth_method_type          = "OIDC_AUTH_METHOD_TYPE_POST"
+  post_logout_redirect_uris = [local.temporal_url]
+  dev_mode                  = false
+}
+
+resource "kubernetes_secret_v1" "temporal_oidc" {
+  metadata {
+    name      = "temporal-oidc-secrets"
+    namespace = "temporal"
+  }
+
+  data = {
+    TEMPORAL_AUTH_CLIENT_ID     = zitadel_application_oidc.temporal.client_id
+    TEMPORAL_AUTH_CLIENT_SECRET = zitadel_application_oidc.temporal.client_secret
   }
 }
 
