@@ -27,9 +27,6 @@ prometheus:
       limits:
         cpu: "2"
         memory: 4Gi
-    # Remote write to Mimir for long-term storage
-    remoteWrite:
-      - url: http://mimir.monitoring.svc.cluster.local:9009/api/v1/push
 
 # --- Grafana ---
 grafana:
@@ -74,13 +71,6 @@ grafana:
           datasourceUid: prometheus
         nodeGraph:
           enabled: true
-    - name: Mimir
-      type: prometheus
-      access: proxy
-      url: http://mimir.monitoring.svc.cluster.local:9009/prometheus
-      isDefault: false
-      jsonData:
-        timeInterval: 15s
 
 # --- AlertManager ---
 alertmanager:
