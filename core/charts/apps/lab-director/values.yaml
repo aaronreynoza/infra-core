@@ -1,6 +1,6 @@
 image:
   repository: harbor.aaron.reynoza.org/lab-director/backend
-  tag: "c11df5f"
+  tag: "2fd90c5"
 
 replicas: 1
 port: 8080
