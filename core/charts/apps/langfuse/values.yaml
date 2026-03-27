@@ -24,6 +24,8 @@ clickhouse:
   persistence:
     size: 10Gi
     storageClass: longhorn
+  zookeeper:
+    podAntiAffinityPreset: "soft"
 
 # -- Bundled Valkey/Redis (cache + queue)
 # Bitnami Valkey subchart (aliased as redis)
