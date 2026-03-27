@@ -14,6 +14,14 @@ kubeProxyReplacement: true
 bpf:
   masquerade: true
 
+# BPF load balancer acceleration (XDP for LB traffic)
+loadBalancer:
+  acceleration: native
+
+# EDT-based bandwidth pacing
+bandwidthManager:
+  enabled: true
+
 # MTU — native routing on VLAN has no tunnel overhead
 # VLAN 802.1Q tag is handled at L2 by switch/NIC, not IP layer
 mtu: 1500
@@ -33,10 +41,10 @@ securityContext:
 resources:
   requests:
     cpu: 100m
-    memory: 128Mi
+    memory: 256Mi
   limits:
     cpu: "1"
-    memory: 512Mi
+    memory: 768Mi
 
 # Hubble observability
 hubble:
@@ -94,7 +102,7 @@ operator:
   resources:
     requests:
       cpu: 50m
-      memory: 64Mi
+      memory: 128Mi
     limits:
       cpu: 500m
-      memory: 256Mi
+      memory: 512Mi
