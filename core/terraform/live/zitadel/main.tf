@@ -404,8 +404,9 @@ resource "zitadel_application_oidc" "temporal" {
   grant_types               = ["OIDC_GRANT_TYPE_AUTHORIZATION_CODE"]
   app_type                  = "OIDC_APP_TYPE_WEB"
   auth_method_type          = "OIDC_AUTH_METHOD_TYPE_POST"
-  post_logout_redirect_uris = [local.temporal_url]
-  dev_mode                  = false
+  post_logout_redirect_uris   = [local.temporal_url]
+  id_token_userinfo_assertion = true
+  dev_mode                    = false
 }
 
 resource "kubernetes_secret_v1" "temporal_oidc" {
