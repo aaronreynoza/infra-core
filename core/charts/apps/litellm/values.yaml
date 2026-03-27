@@ -41,6 +41,20 @@ resources:
 # Model routing config — API keys injected via env vars in prod override
 proxy_config:
   model_list:
+    # --- Lab Director pipeline models (effort matrix) ---
+    - model_name: ollama-fast
+      litellm_params:
+        model: ollama/qwen3:8b
+        api_base: http://ollama.ai.svc.cluster.local:11434
+        stream: false
+        request_timeout: 120
+    - model_name: ollama-mid
+      litellm_params:
+        model: ollama/qwen3:32b
+        api_base: http://ollama.ai.svc.cluster.local:11434
+        stream: false
+        request_timeout: 300
+    # --- Legacy models (Open WebUI, general use) ---
     - model_name: fast
       litellm_params:
         model: ollama/llama3.2:1b-instruct-q4_0

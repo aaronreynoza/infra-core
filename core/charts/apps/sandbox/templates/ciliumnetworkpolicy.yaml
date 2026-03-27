@@ -45,6 +45,16 @@ spec:
             - port: "8080"
               protocol: TCP
 
+    # --- LiteLLM Proxy (Ollama model routing for pipeline stages) ---
+    - toEndpoints:
+        - matchLabels:
+            io.kubernetes.pod.namespace: ai
+            app.kubernetes.io/name: litellm
+      toPorts:
+        - ports:
+            - port: "4000"
+              protocol: TCP
+
     # --- Forgejo (Git SSH + HTTP) ---
     - toCIDR:
         - 10.10.10.222/32
