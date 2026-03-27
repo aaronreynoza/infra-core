@@ -1,40 +1,29 @@
-backend:
-  image:
-    repository: harbor.aaron.reynoza.org/lab-director/backend
-    tag: "6192621"
-  replicas: 1
-  port: 8080
-  resources:
-    requests:
-      cpu: 100m
-      memory: 256Mi
-    limits:
-      cpu: 500m
-      memory: 512Mi
-  env:
-    OPERATOR_URL: ""  # Set in prod overrides
-    TEMPORAL_HOST_PORT: ""  # Set in prod overrides
-    TEMPORAL_NAMESPACE: "default"
-    LITELLM_URL: "http://litellm.ai.svc.cluster.local:4000"
-  # Secret reference for LiteLLM API key (set in prod overrides)
-  litellmSecret:
-    enabled: false
-    secretName: ""
-    secretKey: ""
+image:
+  repository: harbor.aaron.reynoza.org/lab-director/backend
+  tag: "6192621"
 
-frontend:
-  image:
-    repository: harbor.aaron.reynoza.org/lab-director/frontend
-    tag: "0.1.0"
-  replicas: 1
-  port: 3000
-  resources:
-    requests:
-      cpu: 50m
-      memory: 128Mi
-    limits:
-      cpu: 200m
-      memory: 256Mi
+replicas: 1
+port: 8080
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 256Mi
+  limits:
+    cpu: 500m
+    memory: 512Mi
+
+env:
+  OPERATOR_URL: ""  # Set in prod overrides
+  TEMPORAL_HOST_PORT: ""  # Set in prod overrides
+  TEMPORAL_NAMESPACE: "default"
+  LITELLM_URL: "http://litellm.ai.svc.cluster.local:4000"
+
+# Secret reference for LiteLLM API key (set in prod overrides)
+litellmSecret:
+  enabled: false
+  secretName: ""
+  secretKey: ""
 
 database:
   secretName: cnpg-cluster-lab-director-app
