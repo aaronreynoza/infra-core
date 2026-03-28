@@ -53,3 +53,15 @@ sshSecret:
   enabled: false
   secretName: ""
   secretKey: ""
+
+# Claude OAuth credentials file (set in prod overrides)
+claudeOauthSecret:
+  enabled: false
+  secretName: ""
+  secretKey: ""
+
+# Plane API key for ticket management (set in prod overrides)
+planeSecret:
+  enabled: false
+  secretName: ""
+  secretKey: ""

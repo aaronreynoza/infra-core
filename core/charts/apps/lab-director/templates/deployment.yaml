@@ -74,6 +74,13 @@ spec:
                   name: {{ .Values.anthropicSecret.secretName }}
                   key: {{ .Values.anthropicSecret.secretKey }}
             {{- end }}
+            {{- if .Values.planeSecret.enabled }}
+            - name: PLANE_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.planeSecret.secretName }}
+                  key: {{ .Values.planeSecret.secretKey }}
+            {{- end }}
           livenessProbe:
             httpGet:
               path: /api/health
@@ -88,7 +95,7 @@ spec:
             periodSeconds: 5
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
-          {{- if or .Values.execution.enabled .Values.sshSecret.enabled }}
+          {{- if or .Values.execution.enabled .Values.sshSecret.enabled .Values.claudeOauthSecret.enabled }}
           volumeMounts:
             {{- if .Values.execution.enabled }}
             - name: workspace
@@ -100,8 +107,14 @@ spec:
               subPath: {{ .Values.sshSecret.secretKey }}
               readOnly: true
             {{- end }}
+            {{- if .Values.claudeOauthSecret.enabled }}
+            - name: claude-oauth
+              mountPath: /home/appuser/.claude/.credentials.json
+              subPath: {{ .Values.claudeOauthSecret.secretKey }}
+              readOnly: true
+            {{- end }}
           {{- end }}
-      {{- if or .Values.execution.enabled .Values.sshSecret.enabled }}
+      {{- if or .Values.execution.enabled .Values.sshSecret.enabled .Values.claudeOauthSecret.enabled }}
       volumes:
         {{- if .Values.execution.enabled }}
         - name: workspace
@@ -112,6 +125,12 @@ spec:
         - name: ssh-key
           secret:
             secretName: {{ .Values.sshSecret.secretName }}
+            defaultMode: 0400
+        {{- end }}
+        {{- if .Values.claudeOauthSecret.enabled }}
+        - name: claude-oauth
+          secret:
+            secretName: {{ .Values.claudeOauthSecret.secretName }}
             defaultMode: 0400
         {{- end }}
       {{- end }}
