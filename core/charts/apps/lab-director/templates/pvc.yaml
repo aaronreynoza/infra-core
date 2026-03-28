@@ -1,0 +1,14 @@
+{{- if .Values.execution.enabled }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "lab-director.fullname" . }}-workspace
+  labels:
+    {{- include "lab-director.labels" . | nindent 4 }}
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: {{ .Values.execution.pvcSize | default "5Gi" }}
+{{- end }}

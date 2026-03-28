@@ -113,6 +113,12 @@ spec:
                   name: {{ .Values.serviceCredentials.secretName }}
                   key: FORGEJO_TOKEN
             {{- end }}
+            {{- if .Values.execution.enabled }}
+            - name: MANAGER_EXECUTION_ENABLED
+              value: "true"
+            - name: WORKSPACE_DIR
+              value: {{ .Values.execution.workspaceDir | default "/workspace" | quote }}
+            {{- end }}
           livenessProbe:
             httpGet:
               path: /api/health
@@ -127,3 +133,42 @@ spec:
             periodSeconds: 5
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
+          {{- if or .Values.execution.enabled .Values.sshSecret.enabled .Values.claudeOauthSecret.enabled }}
+          volumeMounts:
+            {{- if .Values.execution.enabled }}
+            - name: workspace
+              mountPath: {{ .Values.execution.workspaceDir | default "/workspace" }}
+            {{- end }}
+            {{- if .Values.sshSecret.enabled }}
+            - name: ssh-key
+              mountPath: /home/appuser/.ssh/id_ed25519
+              subPath: {{ .Values.sshSecret.secretKey }}
+              readOnly: true
+            {{- end }}
+            {{- if .Values.claudeOauthSecret.enabled }}
+            - name: claude-oauth
+              mountPath: /home/appuser/.claude/.credentials.json
+              subPath: {{ .Values.claudeOauthSecret.secretKey }}
+              readOnly: true
+            {{- end }}
+          {{- end }}
+      {{- if or .Values.execution.enabled .Values.sshSecret.enabled .Values.claudeOauthSecret.enabled }}
+      volumes:
+        {{- if .Values.execution.enabled }}
+        - name: workspace
+          persistentVolumeClaim:
+            claimName: {{ include "lab-director.fullname" . }}-workspace
+        {{- end }}
+        {{- if .Values.sshSecret.enabled }}
+        - name: ssh-key
+          secret:
+            secretName: {{ .Values.sshSecret.secretName }}
+            defaultMode: 0400
+        {{- end }}
+        {{- if .Values.claudeOauthSecret.enabled }}
+        - name: claude-oauth
+          secret:
+            secretName: {{ .Values.claudeOauthSecret.secretName }}
+            defaultMode: 0400
+        {{- end }}
+      {{- end }}
