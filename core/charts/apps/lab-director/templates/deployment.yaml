@@ -61,6 +61,19 @@ spec:
                   name: {{ .Values.litellmSecret.secretName }}
                   key: {{ .Values.litellmSecret.secretKey }}
             {{- end }}
+            {{- if .Values.execution.enabled }}
+            - name: MANAGER_EXECUTION_ENABLED
+              value: "true"
+            - name: WORKSPACE_DIR
+              value: {{ .Values.execution.workspaceDir | default "/workspace" | quote }}
+            {{- end }}
+            {{- if .Values.anthropicSecret.enabled }}
+            - name: ANTHROPIC_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.anthropicSecret.secretName }}
+                  key: {{ .Values.anthropicSecret.secretKey }}
+            {{- end }}
           livenessProbe:
             httpGet:
               path: /api/health
@@ -75,3 +88,30 @@ spec:
             periodSeconds: 5
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
+          {{- if or .Values.execution.enabled .Values.sshSecret.enabled }}
+          volumeMounts:
+            {{- if .Values.execution.enabled }}
+            - name: workspace
+              mountPath: {{ .Values.execution.workspaceDir | default "/workspace" }}
+            {{- end }}
+            {{- if .Values.sshSecret.enabled }}
+            - name: ssh-key
+              mountPath: /home/appuser/.ssh/id_ed25519
+              subPath: {{ .Values.sshSecret.secretKey }}
+              readOnly: true
+            {{- end }}
+          {{- end }}
+      {{- if or .Values.execution.enabled .Values.sshSecret.enabled }}
+      volumes:
+        {{- if .Values.execution.enabled }}
+        - name: workspace
+          persistentVolumeClaim:
+            claimName: {{ include "lab-director.fullname" . }}-workspace
+        {{- end }}
+        {{- if .Values.sshSecret.enabled }}
+        - name: ssh-key
+          secret:
+            secretName: {{ .Values.sshSecret.secretName }}
+            defaultMode: 0400
+        {{- end }}
+      {{- end }}

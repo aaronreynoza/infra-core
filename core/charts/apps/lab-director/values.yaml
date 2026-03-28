@@ -7,11 +7,11 @@ port: 8080
 
 resources:
   requests:
-    cpu: 100m
-    memory: 256Mi
-  limits:
-    cpu: 500m
+    cpu: 250m
     memory: 512Mi
+  limits:
+    cpu: "2"
+    memory: 4Gi
 
 env:
   OPERATOR_URL: ""  # Set in prod overrides
@@ -35,3 +35,21 @@ httproute:
   gateway:
     name: homelab-gateway
     namespace: cilium-system
+
+# Manager execution capability (HOMELAB-471)
+execution:
+  enabled: false  # Set true in prod overrides to activate
+  pvcSize: "5Gi"
+  workspaceDir: "/workspace"
+
+# Anthropic API key for Claude CLI (set in prod overrides)
+anthropicSecret:
+  enabled: false
+  secretName: ""
+  secretKey: ""
+
+# SSH key for git operations (set in prod overrides)
+sshSecret:
+  enabled: false
+  secretName: ""
+  secretKey: ""
