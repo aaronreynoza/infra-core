@@ -66,11 +66,11 @@ spec:
             - --tls=false
           resources:
             requests:
-              cpu: 500m
-              memory: 512Mi
+              cpu: "1"
+              memory: 1Gi
             limits:
-              cpu: "2"
-              memory: 2Gi
+              cpu: "4"
+              memory: 4Gi
           volumeMounts:
             - name: docker-data
               mountPath: /var/lib/docker
@@ -83,7 +83,8 @@ spec:
           secret:
             secretName: forgejo-runner-secret
         - name: docker-data
-          emptyDir: {}
+          persistentVolumeClaim:
+            claimName: forgejo-runner-docker-data
         - name: workspace
           emptyDir:
             sizeLimit: 10Gi
