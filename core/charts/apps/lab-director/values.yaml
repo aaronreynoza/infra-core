@@ -18,12 +18,22 @@ env:
   TEMPORAL_HOST_PORT: ""  # Set in prod overrides
   TEMPORAL_NAMESPACE: "default"
   LITELLM_URL: "http://litellm.ai.svc.cluster.local:4000"
+  PLANE_API_URL: ""  # Set in prod overrides
+  PLANE_WORKSPACE_SLUG: ""  # Set in prod overrides
+  PLANE_PROJECT_ID: ""  # Set in prod overrides
+  OUTLINE_API_URL: ""  # Set in prod overrides
+  FORGEJO_API_URL: ""  # Set in prod overrides
 
 # Secret reference for LiteLLM API key (set in prod overrides)
 litellmSecret:
   enabled: false
   secretName: ""
   secretKey: ""
+
+# Secret reference for service API tokens (Plane, Outline, Forgejo)
+serviceCredentials:
+  enabled: false
+  secretName: ""
 
 database:
   secretName: cnpg-cluster-lab-director-app

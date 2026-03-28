@@ -61,6 +61,58 @@ spec:
                   name: {{ .Values.litellmSecret.secretName }}
                   key: {{ .Values.litellmSecret.secretKey }}
             {{- end }}
+            {{- if .Values.env.PLANE_API_URL }}
+            - name: PLANE_API_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "lab-director.fullname" . }}
+                  key: PLANE_API_URL
+            {{- end }}
+            {{- if .Values.env.PLANE_WORKSPACE_SLUG }}
+            - name: PLANE_WORKSPACE_SLUG
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "lab-director.fullname" . }}
+                  key: PLANE_WORKSPACE_SLUG
+            {{- end }}
+            {{- if .Values.env.PLANE_PROJECT_ID }}
+            - name: PLANE_PROJECT_ID
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "lab-director.fullname" . }}
+                  key: PLANE_PROJECT_ID
+            {{- end }}
+            {{- if .Values.env.OUTLINE_API_URL }}
+            - name: OUTLINE_API_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "lab-director.fullname" . }}
+                  key: OUTLINE_API_URL
+            {{- end }}
+            {{- if .Values.env.FORGEJO_API_URL }}
+            - name: FORGEJO_API_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "lab-director.fullname" . }}
+                  key: FORGEJO_API_URL
+            {{- end }}
+            {{- if .Values.serviceCredentials.enabled }}
+            - name: PLANE_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.serviceCredentials.secretName }}
+                  key: PLANE_API_KEY
+            - name: OUTLINE_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.serviceCredentials.secretName }}
+                  key: OUTLINE_API_KEY
+            - name: FORGEJO_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.serviceCredentials.secretName }}
+                  key: FORGEJO_TOKEN
+            {{- end }}
           livenessProbe:
             httpGet:
               path: /api/health
