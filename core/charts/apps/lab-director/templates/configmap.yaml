@@ -15,3 +15,18 @@ data:
   {{- if .Values.env.LITELLM_URL }}
   LITELLM_URL: {{ .Values.env.LITELLM_URL | quote }}
   {{- end }}
+  {{- if .Values.env.PLANE_API_URL }}
+  PLANE_API_URL: {{ .Values.env.PLANE_API_URL | quote }}
+  {{- end }}
+  {{- if .Values.env.PLANE_WORKSPACE_SLUG }}
+  PLANE_WORKSPACE_SLUG: {{ .Values.env.PLANE_WORKSPACE_SLUG | quote }}
+  {{- end }}
+  {{- if .Values.env.PLANE_PROJECT_ID }}
+  PLANE_PROJECT_ID: {{ .Values.env.PLANE_PROJECT_ID | quote }}
+  {{- end }}
+  {{- if .Values.env.OUTLINE_API_URL }}
+  OUTLINE_API_URL: {{ .Values.env.OUTLINE_API_URL | quote }}
+  {{- end }}
+  {{- if .Values.env.FORGEJO_API_URL }}
+  FORGEJO_API_URL: {{ .Values.env.FORGEJO_API_URL | quote }}
+  {{- end }}
