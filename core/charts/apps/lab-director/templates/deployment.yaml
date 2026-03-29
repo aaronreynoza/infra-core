@@ -9,6 +9,7 @@ spec:
   {{- if .Values.execution.enabled }}
   strategy:
     type: Recreate
+    rollingUpdate: null
   {{- end }}
   selector:
     matchLabels:
